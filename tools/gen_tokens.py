@@ -65,6 +65,27 @@ def pascal(kebab: str) -> str:
 
 # --------------------------------------------------------------------------- CSS
 
+def kebab(name: str) -> str:
+    """camelCase -> kebab-case for CSS custom properties.
+
+    CSS custom properties are case-sensitive, and the hand-written site CSS was
+    written in kebab-case while this emitter produced camelCase. The result was
+    ten variables -- --ink-muted, --ink-faint, --text-footnote, --font-mono,
+    --pass-on-dark and the type families among them -- referenced by the site
+    and defined nowhere, so every var() silently fell back to the browser
+    default. Nothing errored; the page simply rendered with the wrong greys and
+    the wrong font, and had done since it was built.
+    """
+    out = []
+    for ch in name:
+        if ch.isupper():
+            out.append("-")
+            out.append(ch.lower())
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
 def emit_css(tokens: dict) -> str:
     light = flatten(tokens["color"]["light"], "color-light")
     dark = flatten(tokens["color"]["dark"], "color-dark")
@@ -77,31 +98,63 @@ def emit_css(tokens: dict) -> str:
     lines = [BANNER, "", ":root {"]
     lines.append("  /* --- palette ------------------------------------------------ */")
     for name, value in rest:
-        lines.append(f"  --{name}: {value};")
+        lines.append(f"  --{kebab(name)}: {value};")
     lines.append("")
     lines.append("  /* --- light theme (default) ---------------------------------- */")
     for name, value in light:
-        lines.append(f"  --{name.replace('color-light-', 'c-')}: {value};")
+        lines.append(f"  --{kebab(name.replace('color-light-', 'c-'))}: {value};")
     lines.append("")
     lines.append("  /* --- semantic aliases resolved per theme -------------------- */")
     for alias in ("paper", "surface", "surfaceSunk", "ink", "inkMuted", "inkFaint", "hairline"):
-        lines.append(f"  --{alias}: var(--c-{alias});")
+        lines.append(f"  --{kebab(alias)}: var(--c-{kebab(alias)});")
     for sev in tokens["color"]["severity"]:
         if sev.startswith("$"):
             continue
-        lines.append(f"  --sev-{sev}: var(--color-severity-{sev});")
-    lines.append("  --inner-top: var(--elevation-innerTop);")
+        lines.append(f"  --sev-{kebab(sev)}: var(--color-severity-{kebab(sev)});")
+    lines.append("  --inner-top: var(--elevation-inner-top);")
+    # Aliases the site actually writes. Emitted rather than hand-declared so the
+    # generator stays the single source (DD-11).
+    lines.append("  --text-caption: var(--type-scale-caption);")
+    lines.append("  --text-footnote: var(--type-scale-footnote);")
+    lines.append("  --text-body: var(--type-scale-body);")
+    lines.append("  --font-mono: var(--type-family-mono-web);")
+    lines.append("  --font-body: var(--type-family-body-web);")
+    lines.append("  --font-display: var(--type-family-display-web);")
+    lines.append("  --pass-on-dark: var(--color-severity-pass-on-dark);")
     lines.append("  --duration: var(--motion-base);")
+    lines.append("}")
+    # ---- compatibility aliases ------------------------------------------
+    #
+    # The site was hand-written against camelCase names (--inkMuted,
+    # --surfaceSunk, --type-family-bodyWeb) in some places and kebab-case ones
+    # (--ink-muted, --text-footnote, --font-mono) in others. CSS custom
+    # properties are case-sensitive, so whichever spelling the emitter chose,
+    # the other half of the site silently fell back to browser defaults -- no
+    # error, just the wrong grey and the wrong font, since the day it was built.
+    #
+    # Rather than rewrite every call site and hope none was missed, both
+    # spellings are emitted and `tools/check_css_vars.py` fails the build if any
+    # var() in web/ or design/ resolves to nothing. Kebab-case is canonical; the
+    # camelCase entries below are aliases pointing at it.
+    lines.append("")
+    lines.append("  /* --- camelCase aliases (kebab-case above is canonical) ------ */")
+    emitted = [n for n, _ in rest] + [n.replace("color-light-", "c-") for n, _ in light]
+    emitted += ["paper", "surface", "surfaceSunk", "ink", "inkMuted", "inkFaint", "hairline"]
+    emitted += [f"sev-{sev}" for sev in tokens["color"]["severity"] if not sev.startswith("$")]
+    for name in dict.fromkeys(emitted):
+        if kebab(name) != name:
+            lines.append(f"  --{name}: var(--{kebab(name)});")
+
     lines.append("}")
     lines.append("")
     lines.append('[data-theme="dark"] {')
     for name, value in dark:
-        lines.append(f"  --{name.replace('color-dark-', 'c-')}: {value};")
+        lines.append(f"  --{kebab(name.replace('color-dark-', 'c-'))}: {value};")
     for sev in tokens["color"]["severity"]:
         if sev.startswith("$"):
             continue
-        lines.append(f"  --sev-{sev}: var(--color-severity-{sev}-on-dark);")
-    lines.append("  --inner-top: var(--elevation-innerTopDark);")
+        lines.append(f"  --sev-{kebab(sev)}: var(--color-severity-{kebab(sev)}-on-dark);")
+    lines.append("  --inner-top: var(--elevation-inner-top-dark);")
     lines.append("}")
     lines.append("")
     lines.append("@media (prefers-reduced-motion: reduce) {")

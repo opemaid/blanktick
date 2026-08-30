@@ -67,3 +67,40 @@ page must not imply tested macOS/Linux support.
 working scan shows the operator's taskbar, installed apps, location, local
 administrator names and DNS resolvers. Documentation screenshots must come from
 a clean VM or be synthetic, and go in `docs/shots/public/`.
+
+## 7. The marketing site fetches webfonts from Google and Fontshare
+
+`web/index.html` loads:
+
+- `https://fonts.googleapis.com/css2?family=JetBrains+Mono`
+- `https://api.fontshare.com/v2/css?f[]=clash-display&f[]=switzer`
+
+For a product whose entire claim is *"this never phones home"*, the page making
+that claim phones home to two third parties before it finishes rendering. Google
+Fonts in particular hands the visitor's IP to Google on every page load, which a
+German court has already ruled a GDPR violation.
+
+It is not a bug in the app, and no user data is at risk. It is a contradiction
+sitting on the front page, and the first sceptical reader will open the network
+tab and find it — on the one site that invites them to.
+
+**Fix:** self-host the two font files from `web/fonts/`, or drop to the system
+stack the desktop app already uses. One decision, and the site then makes zero
+external requests.
+
+## 8. The site is invisible below the hero without JavaScript — partly fixed
+
+`[data-reveal]` elements start at `opacity: 0` and are revealed by an
+IntersectionObserver. If the observer never runs, every section below the hero
+stays permanently invisible — and the page does not look broken, it looks like a
+one-screen site.
+
+I previously said a `<noscript>` fallback covered this. **That was wrong**: the
+`<noscript>` block only loads a webfont stylesheet. There was no fallback at all.
+
+Now fixed two ways: the hidden state is applied by a script (`.js-reveal`), so no
+JS means no hiding, and an eight-second timer reveals anything the observer
+missed. **Not yet visually confirmed** — repeated headless captures still showed
+nothing below the hero, which may be the harness or may mean something else is
+collapsing those sections. Open it in a real browser and scroll before trusting
+this item.

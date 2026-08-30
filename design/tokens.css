@@ -3,8 +3,8 @@
 :root {
   /* --- palette ------------------------------------------------ */
   --color-brand-kelp: #0F4D3F;
-  --color-brand-kelpDeep: #0A3A2F;
-  --color-brand-kelpTint: #E7F0EC;
+  --color-brand-kelp-deep: #0A3A2F;
+  --color-brand-kelp-tint: #E7F0EC;
   --color-severity-critical: #8C2F1F;
   --color-severity-critical-on-dark: #F0907E;
   --color-severity-high: #A8541C;
@@ -17,21 +17,21 @@
   --color-severity-info-on-dark: #9FB0BF;
   --color-severity-pass: #0F4D3F;
   --color-severity-pass-on-dark: #5FBFA3;
-  --color-severity-notChecked: #666D6B;
-  --color-severity-notChecked-on-dark: #7A827E;
+  --color-severity-not-checked: #666D6B;
+  --color-severity-not-checked-on-dark: #7A827E;
   --color-grade-strong: #0F4D3F;
   --color-grade-good: #2F6B4F;
   --color-grade-fair: #7A6410;
   --color-grade-weak: #A8541C;
-  --color-grade-atRisk: #8C2F1F;
-  --type-family-displayWeb: 'Clash Display', 'Satoshi', ui-sans-serif, system-ui, sans-serif;
-  --type-family-bodyWeb: 'Switzer', 'General Sans', ui-sans-serif, system-ui, sans-serif;
-  --type-family-monoWeb: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  --color-grade-at-risk: #8C2F1F;
+  --type-family-display-web: 'Clash Display', 'Satoshi', ui-sans-serif, system-ui, sans-serif;
+  --type-family-body-web: 'Switzer', 'General Sans', ui-sans-serif, system-ui, sans-serif;
+  --type-family-mono-web: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   --type-family-ios: SF Pro (system);
   --type-family-android: Roboto Flex (system);
-  --type-family-desktopDisplay: Segoe UI Variable Display, SF Pro Display, Inter, sans-serif;
-  --type-family-desktopBody: Segoe UI Variable Text, SF Pro Text, Inter, sans-serif;
-  --type-family-desktopMono: Cascadia Mono, Consolas, JetBrains Mono, monospace;
+  --type-family-desktop-display: Segoe UI Variable Display, SF Pro Display, Inter, sans-serif;
+  --type-family-desktop-body: Segoe UI Variable Text, SF Pro Text, Inter, sans-serif;
+  --type-family-desktop-mono: Cascadia Mono, Consolas, JetBrains Mono, monospace;
   --type-ratio: 1.2;
   --type-scale-caption: 0.694rem;
   --type-scale-footnote: 0.833rem;
@@ -42,7 +42,7 @@
   --type-scale-title1: 2.074rem;
   --type-scale-display: 3.583rem;
   --type-scale-score: 5.16rem;
-  --type-scale-scoreDesktop: 6.192rem;
+  --type-scale-score-desktop: 6.192rem;
   --type-measure: 62ch;
   --space-0: 0;
   --space-1: 0.25rem;
@@ -60,14 +60,14 @@
   --radius-lg: 1.25rem;
   --radius-xl: 2rem;
   --radius-shell: 2rem;
-  --radius-shellPad: 0.375rem;
+  --radius-shell-pad: 0.375rem;
   --radius-core: 1.625rem;
   --radius-pill: 999px;
   --elevation-rest: 0 1px 2px rgba(11,13,12,0.04), 0 8px 24px -12px rgba(11,13,12,0.10);
   --elevation-raised: 0 2px 4px rgba(11,13,12,0.05), 0 20px 48px -20px rgba(11,13,12,0.16);
   --elevation-float: 0 4px 8px rgba(11,13,12,0.06), 0 32px 72px -28px rgba(11,13,12,0.22);
-  --elevation-innerTop: inset 0 1px 1px rgba(255,255,255,0.65);
-  --elevation-innerTopDark: inset 0 1px 1px rgba(255,255,255,0.06);
+  --elevation-inner-top: inset 0 1px 1px rgba(255,255,255,0.65);
+  --elevation-inner-top-dark: inset 0 1px 1px rgba(255,255,255,0.06);
   --motion-spring: cubic-bezier(0.32, 0.72, 0, 1);
   --motion-exit: cubic-bezier(0.4, 0, 1, 1);
   --motion-fast: 160ms;
@@ -80,21 +80,21 @@
   /* --- light theme (default) ---------------------------------- */
   --c-paper: #FAF9F6;
   --c-surface: #FFFFFF;
-  --c-surfaceSunk: #F1EFEA;
+  --c-surface-sunk: #F1EFEA;
   --c-ink: #0B0D0C;
-  --c-inkMuted: #5A6260;
-  --c-inkFaint: #666D6B;
+  --c-ink-muted: #5A6260;
+  --c-ink-faint: #666D6B;
   --c-hairline: #E2DFD8;
   --c-focus: #0F4D3F;
-  --c-trackMuted: #928E84;
+  --c-track-muted: #928E84;
 
   /* --- semantic aliases resolved per theme -------------------- */
   --paper: var(--c-paper);
   --surface: var(--c-surface);
-  --surfaceSunk: var(--c-surfaceSunk);
+  --surface-sunk: var(--c-surface-sunk);
   --ink: var(--c-ink);
-  --inkMuted: var(--c-inkMuted);
-  --inkFaint: var(--c-inkFaint);
+  --ink-muted: var(--c-ink-muted);
+  --ink-faint: var(--c-ink-faint);
   --hairline: var(--c-hairline);
   --sev-critical: var(--color-severity-critical);
   --sev-high: var(--color-severity-high);
@@ -102,30 +102,63 @@
   --sev-low: var(--color-severity-low);
   --sev-info: var(--color-severity-info);
   --sev-pass: var(--color-severity-pass);
-  --sev-notChecked: var(--color-severity-notChecked);
-  --inner-top: var(--elevation-innerTop);
+  --sev-not-checked: var(--color-severity-not-checked);
+  --inner-top: var(--elevation-inner-top);
+  --text-caption: var(--type-scale-caption);
+  --text-footnote: var(--type-scale-footnote);
+  --text-body: var(--type-scale-body);
+  --font-mono: var(--type-family-mono-web);
+  --font-body: var(--type-family-body-web);
+  --font-display: var(--type-family-display-web);
+  --pass-on-dark: var(--color-severity-pass-on-dark);
   --duration: var(--motion-base);
+}
+
+  /* --- camelCase aliases (kebab-case above is canonical) ------ */
+  --color-brand-kelpDeep: var(--color-brand-kelp-deep);
+  --color-brand-kelpTint: var(--color-brand-kelp-tint);
+  --color-severity-notChecked: var(--color-severity-not-checked);
+  --color-severity-notChecked-on-dark: var(--color-severity-not-checked-on-dark);
+  --color-grade-atRisk: var(--color-grade-at-risk);
+  --type-family-displayWeb: var(--type-family-display-web);
+  --type-family-bodyWeb: var(--type-family-body-web);
+  --type-family-monoWeb: var(--type-family-mono-web);
+  --type-family-desktopDisplay: var(--type-family-desktop-display);
+  --type-family-desktopBody: var(--type-family-desktop-body);
+  --type-family-desktopMono: var(--type-family-desktop-mono);
+  --type-scale-scoreDesktop: var(--type-scale-score-desktop);
+  --radius-shellPad: var(--radius-shell-pad);
+  --elevation-innerTop: var(--elevation-inner-top);
+  --elevation-innerTopDark: var(--elevation-inner-top-dark);
+  --c-surfaceSunk: var(--c-surface-sunk);
+  --c-inkMuted: var(--c-ink-muted);
+  --c-inkFaint: var(--c-ink-faint);
+  --c-trackMuted: var(--c-track-muted);
+  --surfaceSunk: var(--surface-sunk);
+  --inkMuted: var(--ink-muted);
+  --inkFaint: var(--ink-faint);
+  --sev-notChecked: var(--sev-not-checked);
 }
 
 [data-theme="dark"] {
   --c-paper: #0C0E0D;
   --c-surface: #151817;
-  --c-surfaceSunk: #101312;
+  --c-surface-sunk: #101312;
   --c-ink: #F2F1ED;
-  --c-inkMuted: #9AA19E;
-  --c-inkFaint: #7A827E;
+  --c-ink-muted: #9AA19E;
+  --c-ink-faint: #7A827E;
   --c-hairline: #262A29;
   --c-focus: #5FBFA3;
-  --c-trackMuted: #5E6563;
-  --c-kelpTint: #12241E;
+  --c-track-muted: #5E6563;
+  --c-kelp-tint: #12241E;
   --sev-critical: var(--color-severity-critical-on-dark);
   --sev-high: var(--color-severity-high-on-dark);
   --sev-medium: var(--color-severity-medium-on-dark);
   --sev-low: var(--color-severity-low-on-dark);
   --sev-info: var(--color-severity-info-on-dark);
   --sev-pass: var(--color-severity-pass-on-dark);
-  --sev-notChecked: var(--color-severity-notChecked-on-dark);
-  --inner-top: var(--elevation-innerTopDark);
+  --sev-not-checked: var(--color-severity-not-checked-on-dark);
+  --inner-top: var(--elevation-inner-top-dark);
 }
 
 @media (prefers-reduced-motion: reduce) {

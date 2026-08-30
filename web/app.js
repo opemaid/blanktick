@@ -458,6 +458,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
   below.forEach(el => io.observe(el));
 
+  // Last-resort reveal. If the observer has not fired for an element after
+  // eight seconds -- a browser that never scrolls, a print/reader view, a
+  // preview renderer -- show it anyway. Content that exists but can never be
+  // seen is worse than content that arrives without its animation.
+  setTimeout(() => all.forEach(el => el.classList.add('in')), 8000);
+
   // Theme toggle, remembering the choice for this browser only.
   const root = document.documentElement;
   const saved = localStorage.getItem('mume-theme');

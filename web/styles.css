@@ -263,15 +263,18 @@ footer .small { font-size: 0.82rem; color: var(--inkFaint); line-height: 1.7; ma
 
 /* ---- scroll reveal -------------------------------------------------- */
 
-[data-reveal] {
+/* Only hide when the reveal script confirmed it is running -- see the
+   fail-safe note in index.html. Without the .js-reveal gate, a page whose
+   observer never fires shows nothing below the fold, permanently. */
+.js-reveal [data-reveal] {
   opacity: 0;
   transform: translateY(2.5rem);
   filter: blur(6px);
   transition: opacity 900ms var(--ease), transform 900ms var(--ease), filter 900ms var(--ease);
 }
-[data-reveal].in { opacity: 1; transform: none; filter: none; }
+.js-reveal [data-reveal].in { opacity: 1; transform: none; filter: none; }
 @media (prefers-reduced-motion: reduce) {
-  [data-reveal] { opacity: 1; transform: none; filter: none; transition: none; }
+  .js-reveal [data-reveal] { opacity: 1; transform: none; filter: none; transition: none; }
 }
 
 /* ---- theme switch --------------------------------------------------- */
@@ -283,3 +286,59 @@ footer .small { font-size: 0.82rem; color: var(--inkFaint); line-height: 1.7; ma
   transition: background 240ms var(--ease);
 }
 .theme-btn:hover { background: color-mix(in srgb, var(--ink) 13%, transparent); }
+
+/* ---- download ------------------------------------------------------- */
+
+.dl-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  margin-block: var(--space-5);
+}
+
+.dl-card {
+  padding: var(--space-4);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.dl-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.dl-os { font-weight: 700; }
+
+.dl-size,
+.dl-note { color: var(--ink-muted); font-size: var(--text-footnote); }
+
+.dl-note { margin-top: var(--space-3); line-height: 1.6; }
+
+.dl-foot {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--hairline);
+  color: var(--ink-muted);
+}
+
+/* Terminal blocks. Monospaced and selectable: every one of these is a command
+   the reader is meant to actually run, not decoration. */
+.term {
+  margin-block: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: var(--text-footnote);
+  line-height: 1.75;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.term-c { color: var(--pass-on-dark); font-weight: 700; }
+.term-d { color: var(--ink-faint); }

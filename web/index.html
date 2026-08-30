@@ -20,6 +20,19 @@
       href="https://api.fontshare.com/v2/css?f[]=clash-display@600,500&f[]=switzer@400,500,600&display=swap">
 <link rel="stylesheet" media="print" onload="this.media='all'"
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<!--
+  Reveal fail-safe.
+
+  [data-reveal] starts at opacity:0 and is revealed by an IntersectionObserver.
+  If that observer never runs -- JavaScript disabled, a crawler, reader mode, an
+  older browser -- every section below the hero stays permanently invisible. The
+  page does not look broken; it looks like a one-screen site, which is how this
+  went unnoticed: every headless capture of it showed only the hero.
+
+  So the hidden state is applied BY script and only when the script is alive.
+  No JS, no hiding.
+-->
+<script>document.documentElement.classList.add('js-reveal');</script>
 <noscript>
   <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@600,500&f[]=switzer@400,500,600&display=swap">
 </noscript>
@@ -34,6 +47,7 @@
       <a href="#try">Try it</a>
       <a href="#platforms">Android &amp; iPhone</a>
       <a href="#privacy">Privacy</a>
+      <a href="#download">Download</a>
     </div>
     <button class="theme-btn" id="theme" aria-label="Switch between light and dark">◐</button>
   </div>
@@ -282,6 +296,77 @@
 </section>
 
 <!-- ============================ PRIVACY ============================ -->
+<!-- ========================== DOWNLOAD =========================== -->
+<section id="download">
+  <div class="wrap">
+    <h2 data-reveal>Download it, then check what you downloaded.</h2>
+
+    <p class="lede" data-reveal>Mume for Windows is a portable folder. Unzip it anywhere and run
+      <code>Mume.exe</code> &mdash; nothing is installed, no service is registered, nothing is
+      written outside the folder except one settings file you can read.</p>
+
+    <div class="dl-grid" data-reveal>
+      <div class="dl-card">
+        <div class="dl-head">
+          <span class="dl-os">Windows 10 / 11</span>
+          <span class="dl-size">55.6&nbsp;MB &middot; x64</span>
+        </div>
+        <a class="btn" href="dist/Mume-0.1.0-windows-x64-portable.zip" download>
+          Download Mume 0.1.0<span class="icon" aria-hidden="true">&darr;</span>
+        </a>
+        <p class="dl-note">Includes its own Java runtime. Nothing else to install.</p>
+      </div>
+
+      <div class="dl-card">
+        <div class="dl-head"><span class="dl-os">macOS &amp; Linux</span></div>
+        <p class="dl-note">
+          <strong>Not offered yet, deliberately.</strong> The macOS collector has never been run on
+          a Mac and the Linux one has only run under WSL. Both are written to report
+          &ldquo;not checkable&rdquo; rather than guess, so they would be safe &mdash; and nearly
+          useless. Build from source if you want to try them.
+        </p>
+      </div>
+    </div>
+
+    <h3 data-reveal>Verify it before you run it</h3>
+    <p data-reveal>A security tool asking to be trusted should be the easiest thing in the world
+      to check. Compare the hash of what you downloaded against the one published here.</p>
+
+<pre class="term" data-reveal><span class="term-c">PS&gt;</span> Get-FileHash .\Mume-0.1.0-windows-x64-portable.zip -Algorithm SHA256
+
+SHA256  15BAB8554974231A21BB2827C6A50E2A5878BBE073750E9756DA1C1F3CBF3980
+Mume.exe   AEBBA00579FB8EAFBB89E343339D18579F26CEF1438F74B551C0902357FD1847</pre>
+
+    <h3 data-reveal>Windows will warn you. Here is exactly why.</h3>
+    <p data-reveal>You will see <strong>&ldquo;Windows protected your PC&rdquo;</strong>, and you
+      may need to click <em>More info &rarr; Run anyway</em>. That is SmartScreen, and it is
+      behaving correctly: <strong>this build is not code-signed.</strong> A signing certificate
+      costs a few hundred pounds a year, and Mume has not bought one.</p>
+
+    <p data-reveal>We are not going to tell you to ignore a security warning &mdash; that is the
+      habit every piece of malware relies on. What we will do is give you a way to check
+      instead of trusting: the hashes above, and the source below. If the hash matches what is
+      published here and here matches what is in the repository, you know what you have.
+      If either does not, do not run it.</p>
+
+    <h3 data-reveal>Or build it yourself and skip all of that</h3>
+<pre class="term" data-reveal><span class="term-c">$</span> git clone https://github.com/&lt;user&gt;/mume
+<span class="term-c">$</span> cd mume
+<span class="term-c">$</span> ./gradlew check                       <span class="term-d"># 253 tests + both network gates</span>
+<span class="term-c">$</span> ./gradlew :desktop:createDistributable</pre>
+
+    <p data-reveal>The build fails if any Mume class so much as references a networking API, and
+      fails again if the set of third-party jars changes. You do not have to take the offline
+      claim on faith &mdash; you can watch it be enforced.
+      <a href="#privacy">How that works &rarr;</a></p>
+
+    <p class="dl-foot" data-reveal>Mume is free and
+      <a href="https://www.gnu.org/licenses/agpl-3.0.html">AGPL-3.0</a>. No account, no telemetry,
+      no paid tier. If someone ships a modified Mume, the licence obliges them to publish their
+      changes &mdash; which is the only way &ldquo;you can verify this&rdquo; survives a fork.</p>
+  </div>
+</section>
+
 <section id="privacy">
   <div class="wrap">
     <div class="bento">
