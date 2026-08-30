@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Mume — Android manifest.
+
+    ================================================================
+    THE MOST IMPORTANT THING IN THIS FILE IS WHAT IS NOT IN IT.
+    ================================================================
+
+    There is no `android.permission.INTERNET`.
+
+    That is the product's central claim (ADR-002), and declaring it here
+    is what makes the claim verifiable rather than promised: without the
+    permission the OS refuses every socket the process attempts, so no
+    library, no dependency and no future mistake of ours can send data
+    off this device. Anyone can check with:
+
+        aapt dump permissions mume.apk | grep INTERNET
+
+    `NoInternetPermissionTest` in the unit test suite parses the merged
+    manifest and fails the build if this ever changes, so the guarantee
+    cannot be lost to a careless merge.
+
+    Permissions that ARE declared, and why each is needed:
+
+      READ_MEDIA_IMAGES     read EXIF from the user's own photos, on
+                            device, to find ones carrying GPS coordinates
+      PACKAGE_USAGE_STATS   special access, requested in context, to see
+                            which installed apps are dormant
+      QUERY_ALL_PACKAGES    NOT DECLARED. We use a <queries> intent filter
+                            instead, which covers launcher-visible apps (which
+                            is what the audit actually needs) and avoids a
+                            restricted-permission review category entirely
+                            (kickoff, Agenda Item 6).
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <!--
+        Special access. Not granted by a runtime prompt: the user is taken to
+        Settings from an in-app screen that explains what it is for. If they
+        decline, the dormant-app check reports NotApplicable rather than
+        pretending it passed.
+    -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!--
+        Package visibility without QUERY_ALL_PACKAGES. This returns the apps
+        that have a launcher entry, which is precisely the set a person thinks
+        of as "the apps on my phone".
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.accessibilityservice.AccessibilityService" />
+        </intent>
+        <intent>
+            <action android:name="android.service.notification.NotificationListenerService" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".MumeApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Mume"
+        android:usesCleartextTraffic="false"
+        android:hasFragileUserData="false"
+        android:localeConfig="@xml/locales_config">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
+            android:theme="@style/Theme.Mume">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+                Share-sheet entry point for the link checker. Receiving a URL
+                needs no network permission: the analysis is entirely local.
+            -->
+            <intent-filter android:label="@string/check_link">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

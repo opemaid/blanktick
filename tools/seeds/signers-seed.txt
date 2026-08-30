@@ -1,0 +1,21 @@
+# packageName<TAB>SHA-256 of the signing certificate[,alternate...]
+#
+# ============================================================================
+# THIS FILE IS DELIBERATELY EMPTY OF ENTRIES.
+# ============================================================================
+#
+# Clone detection accuses a named app of being fake. A wrong entry here tells
+# someone their real banking app is malware and to uninstall it. So these
+# values must be extracted from genuine, store-installed APKs -- never typed
+# from memory, never copied from a blog post.
+#
+# Populate it with:
+#
+#     python tools/extract_signer.py /path/to/genuine.apk >> tools/seeds/signers-seed.txt
+#
+# or, against a device holding known-good installs:
+#
+#     python tools/extract_signer.py --from-device com.whatsapp com.android.chrome
+#
+# With no entries, APP-CLONE-001 reports "not checkable" rather than passing --
+# which is the correct behaviour for a check we have no data to run.

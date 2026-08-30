@@ -1,0 +1,45 @@
+# A small, hand-checked seed so a developer build has real entries.
+#
+# The shipping bundle is built from full aggregated lists passed via
+# --domains. Everything here is a long-standing, unambiguous tracking or
+# malvertising host; nothing borderline, because a false block is the one
+# error this structure exists to prevent.
+doubleclick.net
+googleadservices.com
+googlesyndication.com
+google-analytics.com
+adservice.google.com
+scorecardresearch.com
+quantserve.com
+outbrain.com
+taboola.com
+criteo.com
+criteo.net
+adnxs.com
+rubiconproject.com
+pubmatic.com
+openx.net
+casalemedia.com
+33across.com
+bluekai.com
+demdex.net
+everesttech.net
+adsrvr.org
+mathtag.com
+bidswitch.net
+smartadserver.com
+zedo.com
+adcolony.com
+applovin.com
+unityads.unity3d.com
+inmobi.com
+mopub.com
+chartboost.com
+vungle.com
+tapjoy.com
+supersonicads.com
+branch.io
+appsflyer.com
+adjust.com
+kochava.com
+singular.net

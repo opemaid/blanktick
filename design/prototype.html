@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mume — app prototype</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+/* ------------------------------------------------------------------ *
+   Mume app prototype.
+
+   Every screen state from the design meeting, rendered rather than
+   described. Open it in a browser -- no build step, no network.
+
+   The theme toggle and the font-scale slider are here because two of the
+   gate-checklist items (dark mode as a first-class theme, 200% Dynamic
+   Type without clipping) cannot be verified by looking at a static comp.
+ * ------------------------------------------------------------------ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { font-size: calc(16px * var(--scale, 1)); }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--surfaceSunk);
+  color: var(--ink);
+  font-family: var(--type-family-bodyWeb);
+  -webkit-font-smoothing: antialiased;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  transition: background var(--duration) var(--motion-spring),
+              color var(--duration) var(--motion-spring);
+}
+
+@media (max-width: 900px) {
+  body { grid-template-columns: 1fr; padding: var(--space-4); }
+}
+
+/* ---- control rail ------------------------------------------------ */
+
+.rail {
+  position: sticky;
+  top: var(--space-6);
+  align-self: start;
+  background: var(--surface);
+  border-radius: var(--radius-shell);
+  padding: var(--space-5);
+  box-shadow: var(--elevation-rest);
+}
+@media (max-width: 900px) { .rail { position: static; } }
+
+.rail h1 {
+  font-family: var(--type-family-displayWeb);
+  font-size: var(--type-scale-title2);
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-1);
+}
+.rail p.sub {
+  margin: 0 0 var(--space-5);
+  color: var(--inkMuted);
+  font-size: var(--type-scale-footnote);
+  line-height: 1.5;
+}
+.rail h2 {
+  font-size: var(--type-scale-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--inkFaint);
+  margin: var(--space-5) 0 var(--space-3);
+  font-weight: 600;
+}
+.rail h2:first-of-type { margin-top: 0; }
+
+.state-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--type-scale-footnote);
+  padding: var(--space-2) var(--space-3);
+  min-height: 44px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--duration) var(--motion-spring);
+}
+.state-btn:hover { background: var(--surfaceSunk); }
+.state-btn[aria-current="true"] {
+  background: var(--color-brand-kelp);
+  color: #fff;
+  font-weight: 600;
+}
+.state-btn:focus-visible { outline: 2px solid var(--color-brand-kelp); outline-offset: 2px; }
+
+.toggle-row { display: flex; gap: var(--space-2); }
+.toggle-row .state-btn { text-align: center; }
+
+.slider-label {
+  display: flex; justify-content: space-between;
+  font-size: var(--type-scale-caption); color: var(--inkMuted);
+  margin-bottom: var(--space-2);
+}
+input[type=range] { width: 100%; accent-color: var(--color-brand-kelp); }
+
+/* ---- phone frame ------------------------------------------------- */
+
+.stage { display: grid; place-items: start center; }
+
+.phone {
+  width: min(400px, 100%);
+  background: var(--surfaceSunk);
+  border-radius: var(--radius-shell);
+  padding: 0.375rem;                       /* shell padding -> core radius */
+  box-shadow: var(--elevation-float);
+}
+
+.screen {
+  background: var(--paper);
+  border-radius: var(--radius-core);
+  box-shadow: var(--inner-top);
+  min-height: 720px;
+  padding: var(--space-5) var(--space-4) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  overflow: hidden;
+}
+
+.status-bar {
+  display: flex; justify-content: space-between;
+  font-size: var(--type-scale-caption);
+  color: var(--inkFaint);
+  font-variant-numeric: tabular-nums;
+}
+
+.brandmark {
+  font-family: var(--type-family-displayWeb);
+  font-size: var(--type-scale-callout);
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+
+/* ---- score ------------------------------------------------------- */
+
+.score-block { display: grid; place-items: center; gap: var(--space-2); padding: var(--space-5) 0 var(--space-3); }
+
+.dial { position: relative; width: 200px; height: 200px; display: grid; place-items: center; }
+.dial svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.dial circle { fill: none; stroke-linecap: round; }
+.dial .track { stroke: var(--hairline); stroke-width: 6; }
+.dial .value {
+  stroke-width: 6;
+  transition: stroke-dashoffset var(--motion-slow) var(--motion-spring),
+              stroke var(--motion-slow) var(--motion-spring);
+}
+
+.score-num {
+  font-family: var(--type-family-displayWeb);
+  font-size: var(--type-scale-score);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-weight: 600;
+}
+.grade { font-size: var(--type-scale-callout); font-weight: 600; letter-spacing: -0.01em; }
+.delta {
+  font-size: var(--type-scale-footnote);
+  color: var(--inkMuted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- findings ---------------------------------------------------- */
+
+.section-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--space-3);
+}
+.section-head h3 {
+  margin: 0;
+  font-size: var(--type-scale-body);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.section-head .count { font-size: var(--type-scale-footnote); color: var(--inkMuted); font-variant-numeric: tabular-nums; }
+
+.finding {
+  display: grid;
+  grid-template-columns: 3px 1fr auto;
+  gap: 0 var(--space-3);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4) var(--space-3) 0;
+  box-shadow: var(--elevation-rest);
+  overflow: hidden;
+  align-items: start;
+  cursor: pointer;
+  transition: transform var(--duration) var(--motion-spring),
+              box-shadow var(--duration) var(--motion-spring);
+}
+.finding:hover { transform: translateY(-1px); box-shadow: var(--elevation-raised); }
+.finding:active { transform: scale(0.995); }
+.finding .bar { grid-row: 1 / -1; align-self: stretch; border-radius: 3px 0 0 3px; }
+
+.sev {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: var(--type-scale-caption);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+/* Severity glyph is a redundant channel, never the only one (DD-03). */
+.sev::before { font-size: 0.9em; line-height: 1; }
+.sev-critical { color: var(--sev-critical); }
+.sev-critical::before { content: "\25C6"; }        /* filled diamond */
+.sev-high { color: var(--sev-high); }
+.sev-high::before { content: "\25B2"; }            /* filled triangle */
+.sev-medium { color: var(--sev-medium); }
+.sev-medium::before { content: "\25A0"; }          /* filled square */
+.sev-low { color: var(--sev-low); }
+.sev-low::before { content: "\25CF"; }             /* filled circle */
+.sev-info { color: var(--sev-info); }
+.sev-info::before { content: "\25CB"; }            /* hollow circle */
+.sev-pass { color: var(--sev-pass); }
+.sev-pass::before { content: "\2713"; }
+.sev-notchecked { color: var(--sev-notChecked); }
+.sev-notchecked::before { content: "\2014"; }
+
+.finding .title {
+  font-size: var(--type-scale-body);
+  font-weight: 600;
+  margin: 2px 0 0;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.finding .detail {
+  font-size: var(--type-scale-footnote);
+  color: var(--inkMuted);
+  line-height: 1.5;
+  margin: var(--space-1) 0 0;
+  max-width: var(--type-measure);
+}
+.finding .cost {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: var(--type-scale-footnote);
+  color: var(--inkMuted);
+  padding-top: 2px;
+  white-space: nowrap;
+}
+
+.action {
+  margin-top: var(--space-3);
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  background: var(--color-brand-kelp);
+  color: #fff;
+  border: 0;
+  font: inherit;
+  font-size: var(--type-scale-footnote);
+  font-weight: 600;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  min-height: 44px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: transform var(--duration) var(--motion-spring),
+              background var(--duration) var(--motion-spring);
+}
+.action:hover { background: var(--color-brand-kelpDeep); }
+.action:active { transform: scale(0.98); }
+/* Button-in-button trailing icon. */
+.action .chev {
+  width: 28px; height: 28px; border-radius: 999px;
+  background: rgba(255,255,255,0.18);
+  display: grid; place-items: center;
+  transition: transform var(--duration) var(--motion-spring);
+}
+.action:hover .chev { transform: translateX(2px); }
+
+/* ---- primary CTA ------------------------------------------------- */
+
+.cta {
+  margin-top: auto;
+  width: 100%;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-3);
+  background: var(--ink);
+  color: var(--paper);
+  border: 0; font: inherit;
+  font-size: var(--type-scale-callout);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  padding: 0.75rem 0.75rem 0.75rem 1.5rem;
+  min-height: 56px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: transform var(--duration) var(--motion-spring), opacity var(--duration) var(--motion-spring);
+}
+.cta:active { transform: scale(0.985); }
+.cta .chev {
+  width: 32px; height: 32px; border-radius: 999px;
+  background: color-mix(in srgb, var(--paper) 18%, transparent);
+  display: grid; place-items: center;
+  transition: transform var(--duration) var(--motion-spring);
+}
+.cta:hover .chev { transform: translateX(3px) translateY(-1px); }
+
+/* ---- breakdown table --------------------------------------------- */
+
+.ledger { width: 100%; border-collapse: collapse; font-size: var(--type-scale-footnote); }
+.ledger th {
+  text-align: left; font-size: var(--type-scale-caption); text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--inkFaint); font-weight: 600;
+  padding-bottom: var(--space-2);
+}
+.ledger td { padding: var(--space-2) 0; border-top: 1px solid var(--hairline); vertical-align: top; }
+.ledger td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.ledger tr.subtotal td { color: var(--inkMuted); font-weight: 600; }
+.ledger tr.total td { border-top: 2px solid var(--ink); font-weight: 700; font-size: var(--type-scale-body); }
+.ledger .capnote { color: var(--sev-medium); font-size: var(--type-scale-caption); display: block; margin-top: 2px; }
+
+.check-us {
+  background: var(--color-brand-kelpTint);
+  color: var(--color-brand-kelpDeep);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  font-size: var(--type-scale-footnote);
+  line-height: 1.5;
+}
+[data-theme="dark"] .check-us {
+  background: color-mix(in srgb, var(--color-brand-kelp) 22%, transparent);
+  color: var(--sev-pass);
+}
+
+/* ---- not-checkable section --------------------------------------- */
+
+.notice {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--elevation-rest);
+  font-size: var(--type-scale-footnote);
+  color: var(--inkMuted);
+  line-height: 1.55;
+}
+.notice strong { color: var(--ink); font-weight: 600; }
+
+.na-row {
+  display: flex; justify-content: space-between; gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--hairline);
+  font-size: var(--type-scale-footnote);
+}
+.na-row:first-of-type { border-top: 0; }
+.na-row .why { color: var(--inkFaint); font-size: var(--type-scale-caption); max-width: 55%; text-align: right; }
+
+/* ---- scanning ---------------------------------------------------- */
+
+.scanning { display: grid; place-items: center; gap: var(--space-4); padding: var(--space-9) 0; text-align: center; }
+.sweep {
+  width: 120px; height: 3px; border-radius: 3px;
+  background: var(--hairline); overflow: hidden; position: relative;
+}
+.sweep::after {
+  content: ""; position: absolute; inset: 0; width: 40%;
+  background: var(--color-brand-kelp); border-radius: 3px;
+  animation: sweep 1200ms var(--motion-spring) infinite;
+}
+@keyframes sweep { 0% { transform: translateX(-110%); } 100% { transform: translateX(320%); } }
+@media (prefers-reduced-motion: reduce) {
+  .sweep::after { animation: none; width: 100%; opacity: 0.4; }
+}
+.scan-step { font-size: var(--type-scale-footnote); color: var(--inkMuted); font-variant-numeric: tabular-nums; }
+
+/* ---- first run --------------------------------------------------- */
+
+.hero-first { display: grid; gap: var(--space-4); padding: var(--space-7) 0 var(--space-5); }
+.hero-first h2 {
+  font-family: var(--type-family-displayWeb);
+  font-size: var(--type-scale-title1);
+  line-height: 1.1; letter-spacing: -0.03em; margin: 0;
+}
+.hero-first p { margin: 0; color: var(--inkMuted); font-size: var(--type-scale-body); line-height: 1.55; }
+.promise { display: grid; gap: var(--space-3); margin-top: var(--space-3); }
+.promise div { display: flex; gap: var(--space-3); align-items: flex-start; font-size: var(--type-scale-footnote); line-height: 1.5; }
+.promise .tick { color: var(--sev-pass); font-weight: 700; }
+
+/* ---- link scanner ------------------------------------------------ */
+
+.verdict {
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  background: var(--surface);
+  box-shadow: var(--elevation-rest);
+  display: grid; gap: var(--space-2);
+}
+.verdict .badge {
+  justify-self: start;
+  font-size: var(--type-scale-caption); font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; padding: 4px 10px; border-radius: var(--radius-pill);
+  border: 1.5px solid currentColor;
+}
+.urlbox {
+  font-family: var(--type-family-monoWeb);
+  font-size: var(--type-scale-footnote);
+  background: var(--surfaceSunk);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  word-break: break-all; line-height: 1.5;
+}
+.urlbox .bad { color: var(--sev-critical); font-weight: 700; }
+.urlbox .real { text-decoration: underline; text-underline-offset: 3px; }
+.signal { display: flex; gap: var(--space-3); font-size: var(--type-scale-footnote); line-height: 1.5; padding: var(--space-2) 0; border-top: 1px solid var(--hairline); }
+.signal .w { font-variant-numeric: tabular-nums; color: var(--inkFaint); font-weight: 600; white-space: nowrap; }
+
+.hide { display: none !important; }
+.footnote { font-size: var(--type-scale-caption); color: var(--inkFaint); line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<aside class="rail">
+  <h1>Mume</h1>
+  <p class="sub">App prototype — every state from the design meeting, rendered rather than described.</p>
+
+  <h2>Screen</h2>
+  <button class="state-btn" data-screen="first">First run</button>
+  <button class="state-btn" data-screen="scanning">Scanning</button>
+  <button class="state-btn" data-screen="findings" aria-current="true">Findings (Android)</button>
+  <button class="state-btn" data-screen="ledger">Score breakdown</button>
+  <button class="state-btn" data-screen="clean">Clean device</button>
+  <button class="state-btn" data-screen="ios">iPhone — what we can't see</button>
+  <button class="state-btn" data-screen="link">Link scanner</button>
+
+  <h2>Theme</h2>
+  <div class="toggle-row">
+    <button class="state-btn" data-theme-set="light" aria-current="true">Light</button>
+    <button class="state-btn" data-theme-set="dark">Dark</button>
+  </div>
+
+  <h2>Text size</h2>
+  <div class="slider-label"><span>100%</span><span id="scaleOut">100%</span><span>200%</span></div>
+  <input type="range" id="scale" min="100" max="200" step="5" value="100"
+         aria-label="Text size, percent">
+  <p class="footnote" style="margin-top:var(--space-3)">
+    Drag to 200%. Nothing may clip or overlap — that is gate-checklist item 4,
+    and it is why finding text wraps rather than truncates.
+  </p>
+</aside>
+
+<main class="stage">
+  <div class="phone">
+    <div class="screen" id="screen"></div>
+  </div>
+</main>
+
+<script>
+/* ------------------------------------------------------------------ *
+   All screens are rendered from data so the prototype cannot drift from
+   the real model: severities, labels and deductions are the same shapes
+   the Kotlin core emits.
+ * ------------------------------------------------------------------ */
+
+const SEV = {
+  critical: { cls: 'sev-critical', label: 'Critical', color: 'var(--sev-critical)' },
+  high:     { cls: 'sev-high',     label: 'High',     color: 'var(--sev-high)' },
+  medium:   { cls: 'sev-medium',   label: 'Medium',   color: 'var(--sev-medium)' },
+  low:      { cls: 'sev-low',      label: 'Low',      color: 'var(--sev-low)' },
+  info:     { cls: 'sev-info',     label: 'Info',     color: 'var(--sev-info)' },
+};
+
+/* Deductions below are the real output of ScoringEngine for this snapshot:
+   they sum to 39, and 100 - 39 = 61. */
+const FINDINGS = [
+  { sev:'critical', cost:25, title:'“WhatsApp Plus” is not the real app',
+    detail:'It uses the identity com.whatsapp but was signed with a different key. Modified copies of popular apps are the most common way banking credentials are stolen on Android.',
+    action:'Uninstall' },
+  { sev:'high', cost:8, title:'“System Update” can read your texts and draw over other apps',
+    detail:'Together with screen control, that is exactly what is needed to show a fake login screen over your bank and read the confirmation code.',
+    action:'Review app' },
+  { sev:'medium', cost:4, title:'Wi-Fi “CoffeeShop_Guest” has no encryption',
+    detail:'Anyone within range can see which sites you visit.',
+    action:'How to fix' },
+  { sev:'low', cost:2, title:'2 unused apps still hold sensitive permissions',
+    detail:'You have not opened these in six months, but they can still use your microphone or location.',
+    action:'Review' },
+];
+
+const NOT_CHECKABLE = [
+  ['Bootloader lock state', 'iOS has no equivalent readable state'],
+  ['Wireless debugging exposure', 'there is no ADB on iOS'],
+  ['USB debugging', 'no equivalent setting is readable'],
+  ['Developer options', 'no equivalent setting is readable'],
+  ['Security patch level', 'iOS does not publish a patch date'],
+  ['End-of-life OS detection', 'depends on the patch table above'],
+  ['Extra certificate authorities', 'the trust store is not enumerable'],
+  ['Wi-Fi router change', 'the gateway address is not exposed'],
+  ['DNS resolver inspection', 'resolver config is not exposed'],
+  ['Encrypted DNS setting', 'no readable equivalent'],
+  ['VPN owner', 'the owning app is not exposed'],
+  ['Cloned / repackaged apps', 'no API lists other apps'],
+  ['Dangerous permission combinations', 'no API lists other apps'],
+  ['Sideloaded app sources', 'no API lists other apps'],
+  ['Insecure app build flags', 'no API lists other apps'],
+  ['Apps opting out of protections', 'no API lists other apps'],
+  ['Dormant apps holding permissions', 'no API lists other apps'],
+];
+
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function statusBar() {
+  return `<div class="status-bar"><span class="brandmark">Mume</span><span>Offline · no network permission</span></div>`;
+}
+
+function dial(score, grade, gradeColor, prev) {
+  const R = 94, C = 2 * Math.PI * R;
+  const off = C * (1 - score / 100);
+  return `
+  <div class="score-block">
+    <div class="dial" role="img" aria-label="Security score ${score} out of 100, ${grade}">
+      <svg viewBox="0 0 200 200" aria-hidden="true">
+        <circle class="track" cx="100" cy="100" r="${R}"></circle>
+        <circle class="value" cx="100" cy="100" r="${R}"
+                stroke="${gradeColor}" stroke-dasharray="${C}" stroke-dashoffset="${off}"></circle>
+      </svg>
+      <div class="score-num">${score}</div>
+    </div>
+    <div class="grade" style="color:${gradeColor}">${grade}</div>
+    ${prev !== undefined ? `<div class="delta">${prev === score ? 'No change since last scan'
+        : (score > prev ? '▲ up ' : '▼ down ') + Math.abs(score - prev) + ' since last scan'}</div>` : ''}
+  </div>`;
+}
+
+function findingRow(f) {
+  const s = SEV[f.sev];
+  return `
+  <article class="finding" tabindex="0">
+    <div class="bar" style="background:${s.color}"></div>
+    <div>
+      <span class="sev ${s.cls}">${s.label}</span>
+      <h4 class="title">${esc(f.title)}</h4>
+      <p class="detail">${esc(f.detail)}</p>
+      ${f.action ? `<button class="action">${esc(f.action)}<span class="chev" aria-hidden="true">→</span></button>` : ''}
+    </div>
+    <div class="cost" aria-label="costs ${f.cost} points">−${f.cost}</div>
+  </article>`;
+}
+
+const SCREENS = {
+
+  first: () => `
+    ${statusBar()}
+    <div class="hero-first">
+      <h2>Mume checks this phone.<br>Nothing else.</h2>
+      <p>It works entirely offline. There is no account, no upload, and no server — because the app has no permission to reach the internet at all.</p>
+      <div class="promise">
+        <div><span class="tick">✓</span><span>Your passwords are checked against a list built into the app. Nothing is sent, not even a hash.</span></div>
+        <div><span class="tick">✓</span><span>Findings never leave this device.</span></div>
+        <div><span class="tick">✓</span><span>No analytics, no crash reporting SDK, no third-party code.</span></div>
+      </div>
+    </div>
+    <p class="footnote">A scan takes about a second and changes nothing on your device.</p>
+    <button class="cta">Run the first scan<span class="chev" aria-hidden="true">→</span></button>`,
+
+  scanning: () => `
+    ${statusBar()}
+    <div class="scanning">
+      <div class="sweep" role="progressbar" aria-label="Scanning"></div>
+      <div class="scan-step" id="scanStep">Checking installed apps… 14 of 22</div>
+      <p class="footnote" style="max-width:30ch">Everything is happening on this device. Nothing is being sent anywhere.</p>
+    </div>`,
+
+  findings: () => `
+    ${statusBar()}
+    ${dial(61, 'Fair', 'var(--color-grade-fair)', 74)}
+    <div class="section-head">
+      <h3>Needs attention</h3><span class="count">4 of 29 checks</span>
+    </div>
+    ${FINDINGS.map(findingRow).join('')}
+    <div class="section-head" style="margin-top:var(--space-3)">
+      <h3>Passed</h3><span class="count">25 checks</span>
+    </div>
+    <div class="notice"><span class="sev sev-pass">Passed</span> &nbsp;Screen lock, storage encryption, root and debugging status, patch level, and 14 more.</div>
+    <button class="cta">Scan again<span class="chev" aria-hidden="true">→</span></button>`,
+
+  ledger: () => `
+    ${statusBar()}
+    <div class="section-head"><h3>How the score was calculated</h3><span class="count">Score 61</span></div>
+    <table class="ledger">
+      <thead><tr><th>Finding</th><th style="text-align:right">Points</th></tr></thead>
+      <tbody>
+        <tr><td>Repackaged app “WhatsApp Plus”<br><span class="footnote">Apps · Critical</span></td><td class="num">−25</td></tr>
+        <tr><td>Banking-trojan permission set<br><span class="footnote">Apps · High</span></td><td class="num">−8</td></tr>
+        <tr><td>2 unused apps hold sensitive permissions<br><span class="footnote">Apps · Low</span></td><td class="num">−2</td></tr>
+        <tr class="subtotal"><td>Apps subtotal<span class="capnote">Repeat findings decay: the 2nd costs 60% of the 1st, the 3rd 36%.</span></td><td class="num">−35</td></tr>
+        <tr><td>Open Wi-Fi network<br><span class="footnote">Network · Medium</span></td><td class="num">−4</td></tr>
+        <tr class="subtotal"><td>Network subtotal</td><td class="num">−4</td></tr>
+        <tr class="total"><td>Total deducted</td><td class="num">−39</td></tr>
+        <tr class="total"><td>Score</td><td class="num">61</td></tr>
+      </tbody>
+    </table>
+    <div class="check-us"><strong>These add up. Check us.</strong><br>
+      100 − 39 = 61. Every point on this screen traces to one finding, and the app is tested to guarantee the column always reconciles.</div>
+    <p class="footnote">Categories are capped so that one bad area cannot make an otherwise sound device read as a disaster. Apps caps at 35, which is why the subtotal stops there.</p>`,
+
+  clean: () => `
+    ${statusBar()}
+    ${dial(100, 'Strong', 'var(--color-grade-strong)', 100)}
+    <div class="section-head"><h3>Passed</h3><span class="count">29 of 29 checks</span></div>
+    <div class="notice">
+      Nothing needs your attention. <strong>That is not the same as “you are safe”</strong> —
+      Mume checks 29 specific things about this device, listed below. It cannot see inside
+      the apps you use or the sites you visit.
+    </div>
+    <div class="notice" style="background:transparent;box-shadow:none;padding:0">
+      <div class="na-row"><span>Threat data built on</span><span class="why">20 Aug 2026 · 8 days old</span></div>
+      <div class="na-row"><span>Passwords checked locally</span><span class="why">20 saved · 0 breached</span></div>
+      <div class="na-row"><span>Photos scanned for location</span><span class="why">100 · 0 tagged</span></div>
+    </div>
+    <button class="cta">Scan again<span class="chev" aria-hidden="true">→</span></button>`,
+
+  ios: () => `
+    ${statusBar()}
+    ${dial(96, 'Strong', 'var(--color-grade-strong)', 96)}
+    <div class="section-head"><h3>Passed</h3><span class="count">11 of 12 checks</span></div>
+    ${findingRow({ sev:'low', cost:4, title:'Screen lock is a four-digit PIN',
+        detail:'Four digits is ten thousand combinations, and roughly a quarter of people pick one of the twenty most common.', action:'How to change' })}
+    <div class="section-head" style="margin-top:var(--space-4)">
+      <h3>What Mume can’t see on iPhone</h3><span class="count">17 checks</span>
+    </div>
+    <div class="notice">
+      <strong>iPhone stops any app from inspecting other apps.</strong> That is a good rule,
+      and Mume follows it. These seventeen checks run on Android, where the system allows them.
+      They are listed here so you can tell the difference between “checked and fine” and
+      “never looked”.
+    </div>
+    <div style="padding:0 var(--space-1)">
+      ${NOT_CHECKABLE.map(([n, w]) => `<div class="na-row"><span class="sev sev-notchecked" style="letter-spacing:0">${esc(n)}</span><span class="why">${esc(w)}</span></div>`).join('')}
+    </div>
+    <button class="cta">Scan again<span class="chev" aria-hidden="true">→</span></button>`,
+
+  link: () => `
+    ${statusBar()}
+    <div class="section-head"><h3>Link check</h3><span class="count">Offline</span></div>
+    <div class="urlbox">https://<span class="bad">standardbank.co.za</span>.<span class="real">verify-account.top</span>/login?id=8823</div>
+    <div class="verdict">
+      <span class="badge" style="color:var(--sev-critical)">Dangerous</span>
+      <p class="detail" style="font-size:var(--type-scale-body);color:var(--ink);margin:0">
+        This link goes to <strong>verify-account.top</strong>, not to Standard Bank.
+      </p>
+      <div class="signal"><span class="w">85</span><span>“standardbank.co.za” appears in the address, but the site it actually goes to is the part just before the first single slash.</span></div>
+      <div class="signal"><span class="w">25</span><span>“.top” addresses are given away cheaply and are used disproportionately for scams.</span></div>
+    </div>
+    <div class="notice">
+      Mume checked this against lists built into the app and against the structure of the
+      address itself. <strong>It did not open the link or contact any server.</strong>
+    </div>
+    <p class="footnote">For a shortened link (bit.ly and similar) Mume will say <em>unknown</em>, never <em>safe</em> — offline it cannot follow the redirect to see where it really goes.</p>`,
+};
+
+/* ---- wiring ------------------------------------------------------- */
+
+const screenEl = document.getElementById('screen');
+let scanTimer;
+
+function render(name) {
+  clearInterval(scanTimer);
+  screenEl.innerHTML = SCREENS[name]();
+
+  if (name === 'scanning') {
+    const steps = ['Reading device settings… 4 of 29', 'Checking installed apps… 18 of 29',
+                   'Comparing passwords locally… 24 of 29', 'Reading photo metadata… 29 of 29'];
+    let i = 0;
+    const out = document.getElementById('scanStep');
+    scanTimer = setInterval(() => { i = (i + 1) % steps.length; out.textContent = steps[i]; }, 900);
+  }
+
+  // The arc interpolates from the PREVIOUS score, not from zero (DD-05).
+  const arc = screenEl.querySelector('.dial .value');
+  if (arc && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const target = arc.getAttribute('stroke-dashoffset');
+    const C = parseFloat(arc.getAttribute('stroke-dasharray'));
+    arc.setAttribute('stroke-dashoffset', C * (1 - 74 / 100));
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      arc.setAttribute('stroke-dashoffset', target);
+    }));
+  }
+}
+
+function select(name, pushHash = true) {
+  if (!SCREENS[name]) name = 'findings';
+  document.querySelectorAll('[data-screen]').forEach(b =>
+    b.dataset.screen === name ? b.setAttribute('aria-current', 'true') : b.removeAttribute('aria-current'));
+  if (pushHash) history.replaceState(null, '', '#' + name);
+  render(name);
+}
+
+document.querySelectorAll('[data-screen]').forEach(btn => {
+  btn.addEventListener('click', () => select(btn.dataset.screen));
+});
+window.addEventListener('hashchange', () => select(location.hash.slice(1), false));
+
+document.querySelectorAll('[data-theme-set]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-theme-set]').forEach(b => b.removeAttribute('aria-current'));
+    btn.setAttribute('aria-current', 'true');
+    document.documentElement.dataset.theme = btn.dataset.themeSet;
+  });
+});
+
+if (new URLSearchParams(location.search).get('theme') === 'dark') {
+  document.documentElement.dataset.theme = 'dark';
+  document.querySelectorAll('[data-theme-set]').forEach(b =>
+    b.dataset.themeSet === 'dark' ? b.setAttribute('aria-current','true') : b.removeAttribute('aria-current'));
+}
+
+const scale = document.getElementById('scale');
+scale.addEventListener('input', () => {
+  document.documentElement.style.setProperty('--scale', scale.value / 100);
+  document.getElementById('scaleOut').textContent = scale.value + '%';
+});
+
+// Deep-linkable states: #ledger, #ios, #link ... so a specific screen can be
+// shared, reviewed or screenshotted without clicking through the rail.
+// Deep-linkable states. Both forms work:
+//   prototype.html#ios              (in-browser navigation)
+//   prototype.html?screen=ios       (headless capture; some tools drop fragments)
+const q = new URLSearchParams(location.search);
+select(q.get('screen') || location.hash.slice(1) || 'findings', false);
+</script>
+</body>
+</html>

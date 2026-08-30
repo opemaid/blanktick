@@ -1,0 +1,51 @@
+# Domains that must never be blocked, whatever a source list says.
+#
+# This is the safety net for the exact blocklist. Aggregated blocklists
+# regularly pick up a CDN or an auth endpoint by accident, and a security app
+# that breaks someone's banking login has done more harm than the tracker it
+# stopped. Checked BEFORE the blocklist, always.
+google.com
+googleapis.com
+gstatic.com
+youtube.com
+microsoft.com
+microsoftonline.com
+office.com
+live.com
+apple.com
+icloud.com
+amazon.com
+amazonaws.com
+cloudflare.com
+cloudfront.net
+akamai.net
+akamaized.net
+fastly.net
+github.com
+githubusercontent.com
+mozilla.org
+wikipedia.org
+whatsapp.net
+whatsapp.com
+facebook.com
+instagram.com
+linkedin.com
+paypal.com
+stripe.com
+visa.com
+mastercard.com
+# South Africa: banking and government, where a false block is worst
+standardbank.co.za
+fnb.co.za
+absa.co.za
+nedbank.co.za
+capitecbank.co.za
+discovery.co.za
+investec.com
+tymebank.co.za
+sars.gov.za
+gov.za
+takealot.com
+vodacom.co.za
+mtn.co.za
+telkom.co.za

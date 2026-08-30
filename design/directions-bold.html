@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mume — bold directions</title>
+<!--
+  Three BOLD art directions for the Mume desktop dashboard.
+
+  Brief: "bold, in your face, less is more."
+
+  Rules this page obeys so the comparison is honest:
+  - One shared component skeleton. Directions differ ONLY by CSS custom
+    properties and the handful of genuinely distinct components. Any visible
+    difference is a real design difference, not a markup artefact.
+  - Real data from a real scan of the development machine on 2026-08-29:
+    score 86, 17 of 45 checks ran, 2 findings (-9 and -5), 28 not checkable
+    split 18 phone-only / 10 unanswered. Nothing here is lorem.
+
+    The one thing that IS altered: the DNS address and the port list. The real
+    scan named the operator's actual resolver and their actual listening
+    services, and this file is public. Documentation must never carry a live
+    finding -- the addresses here are RFC 5737 TEST-NET, which route nowhere.
+  - System fonts only. The product ships no webfont and has no network; a
+    mockup that borrows one would be showing you something unbuildable.
+
+  Contrast was computed for every pairing, not eyeballed. Three values were
+  corrected before this page was shown: A's faint grey 3.88 -> #797979, B's red
+  4.44 -> #DE2A1F, C's faint 3.96 -> #71695E. One could not be patched: C's
+  #FF5B23 is 2.59:1 on bone, so in C the accent never sets text on paper -- it
+  fills. That is a design consequence, not a workaround.
+
+  What is approximated: no motion, no hover, no focus rings, no scrollbars.
+  Those are specified in docs/design-meeting-2026-08-29.md and are not what
+  this page is for. This page is for colour, type, scale and density.
+-->
+<style>
+:root{
+  --r:0px; --card-bg:transparent; --card-bd:1px solid var(--rule);
+  --shadow:none; --pad:28px; --gap:0px;
+  --font:-apple-system,"Segoe UI Variable","Segoe UI",Inter,system-ui,sans-serif;
+  --mono:"Cascadia Mono",Consolas,ui-monospace,monospace;
+}
+
+/* ============================ A — BRUTAL SIGNAL ==========================
+   Near-black. One acid accent, used only where action is required.
+   No cards, no radii, no shadow. Hairlines and type scale do everything.   */
+[data-dir="a"]{
+  --paper:#0A0A0A; --panel:#0A0A0A; --ink:#FFFFFF; --muted:#9A9A9A;
+  --faint:#797979; --rule:#242424;   /* was #6E6E6E = 3.88:1, fails body text */
+  --accent:#D6FF3F;             /* acid — the only saturated thing on screen */
+  --accent-ink:#0A0A0A;
+  --sev:#D6FF3F; --ok:#5A5A5A; --null:#797979;
+  --r:0px; --pad:32px; --card-bd:1px solid var(--rule);
+  --display-w:800; --display-tr:-0.045em;
+}
+/* ============================ B — EDITORIAL ==============================
+   Newspaper front page. Paper white, ink black, one red. Thick rules.
+   No containers at all — the grid is the design.                           */
+[data-dir="b"]{
+  --paper:#FBFAF7; --panel:#FBFAF7; --ink:#0B0B0B; --muted:#4A4A4A;
+  --faint:#6B6B6B; --rule:#0B0B0B;
+  --accent:#DE2A1F; --accent-ink:#FFFFFF;  /* was #E02B20 = 4.44:1 as body text */
+  --sev:#DE2A1F; --ok:#0B0B0B; --null:#6B6B6B;
+  --r:0px; --pad:0px; --card-bd:none;
+  --display-w:800; --display-tr:-0.05em;
+}
+/* ============================ C — SLAB ===================================
+   Bold via mass, not contrast. Deep ink slabs on bone, one warm accent.
+   Big radii, heavy blocks, almost no text outside the blocks.              */
+[data-dir="c"]{
+  --paper:#EFEAE1; --panel:#141210; --ink:#141210; --muted:#5C554C;
+  --faint:#71695E; --rule:#D6CEC1;   /* was #7A7266 = 3.96:1 */
+  --accent:#FF5B23; --accent-ink:#141210;
+  --sev:#FF5B23; --ok:#1F6F52; --null:#71695E;
+  --r:22px; --pad:28px; --card-bd:none;
+  --display-w:800; --display-tr:-0.04em;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:#111;font-family:var(--font);-webkit-font-smoothing:antialiased}
+
+/* -------- page chrome (not part of any direction) -------- */
+.bar{position:sticky;top:0;z-index:9;display:flex;gap:8px;align-items:center;
+  padding:12px 20px;background:#000;color:#fff;font:600 13px/1 var(--font);flex-wrap:wrap}
+.bar b{font-size:14px;letter-spacing:.02em;margin-right:8px}
+.bar button{font:600 12px/1 var(--font);color:#fff;background:#222;border:1px solid #3a3a3a;
+  padding:9px 14px;border-radius:999px;cursor:pointer}
+.bar button[aria-pressed="true"]{background:#fff;color:#000;border-color:#fff}
+.bar .sp{flex:1}
+.note{padding:14px 20px;background:#151515;color:#9a9a9a;font:400 12.5px/1.6 var(--font)}
+
+.stage{padding:28px;background:#111}
+.frame{max-width:1240px;margin:0 auto 28px;border-radius:6px;overflow:hidden;
+  box-shadow:0 24px 70px -30px rgba(0,0,0,.9)}
+.caption{max-width:1240px;margin:0 auto 10px;color:#8d8d8d;font:600 12px/1.4 var(--font);
+  letter-spacing:.14em;text-transform:uppercase}
+.caption span{display:block;margin-top:6px;letter-spacing:0;text-transform:none;
+  font-weight:400;color:#6f6f6f;font-size:12.5px}
+
+
+/* ============================ LANDING / FIRST RUN =======================
+   The empty state, which is where directions diverge hardest: there is no
+   data to hide behind, so type, scale and one claim have to carry it.       */
+.land{display:grid;grid-template-columns:200px 1fr;background:var(--paper);
+  color:var(--ink);min-height:660px}
+[data-dir="b"] .land{grid-template-columns:180px 1fr}
+.land-main{padding:56px 48px;display:grid;grid-template-columns:1fr 420px;
+  gap:56px;align-content:start}
+[data-dir="b"] .land-main{padding:0;grid-template-columns:1fr 400px;gap:0}
+[data-dir="b"] .land-l{padding:48px 44px;border-right:2px solid var(--rule)}
+[data-dir="b"] .land-r{padding:48px 36px}
+
+.claim{font-weight:var(--display-w);letter-spacing:var(--display-tr);
+  line-height:.9;font-size:clamp(46px,5.6vw,84px);margin:0 0 26px;max-width:14ch}
+[data-dir="b"] .claim{text-transform:uppercase;font-size:clamp(52px,6.6vw,96px)}
+[data-dir="a"] .claim em{font-style:normal;color:var(--accent)}
+[data-dir="b"] .claim em{font-style:normal;color:var(--accent)}
+/* C: the accent is 2.59:1 on bone -- below even the 3:1 large-text floor. Rather
+   than darken it to #C63200 and lose the hot orange that IS direction C, the
+   emphasis becomes ink ON an orange slab: 6.03:1, louder, and consistent with
+   the rule that in C the accent lives inside a block rather than on the paper. */
+/* The inline background box is taller than the glyphs, so the .9 line-height
+   that suits plain display type makes the highlight overlap the line above. */
+[data-dir="c"] .claim{line-height:1.18}
+[data-dir="c"] .claim em{font-style:normal;color:var(--panel);background:var(--accent);
+  box-decoration-break:clone;-webkit-box-decoration-break:clone;padding:0 .12em;
+  border-radius:8px}
+
+.sub{font-size:17px;line-height:1.5;color:var(--muted);max-width:52ch;margin:0 0 34px}
+
+.promises{list-style:none;margin:0 0 36px;padding:0;display:grid;gap:0}
+.promises li{display:grid;grid-template-columns:26px 1fr;gap:14px;
+  padding:14px 0;border-top:1px solid var(--rule);font-size:15px;line-height:1.5;
+  color:var(--muted)}
+.promises li:last-child{border-bottom:1px solid var(--rule)}
+[data-dir="b"] .promises li{border-top-width:2px}
+[data-dir="b"] .promises li:last-child{border-bottom-width:2px}
+.promises b{color:var(--ink);font-weight:700}
+.tick{font-weight:800;color:var(--accent);font-size:15px;line-height:1.5}
+/* same reason as the headline: accent-as-text on bone does not clear 4.5:1 */
+[data-dir="c"] .tick{color:var(--ink)}
+[data-dir="b"] .tick{color:var(--ink)}
+
+/* the proof block — the strongest thing this product owns */
+.proof{border:1px solid var(--rule);border-radius:var(--r);overflow:hidden}
+[data-dir="b"] .proof{border:2px solid var(--rule);border-radius:0}
+[data-dir="c"] .proof{border:none;background:var(--panel);border-radius:var(--r)}
+.proof-h{padding:12px 18px;font:700 10.5px/1 var(--font);letter-spacing:.16em;
+  text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--rule)}
+[data-dir="c"] .proof-h{color:#7A7266;border-bottom:1px solid #2A2521}
+.proof pre{margin:0;padding:18px;font:400 12.5px/1.75 var(--mono);
+  color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}
+[data-dir="c"] .proof pre{color:#A9A197}
+.proof .ok{color:var(--accent);font-weight:700}
+[data-dir="b"] .proof .ok{color:var(--accent)}
+.proof-note{margin:14px 0 0;font-size:12.5px;line-height:1.6;color:var(--faint)}
+
+.land .cta{margin-top:0}
+.detected{margin:18px 0 0;font:700 10.5px/1 var(--font);letter-spacing:.16em;
+  text-transform:uppercase;color:var(--faint)}
+
+/* ============================== THE APP ================================= */
+.app{display:grid;grid-template-columns:200px 1fr;background:var(--paper);color:var(--ink);
+  min-height:660px}
+[data-dir="b"] .app{grid-template-columns:180px 1fr}
+
+/* ---- rail ---- */
+.rail{padding:26px 20px;border-right:1px solid var(--rule);display:flex;flex-direction:column;gap:2px}
+[data-dir="b"] .rail{border-right:2px solid var(--rule)}
+.brand{font-weight:var(--display-w);font-size:22px;letter-spacing:-.02em;margin-bottom:2px}
+.brand-sub{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);
+  margin-bottom:26px;line-height:1.5}
+.nav{display:block;padding:9px 0;font-size:14px;color:var(--muted);text-decoration:none;
+  border-bottom:1px solid transparent}
+.nav[aria-current]{color:var(--ink);font-weight:700}
+[data-dir="a"] .nav[aria-current]{color:var(--accent)}
+[data-dir="b"] .nav[aria-current]{border-bottom:2px solid var(--accent)}
+[data-dir="c"] .nav[aria-current]{color:var(--accent)}
+
+/* ---- main ---- */
+.main{padding:var(--main-pad,34px 40px);display:grid;grid-template-columns:1fr 320px;gap:44px}
+[data-dir="b"] .main{padding:0;grid-template-columns:1fr 300px;gap:0}
+[data-dir="b"] .col-l{padding:34px 40px;border-right:2px solid var(--rule)}
+[data-dir="b"] .col-r{padding:34px 32px}
+
+/* ---- masthead ---- */
+.h1{font-weight:var(--display-w);letter-spacing:var(--display-tr);line-height:.92;
+  font-size:clamp(38px,4.4vw,62px);margin:0 0 14px}
+[data-dir="b"] .h1{font-size:clamp(46px,5.6vw,80px);text-transform:uppercase}
+.lede{font-size:15.5px;line-height:1.55;color:var(--muted);max-width:56ch;margin:0}
+.lede b{color:var(--ink)}
+[data-dir="a"] .lede b{color:var(--accent)}
+
+/* ---- the score: a NUMERAL, not a gauge ---- */
+.score{display:flex;align-items:baseline;gap:14px;margin:0 0 6px}
+.score-n{font-weight:var(--display-w);letter-spacing:-.055em;line-height:.8;
+  font-size:132px;font-variant-numeric:tabular-nums lining-nums}
+[data-dir="b"] .score-n{font-size:150px}
+[data-dir="c"] .score-n{font-size:126px}
+.score-of{font-size:15px;color:var(--faint);font-variant-numeric:tabular-nums}
+.grade{font-size:13px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;
+  color:var(--accent);margin:0 0 20px}
+[data-dir="b"] .grade{color:var(--ink);border-top:2px solid var(--rule);padding-top:10px}
+
+/* ---- meter: two segments, nothing else ---- */
+.meter{display:flex;height:6px;gap:2px;margin:0 0 10px}
+[data-dir="b"] .meter{height:10px}
+.meter i{display:block;border-radius:var(--r)}
+.meter .ran{background:var(--accent);flex:17}
+[data-dir="b"] .meter .ran{background:var(--ink)}
+[data-dir="c"] .meter .ran{background:var(--ok)}
+.meter .skip{background:var(--rule);flex:28}
+.census{font-size:13px;color:var(--muted);margin:0 0 4px;line-height:1.5}
+.census b{color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* ---- section head ---- */
+.sh{display:flex;align-items:baseline;justify-content:space-between;
+  margin:38px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+[data-dir="b"] .sh{border-bottom:2px solid var(--rule)}
+.sh h2{margin:0;font-size:13px;letter-spacing:.2em;text-transform:uppercase;font-weight:700}
+.sh .n{font:700 13px/1 var(--mono);color:var(--faint);font-variant-numeric:tabular-nums}
+
+/* ---- finding: no card, a rule and a hanging severity mark ---- */
+.find{padding:20px 0;border-bottom:1px solid var(--rule);display:grid;
+  grid-template-columns:92px 1fr 64px;gap:20px;align-items:start}
+[data-dir="c"] .find{background:var(--panel);color:#EFEAE1;border:none;border-radius:var(--r);
+  padding:22px 26px;margin-bottom:10px}
+[data-dir="c"] .find .f-detail{color:#A9A197}
+[data-dir="c"] .find .f-fix{color:var(--accent)}
+.f-sev{font:700 11px/1.3 var(--font);letter-spacing:.14em;text-transform:uppercase;color:var(--sev)}
+.f-sev u{display:block;text-decoration:none;font-size:15px;line-height:1;margin-bottom:6px}
+.f-title{font-size:19px;font-weight:700;letter-spacing:-.015em;margin:0 0 8px;line-height:1.25}
+[data-dir="b"] .f-title{font-size:22px}
+.f-detail{font-size:14.5px;line-height:1.6;color:var(--muted);margin:0 0 10px;max-width:62ch}
+.f-fix{font-size:14.5px;line-height:1.55;font-weight:600;color:var(--accent);margin:0;max-width:62ch}
+[data-dir="b"] .f-fix{color:var(--accent)}
+.f-pts{font:700 22px/1 var(--mono);text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+[data-dir="c"] .f-pts{color:#EFEAE1}
+
+/* ---- ledger ---- */
+.ledger{margin-top:34px;padding-top:16px;border-top:1px solid var(--rule)}
+[data-dir="b"] .ledger{border-top:2px solid var(--rule)}
+[data-dir="c"] .ledger{background:var(--panel);color:#EFEAE1;border:none;border-radius:var(--r);
+  padding:22px 24px;margin-top:26px}
+.lrow{display:flex;justify-content:space-between;gap:16px;padding:9px 0;font-size:14px;line-height:1.4}
+.lrow span:last-child{font:600 15px/1 var(--mono);font-variant-numeric:tabular-nums;flex:none}
+.ltot{display:flex;justify-content:space-between;padding:12px 0 0;margin-top:6px;
+  border-top:1px solid var(--rule);font-weight:800;font-size:16px}
+[data-dir="c"] .ltot{border-top-color:#3A342E}
+.ltot span:last-child{font:800 20px/1 var(--mono);font-variant-numeric:tabular-nums}
+.lcheck{margin-top:14px;font-size:12.5px;line-height:1.55;color:var(--faint)}
+[data-dir="a"] .lcheck{color:var(--accent)}
+
+/* ---- coverage ---- */
+.cov{padding:14px 0;border-bottom:1px solid var(--rule)}
+.cov h3{margin:0 0 4px;font-size:15px;font-weight:700;display:flex;justify-content:space-between}
+.cov h3 em{font:700 15px/1 var(--mono);font-style:normal;color:var(--null);font-variant-numeric:tabular-nums}
+.cov p{margin:0;font-size:13px;line-height:1.5;color:var(--muted)}
+
+/* ---- action ---- */
+.cta{margin-top:26px;display:inline-block;padding:15px 30px;border-radius:var(--r);
+  font-weight:800;font-size:14.5px;letter-spacing:.02em;cursor:pointer;border:none;
+  background:var(--accent);color:var(--accent-ink)}
+[data-dir="b"] .cta{background:var(--ink);color:var(--paper);border-radius:0}
+.meta{margin-top:14px;font-size:11.5px;color:var(--faint);line-height:1.5}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>Mume — bold directions</b>
+  <button data-show="a" aria-pressed="true">A · Brutal Signal</button>
+  <button data-show="b" aria-pressed="true">B · Editorial</button>
+  <button data-show="c" aria-pressed="true">C · Slab</button>
+  <span class="sp"></span>
+  <button id="screen" aria-pressed="false">Screen: Dashboard</button>
+  <button id="only" aria-pressed="false">Show one at a time</button>
+</div>
+<div class="note">
+  Real scan of this machine, 2026-08-29 — score 86, 17 of 45 checks ran, two findings at −9 and −5,
+  28 not checkable. System fonts only, because the product ships none. No motion, hover or focus
+  states here; those are specified in <code>docs/design-meeting-2026-08-29.md</code>.
+</div>
+
+<div class="stage" id="stage"></div>
+
+
+<template id="tpl-land">
+<div class="land">
+  <aside class="rail">
+    <div class="brand">Mume</div>
+    <div class="brand-sub">Offline<br>by construction</div>
+    <a class="nav" aria-current="true">This computer</a>
+    <a class="nav">Check a link</a>
+    <a class="nav">Check a password</a>
+    <a class="nav">Photo locations</a>
+    <a class="nav">Installed software</a>
+    <a class="nav">Settings</a>
+    <a class="nav">About</a>
+  </aside>
+
+  <div class="land-main">
+    <div class="land-l">
+      <h1 class="claim">Checks this computer.<br><em>Nothing else.</em></h1>
+      <p class="sub">No account. No upload. No server. The app contains no networking
+        code at all — and the build fails if any is ever added.</p>
+
+      <ul class="promises">
+        <li><span class="tick">&check;</span><span><b>Passwords are checked against a list inside the app.</b>
+          Nothing is sent, not even a hash.</span></li>
+        <li><span class="tick">&check;</span><span><b>Findings never leave this computer.</b>
+          There is nowhere for them to go.</span></li>
+        <li><span class="tick">&check;</span><span><b>No analytics, no crash reporting, no third-party services.</b></span></li>
+        <li><span class="tick">&check;</span><span><b>Mume never changes a setting.</b>
+          It tells you what to change and you decide.</span></li>
+      </ul>
+
+      <button class="cta">Run the first scan</button>
+      <p class="detected">Detected: Windows 11</p>
+    </div>
+
+    <div class="land-r">
+      <div class="proof">
+        <div class="proof-h">Verify it yourself</div>
+<pre>$ gradlew :desktop:check
+
+  no Mume class references a
+  networking API.            <span class="ok">PASS</span>
+  42 runtime jars pinned,
+  0 contain networking code. <span class="ok">PASS</span>
+</pre>
+      </div>
+      <p class="proof-note">Two build gates, not a promise. The first fails if any Mume
+        class so much as names a socket. The second pins every third-party jar, so a new
+        dependency has to be looked at by a person before it can land.</p>
+    </div>
+  </div>
+</div>
+</template>
+
+<template id="tpl">
+<div class="app">
+  <aside class="rail">
+    <div class="brand">Mume</div>
+    <div class="brand-sub">Offline<br>by construction</div>
+    <a class="nav" aria-current="true">This computer</a>
+    <a class="nav">Check a link</a>
+    <a class="nav">Check a password</a>
+    <a class="nav">Photo locations</a>
+    <a class="nav">About</a>
+  </aside>
+
+  <div class="main">
+    <div class="col-l">
+      <h1 class="h1">This<br>computer</h1>
+      <p class="lede"><b>17 of 45</b> checks ran here. 15 passed, 2 need attention.
+        <b>28 could not run</b> — 18 are written for a phone, 10 this computer would not answer.</p>
+
+      <div class="sh"><h2>Needs attention</h2><span class="n">2</span></div>
+
+      <div class="find">
+        <div class="f-sev"><u>■</u>Medium</div>
+        <div>
+          <h3 class="f-title">15 services are reachable from the whole network</h3>
+          <p class="f-detail">Listening on every interface rather than only on this machine:
+            135, 445, 3389, 5040, 5357, 7680 and nine more. Fine at home behind a
+            router. Not fine on shared Wi-Fi.</p>
+          <p class="f-fix">Close anything you do not recognise, and make sure the firewall is on
+            for public networks.</p>
+        </div>
+        <div class="f-pts">−9</div>
+      </div>
+
+      <div class="find">
+        <div class="f-sev"><u>■</u>Medium</div>
+        <div>
+          <h3 class="f-title">Name lookups go to an unrecognised server</h3>
+          <p class="f-detail">This network directs your DNS queries to 203.0.113.53, which is neither
+            your router nor a well-known public resolver. Whoever runs it sees every site you visit.</p>
+          <p class="f-fix">Turn on Private DNS with a resolver you trust, or leave this network.</p>
+        </div>
+        <div class="f-pts">−5</div>
+      </div>
+
+      <div class="sh"><h2>Coverage</h2><span class="n">45</span></div>
+      <div class="cov"><h3>Passed <em>15</em></h3><p>Checked, and nothing wrong.</p></div>
+      <div class="cov"><h3>This computer wouldn't answer <em>10</em></h3>
+        <p>The check applies to a computer, but this one did not supply the information.
+           Never counted as a pass.</p></div>
+      <div class="cov"><h3>Written for a phone <em>18</em></h3>
+        <p>Root detection, USB debugging, the Android app auditor. These will never run here.</p></div>
+    </div>
+
+    <div class="col-r">
+      <div class="score"><span class="score-n">86</span><span class="score-of">/100</span></div>
+      <p class="grade">Good</p>
+      <div class="meter"><i class="ran"></i><i class="skip"></i></div>
+      <p class="census"><b>17</b> ran · <b>28</b> could not</p>
+
+      <div class="ledger">
+        <div class="sh" style="margin-top:0;border:none;padding:0"><h2>How this was calculated</h2></div>
+        <div class="lrow"><span>15 services reachable from the whole network</span><span>−9</span></div>
+        <div class="lrow"><span>Name lookups go to an unrecognised server</span><span>−5</span></div>
+        <div class="ltot"><span>Score</span><span>86</span></div>
+        <p class="lcheck">These add up. 100 − 14 = 86, and every point traces to one finding.</p>
+      </div>
+
+      <button class="cta">Scan again</button>
+      <p class="meta">Threat data built 2026-08-28 · 45 rules · nothing left this computer</p>
+    </div>
+  </div>
+</div>
+</template>
+
+<script>
+const DIRS = {
+  a:['A · BRUTAL SIGNAL','Near-black, one acid accent used only where action is required. No cards, no radii, no shadow — hairlines and type scale carry everything. Loudest of the three; the accent is the only saturated thing on screen, so it means something.'],
+  b:['B · EDITORIAL','Newspaper front page. Paper, ink, one red. Thick rules, uppercase display, no containers at all — the grid is the design. The score is set at 150px because it is the headline.'],
+  c:['C · SLAB','Bold by mass rather than contrast. Deep ink slabs on bone, one warm accent. Findings and the ledger become solid blocks; everything else is quiet paper around them.']
+};
+const stage = document.getElementById('stage');
+const tpl = document.getElementById('tpl');
+const tplLand = document.getElementById('tpl-land');
+// ?screen=landing so the page is deep-linkable for screenshots and review.
+let screenIsLanding = new URLSearchParams(location.search).get('screen')==='landing';
+let only = false;
+const shown = {a:true,b:true,c:true};
+
+function render(){
+  stage.innerHTML='';
+  Object.keys(DIRS).forEach(k=>{
+    if(!shown[k]) return;
+    const cap=document.createElement('div');
+    cap.className='caption';
+    cap.innerHTML = DIRS[k][0]+'<span>'+DIRS[k][1]+'</span>';
+    const f=document.createElement('div');
+    f.className='frame'; f.dataset.dir=k;
+    f.appendChild((screenIsLanding ? tplLand : tpl).content.cloneNode(true));
+    stage.appendChild(cap); stage.appendChild(f);
+  });
+}
+document.querySelectorAll('[data-show]').forEach(b=>{
+  b.onclick=()=>{
+    const k=b.dataset.show;
+    if(only){ Object.keys(shown).forEach(x=>shown[x]=false); shown[k]=true;
+      document.querySelectorAll('[data-show]').forEach(x=>x.setAttribute('aria-pressed', x.dataset.show===k));
+    } else { shown[k]=!shown[k]; b.setAttribute('aria-pressed', shown[k]); }
+    render();
+  };
+});
+document.getElementById('screen').onclick=(e)=>{
+  screenIsLanding=!screenIsLanding;
+  e.target.setAttribute('aria-pressed',screenIsLanding);
+  e.target.textContent='Screen: '+(screenIsLanding?'Landing':'Dashboard');
+  render();
+};
+document.getElementById('only').onclick=(e)=>{
+  only=!only; e.target.setAttribute('aria-pressed',only);
+  if(only){ Object.keys(shown).forEach((x,i)=>shown[x]= i===0);
+    document.querySelectorAll('[data-show]').forEach((x,i)=>x.setAttribute('aria-pressed', i===0)); }
+  else { Object.keys(shown).forEach(x=>shown[x]=true);
+    document.querySelectorAll('[data-show]').forEach(x=>x.setAttribute('aria-pressed',true)); }
+  render();
+};
+if(screenIsLanding){
+  const b=document.getElementById('screen');
+  b.setAttribute('aria-pressed',true); b.textContent='Screen: Landing';
+}
+render();
+</script>
+</body>
+</html>

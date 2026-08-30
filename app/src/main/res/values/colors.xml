@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mirrors design/tokens.json. Only the values Android needs outside Compose. -->
+<resources>
+    <color name="paper">#FAF9F6</color>
+    <color name="ink">#0B0D0C</color>
+    <color name="kelp">#0F4D3F</color>
+</resources>

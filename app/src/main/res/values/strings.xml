@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mume</string>
+    <string name="check_link">Check this link with Mume</string>
+    <string name="offline_badge">Offline · no network permission</string>
+</resources>

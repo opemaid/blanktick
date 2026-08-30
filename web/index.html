@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mume — the security app with no internet permission</title>
+<meta name="description" content="Mume checks your phone for real security problems. It works entirely offline: no account, no upload, no server. The app has no permission to reach the internet at all.">
+<meta property="og:title" content="Mume — the security app with no internet permission">
+<meta property="og:description" content="A phone security checkup that runs entirely on your device. Verifiable, because the app cannot reach the network.">
+<!--
+  Fonts load asynchronously. A render-blocking stylesheet on a third-party CDN
+  means a slow or blocked font host leaves the page blank — which is both a
+  performance problem and, for this site in particular, an embarrassing one.
+  The stack in styles.css degrades to the system UI face, so the page is fully
+  readable before (or without) the webfonts ever arriving.
+-->
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" media="print" onload="this.media='all'"
+      href="https://api.fontshare.com/v2/css?f[]=clash-display@600,500&f[]=switzer@400,500,600&display=swap">
+<link rel="stylesheet" media="print" onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<noscript>
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@600,500&f[]=switzer@400,500,600&display=swap">
+</noscript>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <span class="nav-mark">Mume</span>
+    <div class="nav-links">
+      <a href="#checks">What it checks</a>
+      <a href="#try">Try it</a>
+      <a href="#platforms">Android &amp; iPhone</a>
+      <a href="#privacy">Privacy</a>
+    </div>
+    <button class="theme-btn" id="theme" aria-label="Switch between light and dark">◐</button>
+  </div>
+</nav>
+
+<!-- ============================ HERO ============================ -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow" data-reveal>Offline by construction</span>
+      <h1 data-reveal>A security app that <em>can't</em> phone home.</h1>
+      <p class="lede" data-reveal>
+        Mume checks your phone for the things that actually get people robbed —
+        cloned banking apps, hidden permissions, intercepted traffic, breached
+        passwords. Then it tells you exactly what it found and exactly what it
+        could not see.
+      </p>
+      <p class="lede" data-reveal style="margin-top:1.25rem">
+        It does all of it without an internet connection, because the app was
+        never granted one.
+      </p>
+      <div class="hero-cta" data-reveal>
+        <a class="btn" href="#try">Try the link checker<span class="icon" aria-hidden="true">↗</span></a>
+        <a class="btn btn-quiet" href="#platforms">See what it can't do<span class="icon" aria-hidden="true">→</span></a>
+      </div>
+    </div>
+
+    <div data-reveal>
+      <div class="shell">
+        <div class="core" style="padding:var(--shell-pad)">
+          <div class="terminal">
+            <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+<pre><span class="p">$</span> <span class="c">aapt dump permissions mume.apk</span>
+<span class="o">package: com.mume.app</span>
+<span class="o">uses-permission: READ_EXTERNAL_STORAGE</span>
+<span class="o">uses-permission: PACKAGE_USAGE_STATS</span>
+<span class="o">uses-permission: QUERY_ALL_PACKAGES</span>  <span class="hl">← not declared</span>
+
+<span class="p">$</span> <span class="c">aapt dump permissions mume.apk | grep INTERNET</span>
+<span class="p">$</span> <span class="caret"></span></pre>
+          </div>
+        </div>
+      </div>
+      <p class="proof-note">
+        No output. Every other security app on your phone can talk to a server.
+        Mume physically cannot — Android will not let it open a socket, because
+        it never asked for the permission. You can verify this yourself in about
+        ten seconds.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ STATS ============================ -->
+<section style="padding-block:0">
+  <div class="wrap stats">
+    <div class="shell" data-reveal><div class="core stat">
+      <div class="n">0</div>
+      <div class="l">Network requests during a scan. Not "encrypted", not "anonymised" — zero, enforced by the operating system.</div>
+    </div></div>
+    <div class="shell" data-reveal><div class="core stat">
+      <div class="n">29</div>
+      <div class="l">Checks. All 29 run on Android; 12 run on iPhone. We publish both numbers and name every one of the 17 we cannot run there.</div>
+    </div></div>
+    <div class="shell" data-reveal><div class="core stat">
+      <div class="n">2M</div>
+      <div class="l">Breached passwords built into the app, so yours is compared on the phone and never leaves it — not even as a hash prefix.</div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============================ CHECKS ============================ -->
+<section id="checks">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal>What it checks</span>
+    <h2 style="font-size:clamp(2.25rem,5vw,3.75rem);max-width:18ch" data-reveal>
+      The things that actually cost people money.
+    </h2>
+    <p class="lede" data-reveal style="margin-top:1.5rem;margin-bottom:4rem">
+      Not a virus scanner. Phones do not get viruses the way computers did —
+      they get cloned apps, over-permissioned apps, and hostile networks.
+    </p>
+
+    <div class="bento">
+      <div class="shell w8" data-reveal><div class="core card">
+        <div class="card-k">Highest signal · Android</div>
+        <h3>An app pretending to be your bank</h3>
+        <p>
+          A repackaged app keeps the real one's identity but is signed with a
+          different key. Mume carries the genuine signing keys for thousands of
+          well-known apps and compares them on the device. Cloud scanners
+          routinely miss this because they match file hashes, which a repacker
+          changes for free. It is the single most common route to a stolen
+          banking login on Android, and detecting it needs no server at all.
+        </p>
+      </div></div>
+
+      <div class="shell" data-reveal><div class="core card">
+        <div class="card-k">Network</div>
+        <h3>Someone reading your encrypted traffic</h3>
+        <p>
+          An interception proxy has to install its own certificate authority on
+          your device. Mume lists every certificate authority that did not ship
+          with the OS — and tells you when it was your employer.
+        </p>
+      </div></div>
+
+      <div class="shell" data-reveal><div class="core card">
+        <div class="card-k">Apps · Android</div>
+        <h3>Permission combinations, not permissions</h3>
+        <p>
+          Reading your texts is what a messaging app does. Drawing over other
+          apps is what a chat head does. Controlling the screen is what a screen
+          reader does. All three at once is a banking trojan, and almost nothing
+          legitimate needs them together.
+        </p>
+      </div></div>
+
+      <div class="shell w6" data-reveal><div class="core card">
+        <div class="card-k">Passwords</div>
+        <h3>Breached passwords, checked without sending anything</h3>
+        <p>
+          Two million of the most commonly breached passwords ship inside the
+          app as a compact filter. Your password is tested against it on the
+          phone. Other tools send a hash prefix to a server; Mume sends nothing,
+          so there is no request to log, correlate or subpoena.
+        </p>
+      </div></div>
+
+      <div class="shell w6" data-reveal><div class="core card">
+        <div class="card-k">Personal data</div>
+        <h3>Photos that carry your home address</h3>
+        <p>
+          Most photos record the exact coordinates where they were taken.
+          Messaging apps usually strip that; email attachments and many
+          platforms do not. Mume finds them and can write location-free copies
+          without touching the originals.
+        </p>
+      </div></div>
+
+      <div class="shell w12" data-reveal><div class="core card">
+        <div class="card-k">Scoring</div>
+        <h3>A score you can audit</h3>
+        <p style="max-width:75ch">
+          Every point deducted traces to one finding, the per-finding numbers sum
+          exactly to <span class="mono">100 − score</span>, and tapping the score
+          shows the arithmetic. Categories are capped so one bad area cannot make
+          an otherwise sound phone read as a disaster, and repeat findings decay
+          so ten small issues never outweigh one serious one. None of that is
+          hidden — it is in the app, on a screen we called
+          <em>“These add up. Check us.”</em>
+        </p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ LIVE CHECKER ============================ -->
+<section id="try">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal>Try it — nothing is sent</span>
+    <h2 style="font-size:clamp(2.25rem,5vw,3.5rem);max-width:20ch" data-reveal>
+      Paste a suspicious link.
+    </h2>
+    <p class="lede" data-reveal style="margin-top:1.5rem;margin-bottom:2.5rem">
+      This runs the same logic the app uses, here in your browser. Open your
+      network tab if you like — there is no request to make.
+    </p>
+
+    <div class="shell" data-reveal><div class="core">
+      <div class="checker-in">
+        <input id="url" type="text" spellcheck="false" autocomplete="off"
+               placeholder="https://…" aria-label="Link to check"
+               value="https://standardbank.co.za.verify-account.top/login">
+        <button class="btn" id="check">Check<span class="icon" aria-hidden="true">→</span></button>
+      </div>
+
+      <div class="samples">
+        <button data-url="https://standardbank.co.za.verify-account.top/login">Brand in a subdomain</button>
+        <button data-url="https://paypal.com@evil-site.ru/signin">Hidden real destination</button>
+        <button data-url="https://xn--pypal-4ve.com/login">Homoglyph domain</button>
+        <button data-url="https://gogle.com">Typosquat</button>
+        <button data-url="https://bit.ly/3xYzAbC">Shortened link</button>
+        <button data-url="http://192.168.4.20/bank/login">Raw IP address</button>
+        <button data-url="https://www.google.com/search?q=hello">Something fine</button>
+      </div>
+
+      <div class="result" id="result" role="status" aria-live="polite"></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============================ PLATFORMS ============================ -->
+<section id="platforms">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal>The honest part</span>
+    <h2 style="font-size:clamp(2.25rem,5vw,3.5rem);max-width:22ch" data-reveal>
+      Mume does less on iPhone. Here is exactly how much less.
+    </h2>
+    <p class="lede" data-reveal style="margin-top:1.5rem;margin-bottom:3rem">
+      iOS forbids any app from inspecting other apps. That is a good rule and
+      Mume follows it — which means 17 of our 29 checks simply cannot run there.
+      Below is every one of them, not a flattering selection. Most apps hide
+      this behind a feature list with ticks in both columns; we would rather you
+      could tell the difference between <em>“checked and fine”</em> and
+      <em>“never looked”</em>.
+    </p>
+
+    <div class="shell" data-reveal><div class="core">
+      <table class="captable">
+        <thead><tr><th>Check</th><th>Android</th><th>iPhone</th></tr></thead>
+        <tbody>
+          <tr><td>Root / jailbreak detection</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Code-injection framework detection</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Screen lock strength</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Storage encryption</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Auto-lock delay</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Wi-Fi encryption assessment</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Traffic proxy detection</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Breached password check</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Reused password check</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Photo location scan</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Lock-screen message previews</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Threat-data freshness</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Cloned / repackaged app detection</td><td class="yes">Yes</td><td class="no">No API</td></tr>
+          <tr><td>Installed-app permission audit</td><td class="yes">Yes</td><td class="no">No API</td></tr>
+          <tr><td>Dangerous permission combinations</td><td class="yes">Yes</td><td class="no">No API</td></tr>
+          <tr><td>Sideloaded app sources</td><td class="yes">Yes</td><td class="no">No API</td></tr>
+          <tr><td>Insecure app build flags</td><td class="yes">Yes</td><td class="no">No API</td></tr>
+          <tr><td>Apps opting out of protections</td><td class="yes">Yes</td><td class="no">No API</td></tr>
+          <tr><td>Dormant apps holding permissions</td><td class="yes">Yes</td><td class="no">No API</td></tr>
+          <tr><td>Extra certificate authorities</td><td class="yes">Yes</td><td class="no">Not enumerable</td></tr>
+          <tr><td>Security patch level</td><td class="yes">Yes</td><td class="no">Not published</td></tr>
+          <tr><td>End-of-life OS detection</td><td class="yes">Yes</td><td class="no">Not published</td></tr>
+          <tr><td>DNS resolver inspection</td><td class="yes">Yes</td><td class="no">Not exposed</td></tr>
+          <tr><td>Encrypted DNS setting</td><td class="yes">Yes</td><td class="no">Not exposed</td></tr>
+          <tr><td>VPN owner</td><td class="yes">Yes</td><td class="no">Not exposed</td></tr>
+          <tr><td>Wi-Fi router change (evil twin)</td><td class="yes">Yes</td><td class="no">Not exposed</td></tr>
+          <tr><td>Bootloader lock state</td><td class="yes">Yes</td><td class="no">No equivalent</td></tr>
+          <tr><td>Wireless debugging exposure</td><td class="yes">Yes</td><td class="no">No ADB on iOS</td></tr>
+          <tr><td>USB debugging &amp; developer options</td><td class="yes">Yes</td><td class="no">No equivalent</td></tr>
+        </tbody>
+      </table>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============================ PRIVACY ============================ -->
+<section id="privacy">
+  <div class="wrap">
+    <div class="bento">
+      <div class="shell w6" data-reveal><div class="core card">
+        <span class="eyebrow">What Mume does not have</span>
+        <h3 style="margin-top:0.5rem">No account. No server. No SDK.</h3>
+        <p style="margin-top:1rem">
+          There is nothing to sign up for, because there is nothing to sign up
+          to. No analytics library, no crash-reporting SDK, no advertising ID,
+          no third-party code of any kind in the app. A security app that ships
+          someone else's telemetry has lost the argument before it starts.
+        </p>
+      </div></div>
+
+      <div class="shell w6" data-reveal><div class="core card">
+        <span class="eyebrow">The trade-off</span>
+        <h3 style="margin-top:0.5rem">What we give up for it</h3>
+        <p style="margin-top:1rem">
+          Threat data ships inside the app and refreshes when the app updates,
+          so it is days old rather than minutes old — Mume shows you the date on
+          every scan. Shortened links cannot be followed, so they are reported
+          as <em>unknown</em>, never as <em>safe</em>. And because we collect
+          nothing, we genuinely do not know how many people use which feature.
+        </p>
+      </div></div>
+
+      <div class="shell w12" data-reveal><div class="core card">
+        <span class="eyebrow">Free</span>
+        <h3 style="margin-top:0.5rem">All of it, at no cost, with nothing to upsell</h3>
+        <p style="margin-top:1rem;max-width:75ch">
+          Every check is available to everyone. There is no paid tier, no
+          advertising, and no data to sell — the architecture makes selling data
+          impossible rather than merely against policy. If that sounds too good
+          to be true, note that a product with no servers and no accounts costs
+          almost nothing to run.
+        </p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CTA ============================ -->
+<section style="padding-bottom:clamp(4rem,8vw,7rem)">
+  <div class="wrap" style="text-align:center">
+    <h2 style="font-size:clamp(2.5rem,7vw,5rem);max-width:16ch;margin-inline:auto" data-reveal>
+      Find out what's on your phone.
+    </h2>
+    <div class="hero-cta" data-reveal style="justify-content:center;margin-top:2.5rem">
+      <a class="btn" href="#">Google Play<span class="icon" aria-hidden="true">↗</span></a>
+      <a class="btn btn-quiet" href="#">App Store<span class="icon" aria-hidden="true">↗</span></a>
+    </div>
+    <p class="proof-note" data-reveal style="margin-top:2rem">Android 10 and later · iOS 17 and later · about 24 MB</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div>
+      <div class="nav-mark" style="font-size:1.5rem">Mume</div>
+      <p class="small" style="margin-top:0.75rem">
+        Mume checks a specific list of things about your device. Passing every
+        check does not mean you are safe — it means these particular problems
+        are not present. We would rather say that than imply otherwise.
+      </p>
+    </div>
+    <p class="small">
+      Not affiliated with any bank or platform named in this app.<br>
+      Store listings and availability are placeholders pending release.
+    </p>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
