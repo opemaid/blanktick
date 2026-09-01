@@ -158,6 +158,22 @@ private fun FindingsColumn(state: ScanUiState.Complete, includeCoverage: Boolean
                 }
             }
 
+            // Placed above the findings, not below them, and above the score.
+            // A caveat about how much of the machine was actually looked at
+            // changes how every number under it should be read, so it cannot sit
+            // where a reader arrives at it last.
+            if (state.collectionCaveats.isNotEmpty()) {
+                item {
+                    Spacer(Modifier.height(MumeTokens.Space.s5))
+                    Box(Modifier.widthIn(max = MEASURE)) {
+                        Notice(
+                            "This scan is incomplete. " +
+                                state.collectionCaveats.joinToString(" ")
+                        )
+                    }
+                }
+            }
+
             if (state.intelSynthetic) {
                 item {
                     Spacer(Modifier.height(MumeTokens.Space.s5))

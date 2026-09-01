@@ -1,6 +1,7 @@
 package com.mume.desktop.collect
 
 import java.io.File
+import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
 /**
@@ -22,14 +23,17 @@ import java.util.concurrent.TimeUnit
  * 2. **No user input reaches an argument.** Every command in the desktop
  *    collectors is a compile-time constant. Nothing typed into the app is ever
  *    interpolated into one.
- * 3. **Read-only by construction.** Every command used is an interrogation —
+ * 3. **The binary is named absolutely.** See [resolve]. This is the difference
+ *    between reading the operating system and reading whatever an attacker put
+ *    on `PATH`.
+ * 4. **Read-only by construction.** Every command used is an interrogation —
  *    `netsh advfirewall show`, `sfc /verifyonly`-class queries, `systemsetup
  *    -get…`. Mume never changes a setting; it tells the user what to change and
  *    lets them do it, because a security tool that silently reconfigures a
  *    machine is a security tool nobody can audit.
- * 4. **Bounded.** Every call has a timeout and the process is destroyed if it
- *    overruns, so one wedged system utility cannot hang the scan.
- * 5. **Failure is `null`, never a default.** A command that is missing, times
+ * 5. **Bounded, and bounded for real.** See [drain]: a timeout that can be
+ *    evaded by a chatty subprocess is not a timeout.
+ * 6. **Failure is `null`, never a default.** A command that is missing, times
  *    out or exits non-zero yields `null`, which propagates up as "not
  *    checkable" rather than as a reassuring answer.
  */
@@ -39,10 +43,162 @@ internal object Shell {
     private const val DEFAULT_TIMEOUT_SECONDS = 20L
 
     /** Guards against a runaway tool filling the heap with output. */
-    private const val MAX_OUTPUT_CHARS = 1 shl 20   // 1 MiB
+    private const val MAX_OUTPUT_CHARS = 1 shl 22   // 4 MiB
+
+    /**
+     * Set when a command's output hit [MAX_OUTPUT_CHARS] and was cut short.
+     *
+     * Truncation is not a detail. The probe emits its facts in source order, so
+     * a cut-off stream silently deletes *the questions asked last* — and an
+     * attacker who can inflate an earlier answer chooses which ones. One
+     * installed program with a 4 MiB `DisplayName` would push every autorun
+     * entry off the end of the output, and the null contract would faithfully
+     * report those as "not checkable" without anyone knowing why.
+     *
+     * So truncation is recorded, surfaced, and treated as a degraded scan.
+     */
+    @Volatile
+    var lastRunTruncated: Boolean = false
+        private set
 
     data class Result(val exitCode: Int, val stdout: String, val stderr: String) {
         val ok: Boolean get() = exitCode == 0
+    }
+
+    // ------------------------------------------------------------- resolution
+
+    /**
+     * Directories a system tool is allowed to come from, in search order.
+     *
+     * ## The attack this closes
+     *
+     * `ProcessBuilder("powershell.exe", …)` does not name a file, it names a
+     * *search*. Windows resolves it through `%PATH%`, and the per-user half of
+     * `%PATH%` lives in `HKCU\Environment`, which **any process running as the
+     * user can write with no elevation and no prompt**. Prepend a directory,
+     * drop a `powershell.exe` in it, and every scan from then on reads its
+     * facts from a program the attacker wrote.
+     *
+     * That is not tampering with one check. The probe returns `key=value` text
+     * that Mume parses and displays; a hostile stand-in returns whatever it
+     * likes, and the app renders a fully green 100/100 report — the security
+     * scanner becomes the alibi. Verified on a real machine: with a
+     * user-writable directory prepended to `PATH`, the identical invocation ran
+     * the planted binary instead of PowerShell.
+     *
+     * The same hole existed 18 more times on macOS and Linux, where `csrutil`,
+     * `fdesetup` and `spctl` are what decide the SIP, FileVault and Gatekeeper
+     * verdicts, and a shell rc file is all it takes to bend `PATH`.
+     *
+     * Every directory below is one only an administrator can write to. If a
+     * tool is not in one of them, it is not run at all and the caller gets
+     * `null` — "not checkable", which is the honest answer to "is this the real
+     * `csrutil`?" when we cannot tell.
+     */
+    private val TRUSTED_DIRS: List<String> by lazy {
+        val osName = System.getProperty("os.name").orEmpty().lowercase()
+        when {
+            osName.contains("win") -> {
+                val root = System.getenv("SystemRoot")?.takeIf { it.isNotBlank() } ?: "C:\\Windows"
+                listOf(
+                    "$root\\System32",
+                    "$root\\System32\\WindowsPowerShell\\v1.0",
+                    "$root\\SysWOW64",
+                    "$root\\SysWOW64\\WindowsPowerShell\\v1.0",
+                    root
+                )
+            }
+            // /usr/libexec carries several of the tools macOS keeps off PATH.
+            osName.contains("mac") || osName.contains("darwin") ->
+                listOf("/usr/bin", "/bin", "/usr/sbin", "/sbin", "/usr/libexec")
+            else -> listOf("/usr/bin", "/bin", "/usr/sbin", "/sbin", "/usr/local/bin")
+        }
+    }
+
+    /** Windows will run `foo` when handed `foo.exe`; everywhere else, extensions are literal. */
+    private val EXE_SUFFIXES: List<String> by lazy {
+        if (System.getProperty("os.name").orEmpty().lowercase().contains("win")) listOf("", ".exe")
+        else listOf("")
+    }
+
+    private val resolutionCache = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    /**
+     * Turns a tool name into an absolute path inside [TRUSTED_DIRS].
+     *
+     * An absolute path handed in by a caller is accepted only if it is already
+     * inside a trusted directory — that is how the probe's own script file,
+     * which lives in a temp directory, is *not* mistaken for a system tool.
+     *
+     * @return `null` if the tool is not present in a directory only an
+     *   administrator can write to. Callers treat that as "cannot tell".
+     */
+    fun resolve(tool: String): String? {
+        resolutionCache[tool]?.let { return it }
+
+        val candidates = if (File(tool).isAbsolute) {
+            listOf(File(tool))
+        } else {
+            TRUSTED_DIRS.flatMap { dir -> EXE_SUFFIXES.map { File(dir, tool + it) } }
+        }
+
+        val found = candidates.firstOrNull { f ->
+            runCatching { f.isFile && f.canExecute() }.getOrDefault(false) &&
+                // An absolute path from a caller still has to be somewhere an
+                // unprivileged process could not have planted it.
+                TRUSTED_DIRS.any { d ->
+                    runCatching {
+                        f.canonicalPath.startsWith(File(d).canonicalPath + File.separator, ignoreCase = true)
+                    }.getOrDefault(false)
+                }
+        } ?: return null
+
+        val path = runCatching { found.canonicalPath }.getOrDefault(found.absolutePath)
+        resolutionCache[tool] = path
+        return path
+    }
+
+    // ------------------------------------------------------------- execution
+
+    /**
+     * Reads a stream to exhaustion on its own thread.
+     *
+     * ## Why this is not just tidiness
+     *
+     * The previous version read stdout to completion, then stderr, and only
+     * then called `waitFor(timeout)`. A pipe holds about 4–64 KiB; once the
+     * child has filled the stderr buffer it blocks on write, so it never
+     * finishes stdout, so the read never returns, so **the line that enforces
+     * the timeout is never reached**. Measured: a command with a 20-second
+     * ceiling ran for 44 seconds and would not have stopped on its own. With
+     * more output it does not return at all, and the whole scan wedges.
+     *
+     * Any probed tool that gets noisy on stderr does this by accident. Anything
+     * that wants Mume not to finish does it on purpose, which is a cheap way to
+     * make a security app produce no verdict at all.
+     */
+    private fun drain(stream: InputStream): Pair<Thread, StringBuilder> {
+        val sink = StringBuilder()
+        val thread = Thread {
+            runCatching {
+                stream.bufferedReader().use { reader ->
+                    val buf = CharArray(8192)
+                    while (true) {
+                        val n = reader.read(buf)
+                        if (n < 0) break
+                        if (sink.length < MAX_OUTPUT_CHARS) {
+                            sink.append(buf, 0, minOf(n, MAX_OUTPUT_CHARS - sink.length))
+                        }
+                        // Past the cap we keep reading and discarding: stopping
+                        // here would block the child on a full pipe, which is
+                        // the very deadlock this method exists to avoid.
+                    }
+                }
+            }
+        }
+        thread.isDaemon = true
+        thread.start()
+        return thread to sink
     }
 
     /**
@@ -54,24 +210,36 @@ internal object Shell {
         timeoutSeconds: Long = DEFAULT_TIMEOUT_SECONDS,
         workingDir: File? = null
     ): Result? = try {
-        val process = ProcessBuilder(command.toList())
-            .directory(workingDir)
-            .redirectErrorStream(false)
-            .start()
+        // Resolution failure is not an error to report: a machine without
+        // `ufw` is a normal machine. It is "cannot tell", same as any other
+        // unanswerable question.
+        val exe = resolve(command.first())
+        if (exe == null) null else {
+            val process = ProcessBuilder(listOf(exe) + command.drop(1))
+                .directory(workingDir)
+                .redirectErrorStream(false)
+                .start()
 
-        // stdin is closed immediately: nothing here is interactive, and a tool
-        // that decides to prompt should hit EOF and exit rather than block
-        // until the timeout.
-        process.outputStream.close()
+            // stdin is closed immediately: nothing here is interactive, and a
+            // tool that decides to prompt should hit EOF and exit rather than
+            // block until the timeout.
+            process.outputStream.close()
 
-        val out = process.inputStream.bufferedReader().use { it.readText().take(MAX_OUTPUT_CHARS) }
-        val err = process.errorStream.bufferedReader().use { it.readText().take(MAX_OUTPUT_CHARS) }
+            val (outThread, outBuf) = drain(process.inputStream)
+            val (errThread, errBuf) = drain(process.errorStream)
 
-        if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
-            process.destroyForcibly()
-            null
-        } else {
-            Result(process.exitValue(), out, err)
+            if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
+                process.destroyForcibly()
+                process.waitFor(2, TimeUnit.SECONDS)
+                null
+            } else {
+                // The child is gone; the readers see EOF almost immediately.
+                // Bounded anyway, because "almost" is not a guarantee.
+                outThread.join(2_000)
+                errThread.join(2_000)
+                if (outBuf.length >= MAX_OUTPUT_CHARS) lastRunTruncated = true
+                Result(process.exitValue(), outBuf.toString(), errBuf.toString())
+            }
         }
     } catch (_: Exception) {
         // Missing binary, denied by policy, sandboxed: all mean "cannot tell".
@@ -176,7 +344,7 @@ internal object Shell {
      * ## Why one script instead of twenty
      *
      * Each `powershell.exe` launch costs roughly a second of process start and
-     * module loading. The Windows collector asks about twenty-five things; one
+     * module loading. The Windows collector asks about thirty-odd things; one
      * call at a time, that is a scan the user watches for several minutes,
      * which in practice means a scan they do not run. Batching makes it one
      * process and a few seconds.
@@ -193,6 +361,7 @@ internal object Shell {
         script: String,
         timeoutSeconds: Long = 90
     ): Map<String, List<String>> {
+        lastRunTruncated = false
         val raw = powershell(script, timeoutSeconds) ?: return emptyMap()
         val out = mutableMapOf<String, MutableList<String>>()
 

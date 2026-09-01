@@ -293,6 +293,67 @@ data class DesktopFacts(
      */
     val rememberedUsbDevices: List<String>? = null,
 
+    /**
+     * Persistence sources that could not be read, or were only partly read.
+     *
+     * ## Why a list and not a boolean
+     *
+     * "Programs that start themselves" is not one question, it is seven —
+     * Run keys, Startup folders, Winlogon, Image File Execution Options,
+     * scheduled tasks, services — and on a real machine they do not all
+     * succeed. Several IFEO subkeys are ACL'd against a normal user, which is
+     * ordinary rather than suspicious.
+     *
+     * An empty list means all sources were read. A non-empty list is what lets
+     * the app say "six of seven, and this is the one it could not see" instead
+     * of choosing between a reassuring lie and a useless silence. `null` means
+     * the platform does not report per-source coverage.
+     */
+    val autoRunSourcesUnread: List<String>? = null,
+
+    // ---- Integrity of the collection itself --------------------------------
+    /**
+     * Whether the collector ran all the way to the end.
+     *
+     * ## Why a scan needs to vouch for itself
+     *
+     * Every other field here answers "what is true of this machine". This one
+     * answers "can the other answers be believed", and nothing else in the
+     * model does.
+     *
+     * The desktop probe emits its facts in order and ends with a completion
+     * marker. If it is killed partway — by a crash, a policy, or any process
+     * running as this user that would rather the scan did not finish — the
+     * output stops mid-stream and *looks exactly like a successful run of a
+     * shorter script*. Each missing fact is correctly reported as not
+     * checkable, which is the null contract working; but a report that is
+     * three-quarters "not checkable" for an unstated reason still reads as
+     * reassuring, and the user is never told the difference.
+     *
+     * `false` means the report is partial and the app must say so. `null` means
+     * this platform has no completion signal to give.
+     */
+    val collectionCompleted: Boolean? = null,
+    /**
+     * Whether the collector's output hit its size ceiling and was cut short.
+     *
+     * A separate field from [collectionCompleted] because it is a separate
+     * failure with the same symptom, and because it is the one an attacker can
+     * aim: facts are emitted in order, so inflating an early answer deletes the
+     * later ones. Also `true` on a machine that is merely very large, which is
+     * why it is reported rather than treated as an attack.
+     */
+    val collectionTruncated: Boolean? = null,
+    /**
+     * The language mode the Windows probe ran under, when it could be read.
+     *
+     * Constrained Language Mode (WDAC, AppLocker, `__PSLockdownPolicy`) blocks
+     * COM object creation, and the unprivileged BitLocker read depends on it.
+     * Under lockdown that check returns nothing for a reason that has nothing
+     * to do with encryption, and this is what lets the app say which.
+     */
+    val probeLanguageMode: String? = null,
+
     // ---- Installed software -----------------------------------------------
     /**
      * What is installed, as the OS's own uninstall registry reports it.
@@ -389,5 +450,26 @@ data class AutoRunEntry(
     val name: String,
     val location: String,
     val command: String? = null,
-    val signedByKnownVendor: Boolean? = null
+    val signedByKnownVendor: Boolean? = null,
+    /**
+     * The mechanism, not the address: `Run`, `RunOnce`, `Scheduled task`,
+     * `Service`, `Winlogon`, `IFEO debugger`, `Startup folder`.
+     *
+     * Worth a field of its own because the mechanisms are not equally
+     * interesting. A Run-key entry is what every installer creates; an IFEO
+     * debugger entry has essentially one legitimate use and a great many
+     * illegitimate ones.
+     */
+    val kind: String? = null,
+    /**
+     * True when the thing that actually launches is one of Windows' own signed
+     * binaries — `rundll32`, `mshta`, `regsvr32`, `powershell` and friends.
+     *
+     * This exists because [signedByKnownVendor] is otherwise actively
+     * misleading here. An entry reading `rundll32.exe C:\Users\…\payload.dll`
+     * has a perfectly valid Microsoft signature, so the signature check passes
+     * it, and the code that runs is in a file nobody looked at. Reporting the
+     * signature without reporting this would be technically true and useless.
+     */
+    val usesSystemBinary: Boolean? = null
 )

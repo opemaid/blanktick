@@ -147,9 +147,20 @@ The asymmetry is real and every app says so on screen — listing what it could
 - **Secure Boot**, **SIP** on macOS, **automatic updates**, **update staleness**.
 - **Accounts**: passwordless sign-in (critical), the guest account, and whether
   your everyday account holds administrator rights.
-- **Programs that start themselves**, reported only when the platform positively
-  says the binary is unsigned. An unverifiable signature is *not* an unsigned
-  one.
+- **Programs that start themselves**, read from seven places: the Run and
+  RunOnce keys (per-user, machine, and the 32-bit views of both), the Startup
+  folders, Winlogon's `Shell` and `Userinit`, Image File Execution Options
+  debugger hijacks, scheduled tasks, and auto-start services outside the system
+  directories. Reported as unsigned only when the platform positively says so —
+  an unverifiable signature is *not* an unsigned one, and a binary inside a
+  Store package carries the package's signature rather than its own.
+
+  Each source reports its own coverage. If one cannot be read — several Image
+  File Execution Options subkeys are ACL'd against a normal user, which is
+  ordinary — the app names it rather than quietly returning a shorter list.
+  Still not everything: WMI event subscriptions and COM hijacks are not read,
+  and the finding says "starts automatically", never "this is everything that
+  does".
 - **Removable media.** Two things about a USB stick are answerable offline and
   Mume checks exactly those: whether the AutoRun policy has been *explicitly
   weakened* from the Windows default (absent means hardened — Microsoft turned

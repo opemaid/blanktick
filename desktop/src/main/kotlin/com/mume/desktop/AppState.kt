@@ -42,7 +42,18 @@ sealed interface ScanUiState {
         val previousScore: Int?,
         val intelDate: String?,
         val intelComplete: Boolean,
-        val intelSynthetic: Boolean
+        val intelSynthetic: Boolean,
+        /**
+         * Why this report may be incomplete, in plain language. Empty when the
+         * collection ran end to end.
+         *
+         * Kept beside the report rather than inside it because it describes the
+         * *act of collecting*, not the machine. A scan that was cut short is not
+         * a machine with problems, and folding the two together is how a tool
+         * ends up scaring someone about their laptop when the real story is that
+         * PowerShell was killed.
+         */
+        val collectionCaveats: List<String> = emptyList()
     ) : ScanUiState
     data class Failed(val message: String) : ScanUiState
     /** The OS is not one this build knows how to inspect. */
@@ -147,6 +158,56 @@ class AppState(private val scope: CoroutineScope) {
 
     fun show(screen: Screen) { _screen.value = screen }
 
+    /**
+     * Plain-language reasons this report may be less than it appears.
+     *
+     * ## Why the app says this out loud
+     *
+     * Every individual fact the collector failed to read is already reported as
+     * *not checkable*, correctly, by the null contract. But a person looking at
+     * a mostly-green screen does not add up absences. If the probe was killed
+     * halfway, or a persistence source was denied, the report still looks like a
+     * report — just a shorter one — and nothing on screen distinguishes "your
+     * machine is fine" from "I did not get to look".
+     *
+     * That gap is worth an attacker's attention precisely because it is silent:
+     * making a security tool finish early is easier than making it lie.
+     *
+     * These are deliberately NOT findings and cost no points. A truncated scan
+     * is not an insecure computer, and putting it in the score would both
+     * mis-state the machine and give the user a number to feel bad about for
+     * something that is not theirs to fix.
+     */
+    private fun collectionCaveats(d: com.mume.core.model.DesktopFacts?): List<String> = buildList {
+        if (d == null) return@buildList
+        if (d.collectionCompleted == false) {
+            add(
+                "The system probe did not run to the end, so this report covers only what it " +
+                    "reached before stopping. Anything it never asked about is shown as not " +
+                    "checked rather than as a pass."
+            )
+        }
+        if (d.collectionTruncated == true) {
+            add(
+                "The probe produced more output than Mume reads in one pass and was cut short. " +
+                    "The checks asked last are the ones missing."
+            )
+        }
+        d.autoRunSourcesUnread?.takeIf { it.isNotEmpty() }?.let { unread ->
+            add(
+                "Programs that start themselves were read from every place except " +
+                    unread.joinToString(", ") + ". Those may hold entries not listed here."
+            )
+        }
+        if (d.probeLanguageMode != null && !d.probeLanguageMode.equals("FullLanguage", true)) {
+            add(
+                "PowerShell is restricted to " + d.probeLanguageMode + " on this computer, which " +
+                    "blocks some of the queries Mume uses. The affected checks report as not " +
+                    "checked."
+            )
+        }
+    }
+
     // ----------------------------------------------------------------- scan
 
     fun runScan() {
@@ -185,7 +246,8 @@ class AppState(private val scope: CoroutineScope) {
                         previousScore = previous,
                         intelDate = intel.manifest?.builtOn,
                         intelComplete = intel.isComplete,
-                        intelSynthetic = intel.manifest?.synthetic == true
+                        intelSynthetic = intel.manifest?.synthetic == true,
+                        collectionCaveats = collectionCaveats(desktopFacts)
                     )
                 },
                 onFailure = { error ->

@@ -1,5 +1,6 @@
 package com.mume.desktop.collect
 
+import com.mume.core.analysis.DisplaySafe
 import com.mume.core.model.AutoRunEntry
 import com.mume.core.model.CaCertificate
 import com.mume.core.model.DesktopFacts
@@ -59,7 +60,11 @@ internal class WindowsCollector : PlatformCollector {
     override fun osBuild(): String? = one("os.build")
 
     override fun collect(): DesktopFacts {
-        val profiles = all("fw.profile").orEmpty()
+        // The sentinel, not the row count, decides whether this is an answer.
+        // Two profiles enumerated and both enabled is not "the firewall is on"
+        // -- Windows has three, and the one that failed to read is exactly the
+        // one worth knowing about.
+        val profiles = if (one("fw.enumerated") == null) emptyList() else all("fw.profile").orEmpty()
             .mapNotNull { row ->
                 val parts = row.split('\t')
                 if (parts.size != 2) return@mapNotNull null
@@ -95,7 +100,9 @@ internal class WindowsCollector : PlatformCollector {
             daysSinceLastUpdate = int("update.daysSinceLast"),
 
             sessionIsAdministrator = bool("acct.sessionIsAdmin"),
-            administratorAccounts = all("acct.admin"),
+            // Get-LocalGroupMember throws mid-enumeration on Azure AD members.
+            // Without the sentinel a truncated list reads as the whole group.
+            administratorAccounts = if (one("acct.adminEnumerated") == null) null else all("acct.admin").orEmpty(),
             passwordlessAccounts = passwordlessAccounts(),
             guestAccountEnabled = bool("acct.guestEnabled"),
             lockOnWakeEnabled = lockOnWakeEnabled(),
@@ -104,11 +111,19 @@ internal class WindowsCollector : PlatformCollector {
             listeningPorts = listeningPorts(),
 
             autoRunEntries = autoRunEntries(),
+            autoRunSourcesUnread = if (all("autorun.read").isNullOrEmpty()) null
+            else all("autorun.failed").orEmpty(),
             installedPrograms = installedPrograms(),
 
             autoRunBlockedForRemovable = bool("usb.autorunBlocked"),
             removableDrives = removableDrives(),
-            rememberedUsbDevices = all("usbdevice")?.distinct()?.sorted()
+            rememberedUsbDevices = all("usbdevice")?.map { DisplaySafe.label(it) }?.distinct()?.sorted(),
+
+            // Emitted as the probe's last line. Absent means it did not get
+            // there, and every fact above is however far it happened to reach.
+            collectionCompleted = probe.isNotEmpty() && one("probe.complete") != null,
+            collectionTruncated = Shell.lastRunTruncated,
+            probeLanguageMode = one("ps.languageMode")
         )
     }
 
@@ -245,7 +260,10 @@ internal class WindowsCollector : PlatformCollector {
      * the desktop build has no code path that could — `assertNoNetworkBytecode`
      * fails the build if one ever appears.
      */
-    private fun listeningPorts(): List<ListeningPort>? = all("port")?.mapNotNull { row ->
+    private fun listeningPorts(): List<ListeningPort>? {
+        // An empty port table is a real and good answer; a failed read is not.
+        if (one("port.enumerated") == null) return null
+        return all("port").orEmpty().mapNotNull { row ->
         val parts = row.split('\t')
         if (parts.size < 2) return@mapNotNull null
         val port = parts[1].toIntOrNull() ?: return@mapNotNull null
@@ -254,35 +272,76 @@ internal class WindowsCollector : PlatformCollector {
             port = port,
             process = parts.getOrNull(2)?.takeIf { it.isNotBlank() }
         )
+        }
     }
 
     // ---------------------------------------------------------- persistence
 
     /**
-     * Programs that start at sign-in: the two Run keys and the two Startup
-     * folders, which is where consumer malware actually lives.
+     * Programs that start themselves, from every mechanism that can be read
+     * without elevation.
      *
-     * Deliberately *not* a full Autoruns sweep — services and scheduled tasks
-     * need elevation to enumerate reliably, and a partial sweep presented as
-     * complete is the kind of half-truth this app exists to avoid. The finding
-     * says "starts automatically", never "this is everything that does".
+     * ## What changed, and why the old comment here was the bug
+     *
+     * This used to read four locations -- two Run keys, two Startup folders --
+     * under a comment stating that services and scheduled tasks "need elevation
+     * to enumerate reliably" and that a partial sweep presented as complete was
+     * the kind of half-truth this app exists to avoid.
+     *
+     * The second half of that was right and the first half was false. Measured
+     * in a plain non-elevated session: `Get-ScheduledTask` returned all 210
+     * tasks and `Win32_Service` all 306. So the app was performing exactly the
+     * partial sweep its own comment warned against, and the justification for
+     * doing so did not survive being tested.
+     *
+     * Concretely, on the development machine: 9 entries shown, 39 more sitting
+     * in places never looked at -- 20 third-party scheduled tasks, 15
+     * auto-start services outside system32, 2 RunOnce values, and Winlogon's
+     * `Shell` and `Userinit`. Scheduled tasks are where commodity malware
+     * actually persists now, for the same reason burglars stopped trying the
+     * front door.
+     *
+     * Still not everything: WMI event subscriptions and COM hijacks are not
+     * read, and the finding says "starts automatically", never "this is
+     * everything that does".
      */
-    private fun autoRunEntries(): List<AutoRunEntry>? = all("autorun")?.mapNotNull { row ->
-        val parts = row.split('\t')
-        if (parts.size < 2 || parts[0].isBlank()) return@mapNotNull null
-        AutoRunEntry(
-            name = parts[0],
-            location = parts[1],
-            command = parts.getOrNull(2)?.takeIf { it.isNotBlank() }?.take(200),
-            // "Valid" / "NotSigned" / anything else. Only a positive "NotSigned"
-            // becomes false; an unverifiable path stays null, and DSK-AUTO-001
-            // ignores nulls rather than accusing a legitimate tool.
-            signedByKnownVendor = when (parts.getOrNull(3)) {
-                "Valid" -> true
-                "NotSigned", "HashMismatch" -> false
-                else -> null
-            }
-        )
+    private fun autoRunEntries(): List<AutoRunEntry>? {
+        // At least one source has to have worked. Rows from the sources that
+        // did are kept even when another failed; which ones failed is reported
+        // separately in autoRunSourcesUnread rather than folded into silence.
+        if (all("autorun.read").isNullOrEmpty()) return null
+        return all("autorun").orEmpty().mapNotNull { row ->
+            val parts = row.split('	')
+            if (parts.size < 2 || parts[0].isBlank()) return@mapNotNull null
+            AutoRunEntry(
+                // Attacker-chosen text on its way to a screen. A right-to-left
+                // override here reverses how the rest of the row reads.
+                name = DisplaySafe.label(parts[0]),
+                location = parts[1],
+                command = parts.getOrNull(2)?.takeIf { it.isNotBlank() }?.take(200),
+                // "Valid" / "NotSigned" / anything else. Only a positive "NotSigned"
+                // becomes false; an unverifiable path stays null, and DSK-AUTO-001
+                // ignores nulls rather than accusing a legitimate tool.
+                signedByKnownVendor = when {
+                    // A binary inside an MSIX/Store package carries no
+                    // Authenticode signature of its own -- the PACKAGE is
+                    // signed, and Windows verifies it at install time. Reading
+                    // "NotSigned" off one of these and calling it unsigned
+                    // would accuse every Store app on the machine, starting
+                    // with Intel's own graphics service on this one. We cannot
+                    // verify the package signature from here, so the honest
+                    // answer is that this route cannot tell -- null, not false.
+                    parts.getOrNull(2)?.contains(WINDOWS_APPS, ignoreCase = true) == true -> null
+                    else -> when (parts.getOrNull(3)) {
+                        "Valid" -> true
+                        "NotSigned", "HashMismatch" -> false
+                        else -> null
+                    }
+                },
+                kind = parts.getOrNull(4)?.takeIf { it.isNotBlank() },
+                usesSystemBinary = parts.getOrNull(5)?.let { it.equals("True", ignoreCase = true) }
+            )
+        }
     }
 
     // -------------------------------------------------------- removable media
@@ -302,7 +361,7 @@ internal class WindowsCollector : PlatformCollector {
             val letter = f.getOrNull(0)?.trim()?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
             RemovableDrive(
                 letter = letter + ":",
-                label = f.getOrNull(1)?.trim()?.takeIf { it.isNotBlank() },
+                label = f.getOrNull(1)?.trim()?.takeIf { it.isNotBlank() }?.let { DisplaySafe.label(it) },
                 fileSystem = f.getOrNull(2)?.trim()?.takeIf { it.isNotBlank() },
                 sizeBytes = f.getOrNull(3)?.trim()?.toLongOrNull(),
                 // Same shell property as the system drive: 1 and 5 are protected,
@@ -333,9 +392,9 @@ internal class WindowsCollector : PlatformCollector {
             val name = f.getOrNull(0)?.trim().orEmpty()
             if (name.isEmpty()) return@mapNotNull null
             InstalledProgram(
-                name = name,
+                name = DisplaySafe.label(name),
                 version = f.getOrNull(1)?.trim()?.takeIf { it.isNotBlank() },
-                publisher = f.getOrNull(2)?.trim()?.takeIf { it.isNotBlank() },
+                publisher = f.getOrNull(2)?.trim()?.takeIf { it.isNotBlank() }?.let { DisplaySafe.label(it) },
                 installLocation = f.getOrNull(3)?.trim()?.takeIf { it.isNotBlank() },
                 userWritableLocation = f.getOrNull(4)?.trim().equals("True", ignoreCase = true)
             )
@@ -374,6 +433,11 @@ internal class WindowsCollector : PlatformCollector {
     }
 
     override fun screenLockTimeoutSeconds(): Int? = int("lock.screenSaverTimeout")
+
+    private companion object {
+        /** Store/MSIX install root. Binaries here are signed at package level. */
+        const val WINDOWS_APPS = "\\Program Files\\WindowsApps\\"
+    }
 
     /**
      * Certificates added to this user's root store and not present machine-wide.

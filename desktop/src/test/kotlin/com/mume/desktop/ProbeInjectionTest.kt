@@ -46,10 +46,17 @@ class ProbeInjectionTest {
     /** `San` sanitises one field, so it must strip every structural character. */
     @Test
     fun `San strips tab, CR and LF`() {
-        val san = script.lines().firstOrNull { it.contains("function San(") }
-        assertTrue(san != null, "the per-field sanitiser San() is missing entirely")
+        // The whole body, not the declaration line: San grew a length cap and
+        // spans several lines now, and a test that reads only the first one
+        // would report the sanitiser missing the moment it was formatted.
+        val san = script.lines()
+            .dropWhile { !it.contains("function San(") }
+            .takeWhile { !it.contains("function Emit(") }
+            .joinToString(System.lineSeparator())
+
+        assertTrue(san.isNotBlank(), "the per-field sanitiser San() is missing entirely")
         listOf(CR, LF, TAB).forEach {
-            assertTrue(san!!.contains(it), "San must strip '$it': $san")
+            assertTrue(san.contains(it), "San must strip '$it': $san")
         }
     }
 
