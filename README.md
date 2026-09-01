@@ -98,14 +98,14 @@ rather than presenting meaningless password and link verdicts as findings.
 
 ## What it checks
 
-**47 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
+**49 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
 rather than estimated:
 
 | Platform | Eligible | Run on an *idealised* device | Not checkable |
 |---|---|---|---|
-| Android | 29 | 29 | 18 (the desktop-only rules) |
-| iPhone | 15 | 12 | 35 |
-| Desktop | 29 | 28 | 19 |
+| Android | 29 | 29 | 20 (the desktop-only rules) |
+| iPhone | 15 | 12 | 37 |
+| Desktop | 31 | 30 | 19 |
 
 Those are fixture numbers — a device that answers every question it can. **A real
 machine answers fewer.** On the development laptop (Windows 11, standard user, no
@@ -150,6 +150,14 @@ The asymmetry is real and every app says so on screen — listing what it could
 - **Programs that start themselves**, reported only when the platform positively
   says the binary is unsigned. An unverifiable signature is *not* an unsigned
   one.
+- **Removable media.** Two things about a USB stick are answerable offline and
+  Mume checks exactly those: whether the AutoRun policy has been *explicitly
+  weakened* from the Windows default (absent means hardened — Microsoft turned
+  autorun off for removable drives in 2011, so a rule that warned about plain
+  AutoPlay would fire on every machine alive), and whether a drive that is
+  attached right now is encrypted. Nothing plugged in reports as *not checkable*,
+  never as a pass. It also shows every drive and phone the computer still
+  remembers — not a finding, never scored, just your machine's memory of you.
 - **Installed software**, read from the OS's own uninstall registry. Two things
   are checkable offline and Mume checks exactly those: software **past its
   vendor's security support** (matched against a catalogue of products whose EOL
@@ -399,6 +407,9 @@ Stated here because the app says the same thing on screen:
   this build. Deferred to a separate, separately-installable module.
 - **Any product analytics.** We do not know how many people use which feature,
   and cannot find out.
+- **Scan the contents of a USB stick.** Mume never opens files on a drive,
+  hashes them, or checks them against anything. That is an antivirus and it
+  needs a server.
 - **Tell you whether a program is malware.** The desktop lists what is installed
   and checks two offline properties of it. Hashing files and asking a reputation
   service is what an antivirus does, and it needs a server.

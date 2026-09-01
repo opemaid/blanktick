@@ -15,6 +15,7 @@ import com.mume.core.model.PasswordAudit
 import com.mume.core.model.Platform
 import com.mume.core.model.ProxyInfo
 import com.mume.core.model.RemoteAccessService
+import com.mume.core.model.RemovableDrive
 import com.mume.core.model.ScreenLock
 import com.mume.core.model.Severity
 import com.mume.core.model.WifiSecurity
@@ -164,6 +165,15 @@ object Snapshots {
             // in a user-writable folder names its publisher -- which is the
             // shape of every real user-writable install measured on the
             // development machine (11 of them, all attributed).
+            autoRunBlockedForRemovable = true,
+            // One attached, encrypted drive rather than none: an empty list makes
+            // DSK-USB-002 report not-checkable, which would leave the pass path
+            // untested by the fixture that exists to prove a healthy machine
+            // scores 100.
+            removableDrives = listOf(
+                RemovableDrive("E:", "BACKUP", "exFAT", 64L * 1024 * 1024 * 1024, encrypted = true)
+            ),
+            rememberedUsbDevices = listOf("SanDisk Ultra"),
             installedPrograms = listOf(
                 InstalledProgram("Google Chrome", "151.0.7922.175", "Google LLC", "C:/Program Files/Google/Chrome"),
                 InstalledProgram("Python 3.12.10", "3.12.10150.0", "Python Software Foundation"),

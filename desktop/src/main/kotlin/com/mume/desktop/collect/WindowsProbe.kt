@@ -190,6 +190,51 @@ internal object WindowsProbe {
         # like a clean pass.
         Emit 'cert.storeRead' 'True'
 
+        # ---- removable media --------------------------------------------------
+        # AutoRun policy. ABSENT is the hardened Windows 10/11 default -- autorun
+        # on removable drives has been off since 2011 -- so absence is reported as
+        # blocked, not as unknown. Bit 0x04 is DRIVE_REMOVABLE: set means autorun
+        # is disabled for that class, clear means it is allowed.
+        ${'$'}arRaw = ${'$'}null
+        foreach (${'$'}k in @(
+            'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer',
+            'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer')) {
+          ${'$'}v = Reg ${'$'}k 'NoDriveTypeAutoRun'
+          if (${'$'}null -ne ${'$'}v) { ${'$'}arRaw = ${'$'}v }
+        }
+        if (${'$'}null -eq ${'$'}arRaw) {
+          Emit 'usb.autorunBlocked' 'True'
+        } else {
+          Emit 'usb.autorunBlocked' ((([int]${'$'}arRaw) -band 0x04) -ne 0)
+        }
+
+        # Removable drives attached right now, with their encryption state read
+        # through the same unprivileged shell property used for the system drive.
+        # Reuses the single Shell.Application handle created for the system-drive
+        # BitLocker read above. WindowsProbeTest asserts there is exactly ONE
+        # New-Object in this script, so a second handle here fails the build --
+        # which is the guard working, not an obstacle to route around.
+        foreach (${'$'}vol in Get-Volume | Where-Object { ${'$'}_.DriveType -eq 'Removable' -and ${'$'}_.DriveLetter }) {
+          ${'$'}bl = ${'$'}shell.NameSpace("${'$'}(${'$'}vol.DriveLetter):\").Self.ExtendedProperty('System.Volume.BitLockerProtection')
+          Emit 'drive' ("{0}`t{1}`t{2}`t{3}`t{4}" -f ${'$'}vol.DriveLetter, (San ${'$'}vol.FileSystemLabel), (San ${'$'}vol.FileSystem), ${'$'}vol.Size, ${'$'}bl)
+        }
+        # Emitted so "no drive attached" can be told apart from "the enumeration
+        # failed" -- the rule reports not-checkable for the first and must not
+        # treat either as a pass.
+        Emit 'drive.enumerated' 'True'
+
+        # What this computer remembers having been plugged in. Not a finding and
+        # never scored: it is shown because a machine quietly keeping a list of
+        # every stick and handset you have ever connected is something people are
+        # surprised to learn.
+        foreach (${'$'}d in Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\Windows Portable Devices\Devices') {
+          ${'$'}n = (Get-ItemProperty ${'$'}d.PSPath -Name FriendlyName).FriendlyName
+          if (${'$'}n) { Emit 'usbdevice' (San ${'$'}n) }
+        }
+        foreach (${'$'}d in Get-ChildItem 'HKLM:\SYSTEM\CurrentControlSet\Enum\USBSTOR') {
+          Emit 'usbdevice' (San (${'$'}d.PSChildName -replace '^Disk&Ven_' , '' -replace '&Rev_.*' , '' -replace '&Prod_' , ' '))
+        }
+
         # ---- installed software ---------------------------------------------
         # The OS's own uninstall registry -- the same source Settings > Apps
         # reads. No elevation, no filesystem walk, nothing hashed.

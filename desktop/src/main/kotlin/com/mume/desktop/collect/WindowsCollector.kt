@@ -7,6 +7,7 @@ import com.mume.core.model.DesktopOs
 import com.mume.core.model.InstalledProgram
 import com.mume.core.model.ListeningPort
 import com.mume.core.model.RemoteAccessService
+import com.mume.core.model.RemovableDrive
 import com.mume.core.model.ScreenLock
 
 /**
@@ -103,7 +104,11 @@ internal class WindowsCollector : PlatformCollector {
             listeningPorts = listeningPorts(),
 
             autoRunEntries = autoRunEntries(),
-            installedPrograms = installedPrograms()
+            installedPrograms = installedPrograms(),
+
+            autoRunBlockedForRemovable = bool("usb.autorunBlocked"),
+            removableDrives = removableDrives(),
+            rememberedUsbDevices = all("usbdevice")?.distinct()?.sorted()
         )
     }
 
@@ -278,6 +283,38 @@ internal class WindowsCollector : PlatformCollector {
                 else -> null
             }
         )
+    }
+
+    // -------------------------------------------------------- removable media
+
+    /**
+     * Drives attached right now.
+     *
+     * `null` only when the enumeration failed, so "nothing plugged in" (an empty
+     * list) stays distinguishable from "could not look". `DSK-USB-002` treats
+     * both as not-checkable, but for different reasons, and the probe screen
+     * shows which.
+     */
+    private fun removableDrives(): List<RemovableDrive>? {
+        if (one("drive.enumerated") == null) return null
+        return all("drive").orEmpty().mapNotNull { row ->
+            val f = row.split('	')
+            val letter = f.getOrNull(0)?.trim()?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            RemovableDrive(
+                letter = letter + ":",
+                label = f.getOrNull(1)?.trim()?.takeIf { it.isNotBlank() },
+                fileSystem = f.getOrNull(2)?.trim()?.takeIf { it.isNotBlank() },
+                sizeBytes = f.getOrNull(3)?.trim()?.toLongOrNull(),
+                // Same shell property as the system drive: 1 and 5 are protected,
+                // 2 and 6 are not, anything else is unknown and stays null rather
+                // than being rounded towards a verdict.
+                encrypted = when (f.getOrNull(4)?.trim()) {
+                    "1", "5" -> true
+                    "2", "6" -> false
+                    else -> null
+                }
+            )
+        }
     }
 
     // ------------------------------------------------------ installed software

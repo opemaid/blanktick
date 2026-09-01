@@ -71,6 +71,7 @@ fun MumeApp(state: AppState) {
                     Screen.PASSWORDS -> PasswordScreen(state)
                     Screen.PHOTOS -> PhotoScreen(state)
                     Screen.SOFTWARE -> SoftwareScreen(state)
+                    Screen.USB -> UsbScreen(state)
                     Screen.SETTINGS -> SettingsScreen(state)
                     Screen.ABOUT -> AboutScreen(state)
                 }

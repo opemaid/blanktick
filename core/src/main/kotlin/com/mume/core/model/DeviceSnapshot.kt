@@ -269,6 +269,30 @@ data class DesktopFacts(
     /** Programs configured to start automatically at login or boot. */
     val autoRunEntries: List<AutoRunEntry>? = null,
 
+    // ---- Removable media --------------------------------------------------
+    /**
+     * Whether Windows is configured to refuse `autorun.inf` on removable media.
+     *
+     * `true` also covers "the policy is absent", because absent means the
+     * shipping default, and since 2011 that default has been to ignore autorun
+     * on removable drives. A rule that fired on every stock machine would be
+     * noise, so only an explicitly weakened policy is a finding.
+     */
+    val autoRunBlockedForRemovable: Boolean? = null,
+
+    /** Removable drives attached right now. Empty list means none plugged in. */
+    val removableDrives: List<RemovableDrive>? = null,
+
+    /**
+     * Devices this computer remembers having been connected — USB sticks, phones.
+     *
+     * Not a vulnerability and never scored. It is shown because a machine
+     * quietly keeping a list of every drive and handset you have ever plugged in
+     * is the kind of thing people are surprised to learn, and this product's job
+     * is to tell them what their computer knows.
+     */
+    val rememberedUsbDevices: List<String>? = null,
+
     // ---- Installed software -----------------------------------------------
     /**
      * What is installed, as the OS's own uninstall registry reports it.
@@ -297,6 +321,23 @@ data class DesktopFacts(
  *   and also where WinGet, VS Code and Discord legitimately live, which is why
  *   this is never a finding on its own.
  */
+/**
+ * A removable drive currently attached.
+ *
+ * @param encrypted `null` when the encryption state could not be read, which is
+ *   common on a drive formatted by another operating system. Never guessed:
+ *   telling someone an encrypted drive is unprotected sends them to re-encrypt
+ *   something that already is, and telling them an unencrypted one is fine is
+ *   worse.
+ */
+data class RemovableDrive(
+    val letter: String,
+    val label: String? = null,
+    val fileSystem: String? = null,
+    val sizeBytes: Long? = null,
+    val encrypted: Boolean? = null
+)
+
 data class InstalledProgram(
     val name: String,
     val version: String? = null,

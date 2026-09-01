@@ -175,6 +175,11 @@ private fun printProbe() {
     println("listeningPorts                 ${d?.listeningPorts?.size ?: "null"} entries")
     println("autoRunEntries                 ${d?.autoRunEntries?.size ?: "null"} entries")
     println("installedPrograms              ${d?.installedPrograms?.size ?: "null"} entries")
+    println("autoRunBlockedForRemovable     ${d?.autoRunBlockedForRemovable}")
+    println("removableDrives                ${d?.removableDrives?.size ?: "null"} attached")
+    d?.removableDrives?.forEach { println("    ${it.letter} ${it.label} encrypted=${it.encrypted}") }
+    println("rememberedUsbDevices           ${d?.rememberedUsbDevices?.size ?: "null"}")
+    d?.rememberedUsbDevices?.forEach { println("    $it") }
     d?.installedPrograms?.filter { it.userWritableLocation }?.let {
         println("   ...of which user-writable:  ${it.size}  (no publisher: ${it.count { p -> p.publisher.isNullOrBlank() }})")
     }

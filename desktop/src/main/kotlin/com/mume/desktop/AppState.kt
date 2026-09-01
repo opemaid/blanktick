@@ -29,6 +29,7 @@ enum class Screen(val title: String) {
     PASSWORDS("Check a password"),
     PHOTOS("Photo locations"),
     SOFTWARE("Installed software"),
+    USB("USB & drives"),
     SETTINGS("Settings"),
     ABOUT("About")
 }
@@ -106,6 +107,18 @@ class AppState(private val scope: CoroutineScope) {
     private val _settings = MutableStateFlow(Settings.load())
     val settings: StateFlow<Settings> = _settings.asStateFlow()
 
+    /**
+     * The desktop block from the last scan.
+     *
+     * Held so the software and USB screens can show what the scan already read,
+     * rather than each running its own collection pass. One scan, one set of
+     * facts — a screen that re-queried independently could disagree with the
+     * dashboard, and then neither would be trustworthy.
+     */
+    private val _desktopFacts = MutableStateFlow<com.mume.core.model.DesktopFacts?>(null)
+    var desktopFacts: com.mume.core.model.DesktopFacts? = null
+        private set
+
     /** Null until a scan has run: the inventory is a product of the scan, not a separate walk. */
     private val _programs = MutableStateFlow<List<com.mume.core.model.InstalledProgram>?>(null)
     val programs: StateFlow<List<com.mume.core.model.InstalledProgram>?> = _programs.asStateFlow()
@@ -158,6 +171,7 @@ class AppState(private val scope: CoroutineScope) {
                             photosWithPreciseLocation = _photos.value.takeIf { it.done }?.withLocation
                         )
                     _programs.value = snapshot.desktop?.installedPrograms
+                    desktopFacts = snapshot.desktop
                     scanner.scan(snapshot)
                 }
             }

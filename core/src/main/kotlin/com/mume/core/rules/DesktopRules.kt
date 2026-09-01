@@ -713,6 +713,105 @@ object DesktopRules {
         }
     }
 
+    // ------------------------------------------------------- removable media
+
+    /**
+     * AutoRun re-enabled for removable media.
+     *
+     * ## Why this fires so rarely, on purpose
+     *
+     * `autorun.inf` executing itself off a USB stick was how Conficker and a
+     * decade of worms spread, and it is the check every "USB security" article
+     * still tells you to make. On Windows 10 and 11 it is **already off**:
+     * Microsoft disabled autorun for removable drives in 2011 and the policy key
+     * is absent on a stock machine precisely because the hardened behaviour is
+     * the default.
+     *
+     * So an absent policy is a **pass**, not a finding and not "not checkable".
+     * This rule fires only when someone or something has explicitly written a
+     * permissive value back — which is a deliberate act, and worth knowing about.
+     *
+     * Measured on the development machine before shipping: policy absent in both
+     * HKLM and HKCU, so this passes. A rule written the obvious way — "AutoPlay
+     * is enabled, warn" — would fire on essentially every Windows machine alive,
+     * and a check that always fires is one people learn to dismiss.
+     */
+    val AutoRunOnRemovable = object : BaseRule(
+        id = "DSK-USB-001",
+        category = Category.DEVICE_INTEGRITY,
+        description = "Programs cannot auto-run from a USB stick",
+        platforms = Platforms.DESKTOP_ONLY
+    ) {
+        override fun check(s: DeviceSnapshot) = facts(s) { d ->
+            val blocked = d.autoRunBlockedForRemovable ?: return@facts RuleOutcome.NotApplicable
+            if (blocked) return@facts RuleOutcome.Pass
+
+            RuleOutcome.Fail(
+                Finding(
+                    ruleId = id,
+                    category = category,
+                    severity = Severity.HIGH,
+                    title = "Programs can start themselves from a plugged-in drive",
+                    detail = "The AutoRun policy on this computer has been changed from the " +
+                        "Windows default to allow removable drives to run a program the moment " +
+                        "they are connected. Windows turned that off in 2011 because it was how " +
+                        "USB worms spread, so something here turned it back on.",
+                    remediation = "Set AutoPlay back to the default: Settings, then Bluetooth & " +
+                        "devices, then AutoPlay, and choose to take no action for removable drives.",
+                    evidence = mapOf("autoRunBlockedForRemovable" to "false")
+                )
+            )
+        }
+    }
+
+    /**
+     * A removable drive that is attached and not encrypted.
+     *
+     * Checked only while something is actually plugged in — there is no way to
+     * know retrospectively whether a stick that was here last week was
+     * encrypted, and pretending otherwise would be inventing a finding. No drive
+     * attached therefore reports not-checkable rather than passing: "nothing is
+     * wrong" and "there was nothing to look at" are different answers.
+     */
+    val UnencryptedRemovableDrive = object : BaseRule(
+        id = "DSK-USB-002",
+        category = Category.ACCOUNT_SECURITY,
+        description = "Attached removable drives are encrypted",
+        platforms = Platforms.DESKTOP_ONLY
+    ) {
+        override fun check(s: DeviceSnapshot) = facts(s) { d ->
+            val drives = d.removableDrives ?: return@facts RuleOutcome.NotApplicable
+            if (drives.isEmpty()) return@facts RuleOutcome.NotApplicable
+
+            // A drive whose state could not be read is excluded, not accused.
+            val unencrypted = drives.filter { it.encrypted == false }
+            if (unencrypted.isEmpty()) return@facts RuleOutcome.Pass
+
+            RuleOutcome.Fail(
+                unencrypted.take(4).map { drive ->
+                    Finding(
+                        ruleId = id,
+                        category = category,
+                        severity = Severity.MEDIUM,
+                        title = "Drive " + drive.letter + " is not encrypted",
+                        detail = (drive.label?.let { "\"" + it + "\" (" + drive.letter + ")" }
+                            ?: ("The drive at " + drive.letter)) +
+                            " is readable by any computer it is plugged into. A memory stick is " +
+                            "the easiest thing you own to lose, and whoever finds it does not " +
+                            "need your password to read it.",
+                        remediation = "Right-click the drive and choose Turn on BitLocker, then " +
+                            "keep the recovery key somewhere other than the drive itself.",
+                        subjectId = drive.letter,
+                        evidence = buildMap {
+                            drive.label?.let { put("label", it) }
+                            drive.fileSystem?.let { put("fileSystem", it) }
+                        }
+                    )
+                }
+            )
+        }
+    }
+
     val ALL: List<Rule> = listOf(
         // Perimeter
         FirewallOff, RemoteAccessEnabled, PubliclyBoundServices,
@@ -727,6 +826,8 @@ object DesktopRules {
         // Persistence
         UnsignedAutoRuns,
         // Installed software
-        EndOfLifeSoftware, UnattributedUserInstall
+        EndOfLifeSoftware, UnattributedUserInstall,
+        // Removable media
+        AutoRunOnRemovable, UnencryptedRemovableDrive
     )
 }

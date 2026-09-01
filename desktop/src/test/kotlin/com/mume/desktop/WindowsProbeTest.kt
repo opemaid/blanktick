@@ -118,6 +118,7 @@ class WindowsProbeTest {
                 "bitlocker.protection",
                 "cert", "cert.storeRead",
                 "dns",
+                "drive", "drive.enumerated",
                 "fw.profile",
                 "lock.screenSaverActive", "lock.screenSaverIsSecure", "lock.screenSaverTimeout",
                 "os.build",
@@ -128,6 +129,7 @@ class WindowsProbeTest {
                 "secureboot.enabled",
                 "smartscreen.explorer", "smartscreen.policy",
                 "ssh.status",
+                "usb.autorunBlocked", "usbdevice",
                 "update.daysSinceLast", "update.noAutoUpdate", "update.serviceStartType"
             ),
             emitted,
