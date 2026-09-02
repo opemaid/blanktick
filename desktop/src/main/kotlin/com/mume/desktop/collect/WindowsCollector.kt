@@ -1,6 +1,7 @@
 package com.mume.desktop.collect
 
 import com.mume.core.analysis.DisplaySafe
+import com.mume.core.model.AiFacts
 import com.mume.core.model.AntivirusPosture
 import com.mume.core.model.AutoRunEntry
 import com.mume.core.model.CaCertificate
@@ -8,7 +9,9 @@ import com.mume.core.model.DesktopFacts
 import com.mume.core.model.DesktopOs
 import com.mume.core.model.HardeningFacts
 import com.mume.core.model.InstalledProgram
+import com.mume.core.model.CredentialBearingFile
 import com.mume.core.model.ListeningPort
+import com.mume.core.model.McpServer
 import com.mume.core.model.ProcessImage
 import com.mume.core.model.RemoteAccessService
 import com.mume.core.model.RemovableDrive
@@ -175,6 +178,7 @@ internal class WindowsCollector : PlatformCollector {
             // "nothing matched the malware list" and "hashing silently returned
             // nothing" are the same output.
             fileHashingWorks = one("hash.selfTest")?.let { it.length == 64 },
+            ai = aiFacts(),
             hardening = hardening(),
             antivirusPosture = antivirusPosture(),
 
@@ -473,6 +477,36 @@ internal class WindowsCollector : PlatformCollector {
                 antivirusVerdict = verdictFor(f.getOrNull(1))
             )
         }
+    }
+
+    /**
+     * Tools granted to a language model, and Windows' own AI features.
+     *
+     * `null` until the config files have been looked at, so "no MCP servers
+     * configured" stays distinguishable from "the files were never read".
+     */
+    private fun aiFacts(): AiFacts? {
+        if (one("ai.configsRead") == null) return null
+        return AiFacts(
+            mcpServers = all("ai.mcpServer").orEmpty().mapNotNull { row ->
+                val f = row.split('	')
+                val name = f.getOrNull(0)?.trim()?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                McpServer(
+                    name = DisplaySafe.label(name),
+                    launcher = f.getOrNull(1)?.trim()?.takeIf { it.isNotBlank() }
+                        ?.let { DisplaySafe.label(it) },
+                    configFile = f.getOrNull(2)?.trim().orEmpty()
+                )
+            },
+            configsWithCredentials = all("ai.configSecrets").orEmpty().mapNotNull { row ->
+                val f = row.split('	')
+                val path = f.getOrNull(0)?.trim()?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                CredentialBearingFile(path, f.getOrNull(1)?.trim()?.toIntOrNull() ?: 1)
+            },
+            recallDisabled = bool("ai.recallDisabled"),
+            recallStorePresent = bool("ai.recallStorePresent"),
+            recallArtifactCount = int("ai.recallArtifacts")
+        )
     }
 
     // ------------------------------------------------------------- hardening

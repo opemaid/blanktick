@@ -98,14 +98,14 @@ rather than presenting meaningless password and link verdicts as findings.
 
 ## What it checks
 
-**64 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
+**68 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
 rather than estimated:
 
 | Platform | Eligible | Run on an *idealised* device | Not checkable |
 |---|---|---|---|
-| Android | 29 | 29 | 35 (the desktop-only rules) |
-| iPhone | 15 | 12 | 52 |
-| Desktop | 46 | 45 | 19 |
+| Android | 29 | 29 | 39 (the desktop-only rules) |
+| iPhone | 15 | 12 | 56 |
+| Desktop | 50 | 49 | 19 |
 
 Those are fixture numbers — a device that answers every question it can. **A real
 machine answers fewer.** On the development laptop (Windows 11, standard user, no
@@ -256,6 +256,29 @@ The asymmetry is real and every app says so on screen — listing what it could
   corpus: `python tools/build_intel.py --malware hashes.txt`, where the file
   holds one SHA-256 per line (or CSV with the hash first). Any line that is not
   64 hex characters is skipped.
+- **The AI surface** — new, and as far as this project can tell, unaudited by
+  anything else on a consumer machine. Two things arrived on ordinary computers
+  in the last couple of years:
+
+  A **local model server** is an HTTP API with no authentication, because it is
+  meant to be reachable only from the machine it runs on. Bound to every
+  interface instead — on office, hotel or café Wi-Fi — anyone who scans the
+  subnet can use your hardware and read whatever the models are handling. Mume
+  matches on the *program* rather than the port, because people move these to
+  other ports and a port list would flag whatever else was on 8080.
+
+  A **tool configuration** is a plain JSON file naming programs a language model
+  is allowed to run. That is the more interesting one: an entry in it executes
+  commands, and it appears in no Run key, no scheduled task and no service — so
+  every autorun checker ever written looks straight past it, including the
+  thirteen-source sweep above. Mume does not judge whether the tools are
+  appropriate; you chose them. It reports what was granted, because hardly
+  anyone has reread that file since the day they pasted something into it.
+
+  Also: API keys sitting in plain text in those files (**counted, never read** —
+  the same rule the auto-logon password follows), and Windows Recall keeping a
+  searchable record of your screen. Recall reports as *not checkable* on
+  hardware that does not have it, which is most machines, rather than passing.
 - **Machine hardening**: User Account Control, whether sign-in credentials are
   left readable in memory, SMBv1, LLMNR, remote-administration services, and
   whether an auto-logon password is sitting in the registry in cleartext. Mume

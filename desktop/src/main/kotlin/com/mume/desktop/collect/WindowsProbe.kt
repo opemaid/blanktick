@@ -1143,6 +1143,78 @@ internal object WindowsProbe {
           Emit 'av.exclusionsReadable' 'False'
         }
 
+        # ---- the AI surface --------------------------------------------------
+        #
+        # ## Why a consumer security app should look at this at all
+        #
+        # Two things arrived on ordinary machines in the last couple of years and
+        # neither is audited by anything: a **local model server**, which is an
+        # unauthenticated HTTP API by default, and a **tool configuration**,
+        # which is a plain JSON file listing programs a language model is allowed
+        # to run.
+        #
+        # The second is the interesting one. An entry in that file grants a model
+        # the ability to execute a command, and the file lives in AppData where
+        # any program running as the user can append to it. It is a persistence
+        # and execution mechanism that appears in no Run key, no scheduled task
+        # and no service list -- so every autorun checker ever written, including
+        # the one above, looks straight past it.
+        #
+        # Mume does not judge whether the tools are appropriate. The user chose
+        # them. It reports what was granted, because almost nobody has read that
+        # file since the day they pasted something into it.
+
+        # MCP configurations, which are the tool grants.
+        ${'$'}aiConfigs = @(
+          (Join-Path ${'$'}env:APPDATA 'Claude\claude_desktop_config.json'),
+          (Join-Path ${'$'}env:USERPROFILE '.claude.json'),
+          (Join-Path ${'$'}env:USERPROFILE '.cursor\mcp.json'),
+          (Join-Path ${'$'}env:USERPROFILE '.codeium\windsurf\mcp_config.json')
+        )
+        ${'$'}aiOk = ${'$'}true
+        try {
+          foreach (${'$'}cfg in ${'$'}aiConfigs) {
+            if (-not (Test-Path -LiteralPath ${'$'}cfg -PathType Leaf)) { continue }
+            ${'$'}raw = Get-Content -LiteralPath ${'$'}cfg -Raw -ErrorAction Stop
+
+            # Credential-shaped strings. The COUNT is emitted and the value never
+            # is -- the same rule the auto-logon password check follows, for the
+            # same reason: an app that copies a secret into its own report has
+            # made the problem worse while describing it.
+            ${'$'}secretPattern = '(sk-[A-Za-z0-9_\-]{20,})|(AIza[0-9A-Za-z_\-]{30,})|(ghp_[A-Za-z0-9]{30,})|("[A-Z_]*(?:API_?KEY|TOKEN|SECRET)"\s*:\s*"[^"]{12,}")'
+            ${'$'}hits = [regex]::Matches(${'$'}raw, ${'$'}secretPattern).Count
+            if (${'$'}hits -gt 0) { Emit 'ai.configSecrets' ("{0}`t{1}" -f (San ${'$'}cfg), ${'$'}hits) }
+
+            ${'$'}parsed = ${'$'}null
+            try { ${'$'}parsed = ${'$'}raw | ConvertFrom-Json } catch { ${'$'}parsed = ${'$'}null }
+            if (-not ${'$'}parsed -or -not ${'$'}parsed.mcpServers) { continue }
+            foreach (${'$'}sv in ${'$'}parsed.mcpServers.PSObject.Properties) {
+              ${'$'}launcher = "${'$'}(${'$'}sv.Value.command)"
+              Emit 'ai.mcpServer' ("{0}`t{1}`t{2}" -f (San ${'$'}sv.Name), (San ${'$'}launcher), (San ${'$'}cfg))
+            }
+          }
+        } catch { ${'$'}aiOk = ${'$'}false }
+        if (${'$'}aiOk) { Emit 'ai.configsRead' 'True' }
+
+        # Windows Recall keeps screenshots of everything you do, plus text
+        # extracted from them, in a local database. Nothing leaves the machine,
+        # which is genuinely better than the alternative -- and it also means
+        # anything that can read your files can read a searchable history of
+        # every screen you have looked at.
+        #
+        # Absent on hardware without a neural processor, which is most machines,
+        # and the check reports not-applicable there rather than passing.
+        ${'$'}recallStore = Join-Path ${'$'}env:LOCALAPPDATA 'CoreAIPlatform.00\UKP'
+        if (Test-Path -LiteralPath ${'$'}recallStore) {
+          Emit 'ai.recallStorePresent' 'True'
+          ${'$'}snaps = (Get-ChildItem ${'$'}recallStore -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count
+          Emit 'ai.recallArtifacts' ${'$'}snaps
+        }
+        ${'$'}recallOffUser = Reg 'HKCU:\Software\Policies\Microsoft\Windows\WindowsAI' 'DisableAIDataAnalysis'
+        ${'$'}recallOffMachine = Reg 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI' 'DisableAIDataAnalysis'
+        if (${'$'}null -ne ${'$'}recallOffMachine) { Emit 'ai.recallDisabled' (${'$'}recallOffMachine -eq 1) }
+        elseif (${'$'}null -ne ${'$'}recallOffUser) { Emit 'ai.recallDisabled' (${'$'}recallOffUser -eq 1) }
+
         # ---- completion ------------------------------------------------------
         # The last line of the script, and the one that says the rest can be
         # believed. PowerShell can be killed partway through -- by a crash, by a

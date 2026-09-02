@@ -152,6 +152,8 @@ class WindowsProbeTest {
 
         assertEquals(
             sortedSetOf(
+                "ai.configsRead", "ai.configSecrets", "ai.mcpServer",
+                "ai.recallArtifacts", "ai.recallDisabled", "ai.recallStorePresent",
                 "acct.admin", "acct.adminEnumerated", "acct.currentPasswordRequired", "acct.guestEnabled",
                 "acct.passwordless", "acct.sessionIsAdmin", "acct.userCount",
                 "autorun", "autorun.read", "autorun.failed",

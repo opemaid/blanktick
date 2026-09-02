@@ -5,6 +5,7 @@ import com.mume.core.intel.ClusterRulePack
 import com.mume.core.intel.Perms
 import com.mume.core.model.AutoRunEntry
 import com.mume.core.model.CaCertificate
+import com.mume.core.model.AiFacts
 import com.mume.core.model.AntivirusPosture
 import com.mume.core.model.DesktopFacts
 import com.mume.core.model.HardeningFacts
@@ -213,6 +214,15 @@ object Snapshots {
             // Windows cannot account for. Null would make DSK-CA-001 report
             // not-checkable and leave its pass path untested.
             machineAddedRootCerts = emptyList(),
+            // A developer machine with tool servers configured, none of them
+            // launched through a shell, and no keys in the files. Populated
+            // rather than null so the AI rules are actually exercised.
+            ai = AiFacts(
+                mcpServers = emptyList(),
+                configsWithCredentials = emptyList(),
+                recallStorePresent = false,
+                recallDisabled = null
+            ),
             // Two of the listening sockets are permitted inbound by a firewall
             // rule, which is the real shape of a developer machine.
             reachableFromNetwork = emptyList(),

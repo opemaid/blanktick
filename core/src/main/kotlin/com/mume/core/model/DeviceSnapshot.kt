@@ -386,6 +386,14 @@ data class DesktopFacts(
      */
     val fileHashingWorks: Boolean? = null,
 
+    /**
+     * The AI surface: tools granted to a model, and Windows' own AI features.
+     *
+     * A new category, and one nothing else on a consumer machine audits. `null`
+     * where the platform cannot report it.
+     */
+    val ai: AiFacts? = null,
+
     // ---- Hardening settings ------------------------------------------------
     /**
      * Individually small settings that jointly decide whether a foothold stays
@@ -627,6 +635,60 @@ data class AntivirusPosture(
      */
     val activeThreatNames: List<String>? = null,
     val exclusionPaths: List<String>? = null
+)
+
+/**
+ * What a language model has been granted on this machine, and what Windows'
+ * own AI features are keeping.
+ *
+ * ## Why this is a security surface and not a curiosity
+ *
+ * An MCP entry names a program a model is allowed to run. The file listing them
+ * is plain JSON in a user directory, so anything running as the user can append
+ * to it — and the result executes commands without appearing in any Run key,
+ * scheduled task or service. Every autorun checker ever written, including the
+ * one in this app, looks straight past it.
+ *
+ * Mume does not judge whether the tools are appropriate; the user chose them.
+ * It reports what was granted, because hardly anyone has read that file since
+ * the day they pasted something into it.
+ */
+data class AiFacts(
+    /** Tool servers a model may invoke. Empty list means none configured. */
+    val mcpServers: List<McpServer>? = null,
+    /**
+     * Config files containing credential-shaped strings, and how many.
+     *
+     * The values are never collected — only that something key-shaped is in
+     * there, which is the same discipline the auto-logon password check
+     * follows. An app that copied a secret into its own report would have made
+     * the problem worse while describing it.
+     */
+    val configsWithCredentials: List<CredentialBearingFile>? = null,
+    /** Whether Windows Recall has been switched off by policy. */
+    val recallDisabled: Boolean? = null,
+    /** Whether Recall's local snapshot store exists on disk, and how much is in it. */
+    val recallStorePresent: Boolean? = null,
+    val recallArtifactCount: Int? = null
+)
+
+/**
+ * One tool server a model can invoke.
+ *
+ * @param launcher the program that starts it. A general-purpose shell or
+ *   interpreter here — `cmd`, `powershell`, `bash` — means the grant is
+ *   unrestricted command execution rather than one purpose-built tool.
+ */
+data class McpServer(
+    val name: String,
+    val launcher: String?,
+    val configFile: String
+)
+
+/** A configuration file that appears to contain a credential. Count only. */
+data class CredentialBearingFile(
+    val path: String,
+    val matches: Int
 )
 
 data class AutoRunEntry(

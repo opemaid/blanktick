@@ -5,6 +5,7 @@ import com.mume.core.model.Finding
 import com.mume.core.model.Platform
 import com.mume.core.model.ScanResult
 import com.mume.core.rules.AccountSecurityRules
+import com.mume.core.rules.AiSecurityRules
 import com.mume.core.rules.AppHygieneRules
 import com.mume.core.rules.DataExposureRules
 import com.mume.core.rules.HardeningRules
@@ -158,7 +159,8 @@ object DefaultRules {
             AccountSecurityRules.ALL +
             DesktopRules.ALL +
             HardeningRules.ALL +
-            MalwareRules.ALL
+            MalwareRules.ALL +
+            AiSecurityRules.ALL
 
     val COUNT: Int get() = ALL.size
 
