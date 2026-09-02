@@ -138,6 +138,7 @@ class WindowsProbeTest {
                 "hard.winrmStatus",
                 "lock.screenSaverActive", "lock.screenSaverIsSecure", "lock.screenSaverTimeout",
                 "os.build", "ps.languageMode", "probe.complete",
+                "avscan", "avscan.enumerated", "av.scannerAvailable",
                 "port", "port.enumerated",
                 "process", "process.enumerated", "process.pathUnreadable",
                 "program", "program.enumerated",
@@ -151,6 +152,31 @@ class WindowsProbeTest {
             ),
             emitted,
             "probe keys changed — update WindowsCollector to match"
+        )
+    }
+
+    /**
+     * Handing a file to the antivirus must never let it change the machine.
+     *
+     * `MpCmdRun -Scan` **quarantines what it finds** unless remediation is
+     * disabled. Measured: "found 1 threats. Cleaning started..." and the file
+     * was gone. That would make Mume a program that silently alters your
+     * computer as a side effect of asking a question — the one thing it
+     * promises not to do, arrived at through a side door rather than a
+     * `Set-` cmdlet, which is why the blanket mutation ban above would not have
+     * caught it.
+     */
+    @Test
+    fun `every antivirus scan disables remediation`() {
+        val scans = statements.filter { it.contains("-Scan") && it.contains("mpCmdRun", true) }
+
+        assertTrue(scans.isNotEmpty(), "the Defender scan invocation has gone missing")
+        val unguarded = scans.filterNot { it.contains("-DisableRemediation") }
+        assertTrue(
+            unguarded.isEmpty(),
+            "a scan without -DisableRemediation lets the antivirus quarantine files " +
+                "during what is supposed to be a read-only report: " +
+                unguarded.joinToString(" | ")
         )
     }
 

@@ -309,6 +309,11 @@ private fun printScan() {
             procs.count { it.sha256 != null } + "/" + procs.size + " processes hashed; " +
             (auto.count { it.matchesKnownMalware != null } +
                 procs.count { it.matchesKnownMalware != null }) + " compared against the corpus")
+        val asked = auto.count { it.antivirusVerdict != null } + procs.count { it.antivirusVerdict != null }
+        println("antivirus check  " + (if (asked == 0) "not available (no scanner Mume could ask)"
+            else "$asked files submitted to the installed scanner, read-only; " +
+                (auto.count { it.antivirusVerdict == "threat" } +
+                    procs.count { it.antivirusVerdict == "threat" }) + " flagged"))
     }
     println("score            ${result.score}/100   grade ${result.grade}")
     println("checks run       ${result.checksRun}")

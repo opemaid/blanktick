@@ -85,6 +85,11 @@ internal object WindowsProbe {
           (Get-ItemProperty -Path ${'$'}path -Name ${'$'}name -ErrorAction SilentlyContinue).${'$'}name
         }
 
+        # Files worth a second opinion, gathered as the sweeps run and scanned
+        # in one place at the end. Collecting them rather than scanning inline
+        # keeps the per-file cost in a single, obvious block.
+        ${'$'}script:scanTargets = @()
+
         # SHA-256 of a file, for comparison against the bundled known-malware
         # table. Only ever called on the small set that matters -- the programs
         # that start themselves and the ones running out of personal folders --
@@ -483,6 +488,7 @@ internal object WindowsProbe {
         # inspect one entry must cost that entry and nothing else.
         function EmitAuto(${'$'}name, ${'$'}location, ${'$'}kind, ${'$'}cmd) {
           ${'$'}exe = ExePath ${'$'}cmd
+          if (${'$'}exe) { ${'$'}script:scanTargets += ${'$'}exe }
           ${'$'}status = ''
           if (${'$'}exe) {
             try { ${'$'}status = (Get-AuthenticodeSignature -LiteralPath ${'$'}exe -ErrorAction Stop).Status }
@@ -497,7 +503,7 @@ internal object WindowsProbe {
               if (${'$'}base -and (${'$'}lolbins -contains ${'$'}base.ToLower())) { ${'$'}lol = ${'$'}true }
             } catch { }
           }
-          Emit 'autorun' ("{0}`t{1}`t{2}`t{3}`t{4}`t{5}`t{6}`t{7}" -f (San ${'$'}name), (San ${'$'}location), (San ${'$'}cmd), ${'$'}status, ${'$'}kind, ${'$'}lol, (FromInternet ${'$'}exe), (FileHash ${'$'}exe))
+          Emit 'autorun' ("{0}`t{1}`t{2}`t{3}`t{4}`t{5}`t{6}`t{7}`t{8}" -f (San ${'$'}name), (San ${'$'}location), (San ${'$'}cmd), ${'$'}status, ${'$'}kind, ${'$'}lol, (FromInternet ${'$'}exe), (FileHash ${'$'}exe), (San ${'$'}exe))
         }
 
         function EmitRun(${'$'}key, ${'$'}kind) {
@@ -822,6 +828,7 @@ internal object WindowsProbe {
             }
             # Only the interesting ones are signature-checked: doing it for all
             # 337 costs seconds and tells us nothing about Windows' own files.
+            ${'$'}script:scanTargets += ${'$'}path
             ${'$'}userland = ${'$'}path -match 'AppData|\\Temp\\|\\Downloads\\|\\Users\\Public'
             ${'$'}sig = ''
             if (${'$'}masq -or ${'$'}userland) {
@@ -838,6 +845,87 @@ internal object WindowsProbe {
           # to an unprivileged caller, and "I checked everything" would be false.
           Emit 'process.pathUnreadable' ${'$'}procNoPath
         }
+
+        # ---- asking Windows Defender about the files that matter --------------
+        #
+        # ## The best malware verdict available offline is already installed
+        #
+        # Mume ships a table of known-bad hashes. It is stale the day it is
+        # built and it is defeated by recompiling the file. Meanwhile every
+        # Windows machine has a scanner with signatures a few hours old, and it
+        # is sitting right there. Asking it is strictly better than anything
+        # Mume could bundle.
+        #
+        # What Mume contributes is *which files to ask about*. Defender's
+        # real-time protection checks files as they are written and opened; a
+        # file that arrived before a signature existed can sit on disk unflagged
+        # until something touches it, and the full scan that would find it is
+        # the thing nobody ever runs. Mume already knows the sixty files that
+        # matter -- the ones that start themselves and the ones running out of
+        # personal folders -- so it hands Defender exactly those. Measured: 33
+        # milliseconds each, about two seconds for the set.
+        #
+        # ## -DisableRemediation is not optional here
+        #
+        # Without it, Defender QUARANTINES what it finds. Measured: "found 1
+        # threats. Cleaning started..." and the file was gone. That would make
+        # Mume a program that silently changes your computer, which is the one
+        # thing this app promises never to do -- and it would do it through a
+        # side effect of asking a question. With the flag the file is left
+        # exactly where it was, the detection is reported to us and not raised
+        # in Defender's own interface, and the user decides.
+        #
+        # WindowsProbeTest asserts the flag is present on every invocation.
+        #
+        # ## The exit code is a trap, twice over
+        #
+        # Without -DisableRemediation a detection exits **0**, because
+        # remediation succeeded. With the flag a detection exits **2** -- but so
+        # does a file that does not exist. Neither number alone distinguishes
+        # "clean" from "threat", so the verdict is read from the output text and
+        # only for files confirmed to exist. Third time in this probe that the
+        # obvious signal turned out to be a lie.
+        #
+        # ## What this costs against the no-network promise
+        #
+        # Mume still makes no network connection; the bytecode gate still
+        # forbids one. It asks a component that is already running and already
+        # scanning these files to report what it thinks. Defender then behaves
+        # as Defender always behaves, which -- depending on the user's own cloud
+        # protection setting -- may include contacting Microsoft. That is stated
+        # plainly rather than buried, because "we never touch the network" and
+        # "we never cause anything to touch the network" are different claims
+        # and only the first one is true.
+        ${'$'}mpCmdRun = Join-Path ${'$'}env:ProgramFiles 'Windows Defender\MpCmdRun.exe'
+        ${'$'}defenderUsable = ${'$'}false
+        if ((Test-Path -LiteralPath ${'$'}mpCmdRun) -and ${'$'}mp -and ${'$'}mp.AntivirusEnabled) {
+          ${'$'}defenderUsable = ${'$'}true
+          Emit 'av.scannerAvailable' 'True'
+        } else {
+          Emit 'av.scannerAvailable' 'False'
+        }
+
+        function AskDefender(${'$'}path) {
+          if (-not ${'$'}defenderUsable) { return '' }
+          if (-not ${'$'}path) { return '' }
+          # Confirmed to exist first: a missing file exits 2, exactly like a
+          # detection, so skipping this check would invent threats.
+          if (-not (Test-Path -LiteralPath ${'$'}path -PathType Leaf)) { return '' }
+          try {
+            ${'$'}out = & ${'$'}mpCmdRun -Scan -ScanType 3 -File ${'$'}path -DisableRemediation 2>&1 | Out-String
+            if (${'$'}out -match 'found\s+(\d+)\s+threat') {
+              if ([int]${'$'}Matches[1] -gt 0) { return 'threat' }
+            }
+            if (${'$'}out -match 'found no threats') { return 'clean' }
+            return ''
+          } catch { return '' }
+        }
+
+        foreach (${'$'}t in (${'$'}script:scanTargets | Select-Object -Unique)) {
+          ${'$'}verdict = AskDefender ${'$'}t
+          if (${'$'}verdict) { Emit 'avscan' ("{0}`t{1}" -f (San ${'$'}t), ${'$'}verdict) }
+        }
+        if (${'$'}defenderUsable) { Emit 'avscan.enumerated' 'True' }
 
         # ---- hardening settings ----------------------------------------------
         # Individually small, jointly the difference between a machine that

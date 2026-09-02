@@ -70,6 +70,24 @@ internal class WindowsCollector : PlatformCollector {
      * `true`, because the one output this feature must never produce by
      * accident is an accusation.
      */
+    /**
+     * Verdicts from the scanner already installed, keyed by file path.
+     *
+     * Built once per collect: the probe emits one row per file it asked about,
+     * and both the autorun and process parsers look their own paths up here.
+     */
+    private val antivirusVerdicts: Map<String, String> by lazy {
+        all("avscan").orEmpty().mapNotNull { row ->
+            val f = row.split('	')
+            val path = f.getOrNull(0)?.trim()?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val verdict = f.getOrNull(1)?.trim()?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            path.lowercase() to verdict
+        }.toMap()
+    }
+
+    private fun verdictFor(path: String?): String? =
+        path?.trim()?.lowercase()?.let { antivirusVerdicts[it] }
+
     private fun matchesKnownMalware(sha256: String?): Boolean? {
         val hash = sha256?.trim()?.lowercase()?.takeIf { it.length == 64 } ?: return null
         return knownMalware?.invoke(hash)
@@ -375,7 +393,11 @@ internal class WindowsCollector : PlatformCollector {
                 usesSystemBinary = parts.getOrNull(5)?.let { it.equals("True", ignoreCase = true) },
                 downloadedFromInternet = parts.getOrNull(6)?.let { it.equals("True", ignoreCase = true) },
                 sha256 = parts.getOrNull(7)?.trim()?.takeIf { it.length == 64 },
-                matchesKnownMalware = matchesKnownMalware(parts.getOrNull(7))
+                matchesKnownMalware = matchesKnownMalware(parts.getOrNull(7)),
+                // Keyed on the RESOLVED executable (field 8), not the command
+                // line: the command may carry arguments and quoting, and the
+                // scanner was handed the resolved path.
+                antivirusVerdict = verdictFor(parts.getOrNull(8))
             )
         }
     }
@@ -403,7 +425,8 @@ internal class WindowsCollector : PlatformCollector {
                 masqueradingAs = f.getOrNull(3)?.trim()?.takeIf { it.isNotBlank() },
                 downloadedFromInternet = f.getOrNull(4)?.trim()?.equals("True", ignoreCase = true),
                 sha256 = f.getOrNull(5)?.trim()?.takeIf { it.length == 64 },
-                matchesKnownMalware = matchesKnownMalware(f.getOrNull(5))
+                matchesKnownMalware = matchesKnownMalware(f.getOrNull(5)),
+                antivirusVerdict = verdictFor(f.getOrNull(1))
             )
         }
     }

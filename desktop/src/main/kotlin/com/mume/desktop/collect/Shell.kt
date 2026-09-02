@@ -100,12 +100,17 @@ internal object Shell {
         when {
             osName.contains("win") -> {
                 val root = windowsRoot()
-                listOf(
+                listOfNotNull(
                     "$root\\System32",
                     "$root\\System32\\WindowsPowerShell\\v1.0",
                     "$root\\SysWOW64",
                     "$root\\SysWOW64\\WindowsPowerShell\\v1.0",
-                    root
+                    root,
+                    // Windows Defender's command-line scanner. Checked before
+                    // adding: the directory is owned by TrustedInstaller with
+                    // zero write entries for anyone below administrator, and
+                    // MpCmdRun.exe is signed by Microsoft Windows.
+                    System.getenv("ProgramFiles")?.let { "$it\\Windows Defender" }
                 )
             }
             // /usr/libexec carries several of the tools macOS keeps off PATH.

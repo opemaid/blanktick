@@ -641,7 +641,16 @@ data class AutoRunEntry(
      * not one of the ones we shipped". `null` means no corpus was bundled or
      * the file was not hashed, and the rule reports the check as not performed.
      */
-    val matchesKnownMalware: Boolean? = null
+    val matchesKnownMalware: Boolean? = null,
+    /**
+     * What the antivirus already installed on the machine says about this file.
+     *
+     * `"threat"`, `"clean"`, or `null` when it was not asked or could not
+     * answer. Mume does not decide this — it hands the file to the scanner that
+     * is already there and reports the answer, because a scanner with
+     * signatures a few hours old beats anything an offline app could bundle.
+     */
+    val antivirusVerdict: String? = null
 )
 
 /**
@@ -677,5 +686,14 @@ data class ProcessImage(
      * not one of the ones we shipped". `null` means no corpus was bundled or
      * the file was not hashed, and the rule reports the check as not performed.
      */
-    val matchesKnownMalware: Boolean? = null
+    val matchesKnownMalware: Boolean? = null,
+    /**
+     * What the antivirus already installed on the machine says about this file.
+     *
+     * `"threat"`, `"clean"`, or `null` when it was not asked or could not
+     * answer. Mume does not decide this — it hands the file to the scanner that
+     * is already there and reports the answer, because a scanner with
+     * signatures a few hours old beats anything an offline app could bundle.
+     */
+    val antivirusVerdict: String? = null
 )

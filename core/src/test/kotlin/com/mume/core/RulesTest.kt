@@ -200,11 +200,11 @@ object Snapshots {
                 // and leave its pass path untested.
                 ProcessImage(
                     "Code", "C:/Users/x/AppData/Local/Programs/Microsoft VS Code/Code.exe", "Valid",
-                    matchesKnownMalware = false
+                    matchesKnownMalware = false, antivirusVerdict = "clean"
                 ),
                 ProcessImage(
                     "Update", "C:/Users/x/AppData/Local/SquirrelTemp/Update.exe", "Valid",
-                    matchesKnownMalware = false
+                    matchesKnownMalware = false, antivirusVerdict = "clean"
                 )
             ),
             processesWithUnreadablePath = 179,

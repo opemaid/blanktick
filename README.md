@@ -98,14 +98,14 @@ rather than presenting meaningless password and link verdicts as findings.
 
 ## What it checks
 
-**62 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
+**63 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
 rather than estimated:
 
 | Platform | Eligible | Run on an *idealised* device | Not checkable |
 |---|---|---|---|
-| Android | 29 | 29 | 33 (the desktop-only rules) |
-| iPhone | 15 | 12 | 50 |
-| Desktop | 44 | 43 | 19 |
+| Android | 29 | 29 | 34 (the desktop-only rules) |
+| iPhone | 15 | 12 | 51 |
+| Desktop | 45 | 44 | 19 |
 
 Those are fixture numbers — a device that answers every question it can. **A real
 machine answers fewer.** On the development laptop (Windows 11, standard user, no
@@ -189,6 +189,29 @@ The asymmetry is real and every app says so on screen — listing what it could
   Roughly a third of running processes will not reveal their path to a program
   without administrator rights — 179 of them on the development machine. That
   number is shown, because "I checked everything" would not be true.
+- **The verdict of the antivirus you already have.** Windows ships a scanner
+  whose signatures are hours old, and it is already installed. Mume asks it
+  about the sixty-odd files it has identified as worth asking about — the
+  programs that start themselves and the ones running from personal folders —
+  and reports what it says.
+
+  This is the useful division of labour. Real-time protection checks files as
+  they are written and opened; a file that arrived before its signature existed
+  can sit on disk unflagged until something touches it, and the full scan that
+  would find it is the one nobody runs. Mume contributes the *shortlist*, not
+  the verdict. Measured at 33 milliseconds a file.
+
+  The scan is requested **with remediation disabled**, so nothing is quarantined
+  or moved: without that flag the scanner deletes what it finds, and Mume would
+  become a program that silently changes your computer as a side effect of
+  asking a question. A test asserts the flag can never be dropped.
+
+  One honest caveat, because it touches the central claim: **Mume still makes no
+  network connection.** It asks a component that is already running and already
+  scanning these files. That component then behaves as it always does, which —
+  depending on your own cloud-protection setting — may include contacting
+  Microsoft. "We never touch the network" and "we never cause anything to touch
+  the network" are different claims, and only the first is true.
 - **A bundled list of known-malicious files.** The closest thing here to
   conventional antivirus, and worth being exact about. Mume ships a table of
   SHA-256 hashes and compares it against the programs that start themselves and
