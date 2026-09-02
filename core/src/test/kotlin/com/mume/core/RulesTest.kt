@@ -14,6 +14,7 @@ import com.mume.core.model.ListeningPort
 import com.mume.core.model.InstalledApp
 import com.mume.core.model.InstalledProgram
 import com.mume.core.model.PasswordAudit
+import com.mume.core.model.ProcessImage
 import com.mume.core.model.Platform
 import com.mume.core.model.ProxyInfo
 import com.mume.core.model.RemoteAccessService
@@ -189,6 +190,15 @@ object Snapshots {
             // healthy machine scores 100. A fixture that omits a fact block
             // makes every rule reading it report not-checkable, which passes the
             // suite while testing nothing.
+            // Two ordinary user-folder programs and nothing masquerading. An
+            // empty list would make the malware rules report not-checkable,
+            // leaving their pass path untested by the fixture whose whole job is
+            // to prove a healthy machine scores 100.
+            runningProcesses = listOf(
+                ProcessImage("Code", "C:/Users/x/AppData/Local/Programs/Microsoft VS Code/Code.exe", "Valid"),
+                ProcessImage("Update", "C:/Users/x/AppData/Local/SquirrelTemp/Update.exe", "Valid")
+            ),
+            processesWithUnreadablePath = 179,
             hardening = HardeningFacts(
                 uacEnabled = true,
                 uacPromptsForElevation = true,

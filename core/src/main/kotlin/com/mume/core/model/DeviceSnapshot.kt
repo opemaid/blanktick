@@ -311,6 +311,26 @@ data class DesktopFacts(
      */
     val autoRunSourcesUnread: List<String>? = null,
 
+    // ---- What is running ----------------------------------------------------
+    /**
+     * Running programs worth a second look — not an inventory of all of them.
+     *
+     * See [ProcessImage]. Only masquerading processes and those running out of
+     * user-writable folders are here, because those are the two questions
+     * answerable about a running program without a malware corpus.
+     */
+    val runningProcesses: List<ProcessImage>? = null,
+    /**
+     * How many processes would not reveal their path.
+     *
+     * Roughly a third of them, on an ordinary machine, because an unprivileged
+     * caller cannot open a system process. Recorded so the app can say "these
+     * are the ones I could look at" rather than implying it examined
+     * everything — the gap is real, and a scanner that hides its own blind spot
+     * is the thing this whole project is against.
+     */
+    val processesWithUnreadablePath: Int? = null,
+
     // ---- Hardening settings ------------------------------------------------
     /**
      * Individually small settings that jointly decide whether a foothold stays
@@ -579,5 +599,35 @@ data class AutoRunEntry(
      * it, and the code that runs is in a file nobody looked at. Reporting the
      * signature without reporting this would be technically true and useless.
      */
-    val usesSystemBinary: Boolean? = null
+    val usesSystemBinary: Boolean? = null,
+    /**
+     * Whether the file this entry launches arrived from the internet.
+     *
+     * Windows tags downloaded files with a `Zone.Identifier` stream. On its own
+     * that is unremarkable — most software is downloaded. Paired with "and it
+     * now runs every time you sign in", it is worth saying out loud.
+     */
+    val downloadedFromInternet: Boolean? = null
+)
+
+/**
+ * A program running right now, recorded only when there is a reason to.
+ *
+ * The list is deliberately not every process: Windows runs several hundred, and
+ * an inventory of them is not information. Only entries that are either
+ * masquerading or running out of a user-writable folder are collected, because
+ * those are the two questions worth asking about a running program without a
+ * malware corpus to compare against.
+ *
+ * @param masqueradingAs the core Windows binary whose name this process is
+ *   using from the wrong location. `null` for everything legitimate. There is
+ *   no innocent reason for a program called `svchost.exe` to run out of AppData,
+ *   which is what makes this checkable at all without signatures.
+ */
+data class ProcessImage(
+    val name: String,
+    val path: String,
+    val signatureStatus: String? = null,
+    val masqueradingAs: String? = null,
+    val downloadedFromInternet: Boolean? = null
 )

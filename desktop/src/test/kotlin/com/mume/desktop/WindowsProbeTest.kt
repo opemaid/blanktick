@@ -139,6 +139,7 @@ class WindowsProbeTest {
                 "lock.screenSaverActive", "lock.screenSaverIsSecure", "lock.screenSaverTimeout",
                 "os.build", "ps.languageMode", "probe.complete",
                 "port", "port.enumerated",
+                "process", "process.enumerated", "process.pathUnreadable",
                 "program", "program.enumerated",
                 "proxy.enable", "proxy.server",
                 "rdp.denyConnections", "rdp.userAuthentication",

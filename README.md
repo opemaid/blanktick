@@ -98,14 +98,14 @@ rather than presenting meaningless password and link verdicts as findings.
 
 ## What it checks
 
-**58 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
+**61 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
 rather than estimated:
 
 | Platform | Eligible | Run on an *idealised* device | Not checkable |
 |---|---|---|---|
-| Android | 29 | 29 | 29 (the desktop-only rules) |
-| iPhone | 15 | 12 | 46 |
-| Desktop | 40 | 39 | 19 |
+| Android | 29 | 29 | 32 (the desktop-only rules) |
+| iPhone | 15 | 12 | 49 |
+| Desktop | 43 | 42 | 19 |
 
 Those are fixture numbers — a device that answers every question it can. **A real
 machine answers fewer.** On the development laptop (Windows 11, standard user, no
@@ -169,6 +169,26 @@ The asymmetry is real and every app says so on screen — listing what it could
   attached right now is encrypted. Nothing plugged in reports as *not checkable*,
   never as a pass. It also shows every drive and phone the computer still
   remembers — not a finding, never scored, just your machine's memory of you.
+- **Programs pretending to be Windows.** A real `svchost.exe` lives in the
+  system folder. Anything else with that name, running out of your personal
+  folders, is not a borderline case — there is no innocent reason to do it.
+  Mume checks the programs running right now against a per-binary table of where
+  each one actually belongs. That table has to be per binary: a single "must be
+  in System32" rule reports `explorer.exe` on every Windows machine alive,
+  because Explorer genuinely lives in `C:\Windows`.
+
+  This is the one part of Mume that looks for malware, and it is worth being
+  precise about what it means. It does not scan your disk, hash your files or
+  carry signatures — that is the antivirus you already have, and it needs a
+  server Mume does not talk to. What it detects is a *technique*, which is a
+  property of your machine rather than a fact someone else has to tell you
+  about a file. A dormant installer sitting in a downloads folder will not be
+  found here, and nothing in this section should be read as "your computer is
+  clean".
+
+  Roughly a third of running processes will not reveal their path to a program
+  without administrator rights — 179 of them on the development machine. That
+  number is shown, because "I checked everything" would not be true.
 - **Machine hardening**: User Account Control, whether sign-in credentials are
   left readable in memory, SMBv1, LLMNR, remote-administration services, and
   whether an auto-logon password is sitting in the registry in cleartext. Mume

@@ -9,6 +9,7 @@ import com.mume.core.model.DesktopOs
 import com.mume.core.model.HardeningFacts
 import com.mume.core.model.InstalledProgram
 import com.mume.core.model.ListeningPort
+import com.mume.core.model.ProcessImage
 import com.mume.core.model.RemoteAccessService
 import com.mume.core.model.RemovableDrive
 import com.mume.core.model.ScreenLock
@@ -121,6 +122,8 @@ internal class WindowsCollector : PlatformCollector {
             removableDrives = removableDrives(),
             rememberedUsbDevices = all("usbdevice")?.map { DisplaySafe.label(it) }?.distinct()?.sorted(),
 
+            runningProcesses = runningProcesses(),
+            processesWithUnreadablePath = int("process.pathUnreadable"),
             hardening = hardening(),
             antivirusPosture = antivirusPosture(),
 
@@ -344,7 +347,34 @@ internal class WindowsCollector : PlatformCollector {
                     }
                 },
                 kind = parts.getOrNull(4)?.takeIf { it.isNotBlank() },
-                usesSystemBinary = parts.getOrNull(5)?.let { it.equals("True", ignoreCase = true) }
+                usesSystemBinary = parts.getOrNull(5)?.let { it.equals("True", ignoreCase = true) },
+                downloadedFromInternet = parts.getOrNull(6)?.let { it.equals("True", ignoreCase = true) }
+            )
+        }
+    }
+
+    /**
+     * Programs running right now that are worth a second look.
+     *
+     * Only masquerading processes and those running from user-writable folders
+     * are collected. An inventory of the several hundred processes a Windows
+     * machine runs is not information, and the two questions worth asking
+     * without a malware corpus — is it pretending to be a system binary, and
+     * did it come from a folder anyone can write to — are answerable from that
+     * subset alone.
+     */
+    private fun runningProcesses(): List<ProcessImage>? {
+        if (one("process.enumerated") == null) return null
+        return all("process").orEmpty().mapNotNull { row ->
+            val f = row.split('	')
+            val name = f.getOrNull(0)?.trim()?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val path = f.getOrNull(1)?.trim()?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            ProcessImage(
+                name = DisplaySafe.label(name),
+                path = path,
+                signatureStatus = f.getOrNull(2)?.trim()?.takeIf { it.isNotBlank() },
+                masqueradingAs = f.getOrNull(3)?.trim()?.takeIf { it.isNotBlank() },
+                downloadedFromInternet = f.getOrNull(4)?.trim()?.equals("True", ignoreCase = true)
             )
         }
     }

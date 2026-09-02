@@ -8,6 +8,7 @@ import com.mume.core.rules.AccountSecurityRules
 import com.mume.core.rules.AppHygieneRules
 import com.mume.core.rules.DataExposureRules
 import com.mume.core.rules.HardeningRules
+import com.mume.core.rules.MalwareRules
 import com.mume.core.rules.DesktopRules
 import com.mume.core.rules.DeviceIntegrityRules
 import com.mume.core.rules.NetworkRules
@@ -156,7 +157,8 @@ object DefaultRules {
             DataExposureRules.ALL +
             AccountSecurityRules.ALL +
             DesktopRules.ALL +
-            HardeningRules.ALL
+            HardeningRules.ALL +
+            MalwareRules.ALL
 
     val COUNT: Int get() = ALL.size
 

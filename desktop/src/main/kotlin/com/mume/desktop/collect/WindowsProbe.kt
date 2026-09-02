@@ -85,6 +85,17 @@ internal object WindowsProbe {
           (Get-ItemProperty -Path ${'$'}path -Name ${'$'}name -ErrorAction SilentlyContinue).${'$'}name
         }
 
+        # A file carries a Zone.Identifier stream when it was downloaded. On a
+        # program that has been set to start automatically, that pairing --
+        # arrived from the internet, and now runs every time you sign in -- is
+        # worth saying out loud.
+        function FromInternet(${'$'}path) {
+          if (-not ${'$'}path) { return ${'$'}false }
+          try { ${'$'}null = Get-Item -LiteralPath ${'$'}path -Stream Zone.Identifier -ErrorAction Stop; return ${'$'}true }
+          catch { return ${'$'}false }
+        }
+
+
         # ---- identity -------------------------------------------------------
         Emit 'os.build' ((Get-CimInstance Win32_OperatingSystem).Caption + ' ' + [Environment]::OSVersion.Version)
 
@@ -435,7 +446,7 @@ internal object WindowsProbe {
               if (${'$'}base -and (${'$'}lolbins -contains ${'$'}base.ToLower())) { ${'$'}lol = ${'$'}true }
             } catch { }
           }
-          Emit 'autorun' ("{0}`t{1}`t{2}`t{3}`t{4}`t{5}" -f (San ${'$'}name), (San ${'$'}location), (San ${'$'}cmd), ${'$'}status, ${'$'}kind, ${'$'}lol)
+          Emit 'autorun' ("{0}`t{1}`t{2}`t{3}`t{4}`t{5}`t{6}" -f (San ${'$'}name), (San ${'$'}location), (San ${'$'}cmd), ${'$'}status, ${'$'}kind, ${'$'}lol, (FromInternet ${'$'}exe))
         }
 
         function EmitRun(${'$'}key, ${'$'}kind) {
@@ -696,6 +707,85 @@ internal object WindowsProbe {
             if (${'$'}b -eq 'autocheck autochk *') { continue }
             EmitAuto 'BootExecute' 'Session Manager' 'Boot execute' "${'$'}b"
           }
+        }
+
+        # ---- what is running, and whether it is pretending ---------------------
+        #
+        # ## This is the one part of Mume that looks for malware
+        #
+        # It does not scan the disk, hash every file, or carry signatures. What
+        # it does is check the small set of programs that matter -- the ones
+        # running right now -- for a technique that cannot be done without
+        # lying: **using the name of a core Windows binary from the wrong
+        # place**. A real svchost.exe lives in System32. A copy of anything else
+        # called svchost.exe, running out of AppData, is not a false positive
+        # waiting to happen; there is no innocent reason to do it.
+        #
+        # The expected home is per binary, and that had to be measured. A single
+        # shared "must be in System32" list reports explorer.exe twice on every
+        # Windows machine, because Explorer genuinely lives in C:\Windows. With
+        # the per-binary table below: zero on a healthy machine.
+        #
+        # Roughly a third of processes will not give up their path to an
+        # unprivileged caller (337 of 514 here). Those are skipped rather than
+        # guessed at, and the count of skipped ones is reported, because "I
+        # looked at every process" would be false.
+        ${'$'}sysBinaries = @{
+          'svchost' = 'sys'; 'lsass' = 'sys'; 'csrss' = 'sys'; 'winlogon' = 'sys';
+          'services' = 'sys'; 'smss' = 'sys'; 'taskhostw' = 'sys'; 'dwm' = 'sys';
+          'conhost' = 'sys'; 'spoolsv' = 'sys'; 'wininit' = 'sys'; 'rundll32' = 'sys';
+          'ctfmon' = 'sys'; 'sihost' = 'sys'; 'runtimebroker' = 'sys';
+          'searchindexer' = 'sys'; 'dllhost' = 'sys'; 'wuauclt' = 'sys';
+          'regsvr32' = 'sys'; 'mshta' = 'sys'; 'wscript' = 'sys'; 'cscript' = 'sys';
+          'explorer' = 'win'
+        }
+
+        ${'$'}procOk = ${'$'}true
+        ${'$'}procNoPath = 0
+        try {
+          foreach (${'$'}p in Get-Process -ErrorAction Stop) {
+            # Per process, and this is the third time in this file that mattered.
+            # Reading .Path on a protected process raises a terminating error --
+            # not a null, an exception -- so an unguarded loop stops at the first
+            # system process and emits NOTHING. It did exactly that on the first
+            # run: 0 rows, no error, and only the enumeration sentinel to show
+            # for it. Same shape as the Run-key sweep that one WindowsApps stub
+            # aborted, and the persistence sweep that one denied registry key
+            # emptied. A failure to inspect one item must cost that item alone.
+            ${'$'}path = ${'$'}null
+            try { ${'$'}path = ${'$'}p.Path } catch { ${'$'}path = ${'$'}null }
+            if (-not ${'$'}path) { ${'$'}procNoPath++; continue }
+            ${'$'}n = ${'$'}p.ProcessName.ToLower()
+            # Deliberately not named "home". That is a read-only automatic
+            # variable in PowerShell, and assigning to it throws
+            # SessionStateUnauthorizedAccessException -- which the outer
+            # catch swallowed, so the whole process sweep returned zero
+            # rows and no sentinel. The sentinel is what made it visible.
+            ${'$'}expectedHome = ${'$'}sysBinaries[${'$'}n]
+            ${'$'}masq = ''
+            if (${'$'}expectedHome -eq 'sys') {
+              if (${'$'}path -notmatch '\\Windows\\(System32|SysWOW64|WinSxS)\\') { ${'$'}masq = ${'$'}p.ProcessName }
+            } elseif (${'$'}expectedHome -eq 'win') {
+              # Directly inside the Windows directory, not a subfolder of it.
+              if (${'$'}path -notmatch '^[A-Za-z]:\\Windows\\[^\\]+${'$'}') { ${'$'}masq = ${'$'}p.ProcessName }
+            }
+            # Only the interesting ones are signature-checked: doing it for all
+            # 337 costs seconds and tells us nothing about Windows' own files.
+            ${'$'}userland = ${'$'}path -match 'AppData|\\Temp\\|\\Downloads\\|\\Users\\Public'
+            ${'$'}sig = ''
+            if (${'$'}masq -or ${'$'}userland) {
+              try { ${'$'}sig = (Get-AuthenticodeSignature -LiteralPath ${'$'}path -ErrorAction Stop).Status } catch { ${'$'}sig = '' }
+            }
+            if (${'$'}masq -or ${'$'}userland) {
+              Emit 'process' ("{0}`t{1}`t{2}`t{3}`t{4}" -f (San ${'$'}p.ProcessName), (San ${'$'}path), ${'$'}sig, (San ${'$'}masq), (FromInternet ${'$'}path))
+            }
+          }
+        } catch { ${'$'}procOk = ${'$'}false }
+        if (${'$'}procOk) {
+          Emit 'process.enumerated' 'True'
+          # Reported rather than hidden: a third of processes refuse their path
+          # to an unprivileged caller, and "I checked everything" would be false.
+          Emit 'process.pathUnreadable' ${'$'}procNoPath
         }
 
         # ---- hardening settings ----------------------------------------------
