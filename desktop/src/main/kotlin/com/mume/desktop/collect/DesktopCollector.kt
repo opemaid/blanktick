@@ -25,8 +25,15 @@ internal interface PlatformCollector {
     /** Human-readable OS build string, for display only. */
     fun osBuild(): String? = null
 
-    /** The desktop-specific block. */
-    fun collect(): DesktopFacts
+    /**
+     * The desktop-specific block.
+     *
+     * @param intel the bundled threat data, so a collector can resolve a file
+     *   hash against the known-malware table while it still has the file in
+     *   hand. The alternative -- carrying every hash up to a rule -- would mean
+     *   putting a million-entry table on the snapshot.
+     */
+    fun collect(intel: DesktopIntelSnapshot): DesktopFacts
 
     // ---- Facts shared with the mobile snapshot -----------------------------
 
@@ -99,7 +106,7 @@ class DesktopCollector internal constructor(
             photosWithPreciseLocation = null,
             passwordAudit = null,
 
-            desktop = platform.collect(),
+            desktop = platform.collect(intel),
 
             intelBundleDate = intel.builtOn,
             intelStalenessDays = intel.stalenessDays,
@@ -132,8 +139,20 @@ class DesktopCollector internal constructor(
     }
 }
 
-/** Bundle metadata, mirroring `IntelSnapshot` on Android. */
+/**
+ * Bundle metadata, mirroring `IntelSnapshot` on Android, plus the one lookup a
+ * collector needs while it still has a file in hand.
+ *
+ * @param isKnownMalware SHA-256 (lowercase hex) to a verdict. `null` from the
+ *   function means no corpus is bundled, which must be reported as *not
+ *   checked* and never as "nothing found". A `null` function is the same
+ *   answer for platforms that never load one.
+ *
+ *   It lives here rather than on the snapshot the rules see because the
+ *   alternative is putting a million-entry hash table on `DeviceSnapshot`.
+ */
 data class DesktopIntelSnapshot(
     val builtOn: String?,
-    val stalenessDays: Int?
+    val stalenessDays: Int?,
+    val isKnownMalware: ((String) -> Boolean?)? = null
 )

@@ -44,7 +44,7 @@ internal class LinuxCollector : PlatformCollector {
             ?.trim('"', ' ')
             ?.takeIf { it.isNotBlank() }
 
-    override fun collect(): DesktopFacts = DesktopFacts(
+    override fun collect(intel: DesktopIntelSnapshot): DesktopFacts = DesktopFacts(
         os = os,
         osBuild = osBuild(),
 

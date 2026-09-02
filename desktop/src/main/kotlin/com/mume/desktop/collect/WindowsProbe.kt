@@ -85,6 +85,50 @@ internal object WindowsProbe {
           (Get-ItemProperty -Path ${'$'}path -Name ${'$'}name -ErrorAction SilentlyContinue).${'$'}name
         }
 
+        # SHA-256 of a file, for comparison against the bundled known-malware
+        # table. Only ever called on the small set that matters -- the programs
+        # that start themselves and the ones running out of personal folders --
+        # never on the disk at large. Roughly sixty files, not sixty thousand.
+        #
+        # Capped at 200 MB. A hash of a 4 GB game costs seconds and buys nothing:
+        # commodity malware is small, and a scan the user cancels finds nothing
+        # at all.
+        # ## Why .NET directly instead of Get-FileHash
+        #
+        # Get-FileHash lives in a module, and a module has to be found. When
+        # Mume is launched from a process whose PSModulePath points at
+        # PowerShell 7's module directories -- a terminal, an IDE, a build tool
+        # -- the Windows PowerShell 5.1 child inherits that path, cannot locate
+        # its own modules, and Get-FileHash simply does not exist. Measured
+        # here: 3 modules loaded and `Get-Command Get-FileHash` returning
+        # nothing, in a shell that works perfectly when started by hand.
+        #
+        # The consequence was the quiet kind. Hashing returned nothing, every
+        # file reported as un-hashed, and the malware check said "not
+        # performed" -- correctly, by the null contract, and for a reason that
+        # had nothing to do with the machine being scanned. It would have
+        # worked for a user who double-clicked the exe and silently not worked
+        # for one who ran it from a terminal.
+        #
+        # These types are part of the .NET base library. They need no module,
+        # no auto-loading and no PSModulePath, so this behaves identically
+        # however the app was started. [Shell] also strips the inherited
+        # PSModulePath now, which fixes the class of problem rather than this
+        # one instance.
+        function FileHash(${'$'}path) {
+          if (-not ${'$'}path) { return '' }
+          try {
+            ${'$'}f = Get-Item -LiteralPath ${'$'}path -ErrorAction Stop
+            if (${'$'}f.Length -gt 209715200) { return '' }
+            ${'$'}sha = [System.Security.Cryptography.SHA256]::Create()
+            try {
+              ${'$'}stream = [System.IO.File]::OpenRead(${'$'}f.FullName)
+              try { return [System.BitConverter]::ToString(${'$'}sha.ComputeHash(${'$'}stream)).Replace('-', '').ToLower() }
+              finally { ${'$'}stream.Dispose() }
+            } finally { ${'$'}sha.Dispose() }
+          } catch { return '' }
+        }
+
         # A file carries a Zone.Identifier stream when it was downloaded. On a
         # program that has been set to start automatically, that pairing --
         # arrived from the internet, and now runs every time you sign in -- is
@@ -98,6 +142,13 @@ internal object WindowsProbe {
 
         # ---- identity -------------------------------------------------------
         Emit 'os.build' ((Get-CimInstance Win32_OperatingSystem).Caption + ' ' + [Environment]::OSVersion.Version)
+
+        # Proves the hashing path works in whatever environment the probe was
+        # launched into, against a file every Windows machine has. Without it,
+        # "nothing matched the malware list" and "hashing silently returned
+        # nothing" are the same output -- which is the failure mode this whole
+        # project keeps having to design against.
+        Emit 'hash.selfTest' (FileHash (Join-Path ${'$'}env:SystemRoot 'System32\notepad.exe'))
 
         # The language mode the probe is running under. Constrained Language
         # Mode (WDAC, AppLocker, or the __PSLockdownPolicy registry value)
@@ -446,7 +497,7 @@ internal object WindowsProbe {
               if (${'$'}base -and (${'$'}lolbins -contains ${'$'}base.ToLower())) { ${'$'}lol = ${'$'}true }
             } catch { }
           }
-          Emit 'autorun' ("{0}`t{1}`t{2}`t{3}`t{4}`t{5}`t{6}" -f (San ${'$'}name), (San ${'$'}location), (San ${'$'}cmd), ${'$'}status, ${'$'}kind, ${'$'}lol, (FromInternet ${'$'}exe))
+          Emit 'autorun' ("{0}`t{1}`t{2}`t{3}`t{4}`t{5}`t{6}`t{7}" -f (San ${'$'}name), (San ${'$'}location), (San ${'$'}cmd), ${'$'}status, ${'$'}kind, ${'$'}lol, (FromInternet ${'$'}exe), (FileHash ${'$'}exe))
         }
 
         function EmitRun(${'$'}key, ${'$'}kind) {
@@ -777,7 +828,7 @@ internal object WindowsProbe {
               try { ${'$'}sig = (Get-AuthenticodeSignature -LiteralPath ${'$'}path -ErrorAction Stop).Status } catch { ${'$'}sig = '' }
             }
             if (${'$'}masq -or ${'$'}userland) {
-              Emit 'process' ("{0}`t{1}`t{2}`t{3}`t{4}" -f (San ${'$'}p.ProcessName), (San ${'$'}path), ${'$'}sig, (San ${'$'}masq), (FromInternet ${'$'}path))
+              Emit 'process' ("{0}`t{1}`t{2}`t{3}`t{4}`t{5}" -f (San ${'$'}p.ProcessName), (San ${'$'}path), ${'$'}sig, (San ${'$'}masq), (FromInternet ${'$'}path), (FileHash ${'$'}path))
             }
           }
         } catch { ${'$'}procOk = ${'$'}false }

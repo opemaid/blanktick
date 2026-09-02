@@ -130,7 +130,7 @@ class WindowsProbeTest {
                 "cert", "cert.storeRead",
                 "dns", "dns.enumerated",
                 "drive", "drive.enumerated",
-                "fw.enumerated",
+                "fw.enumerated", "hash.selfTest",
                 "fw.profile",
                 "hard.autoAdminLogon", "hard.autoLogonPasswordStored", "hard.consentPrompt",
                 "hard.enableLua", "hard.llmnr", "hard.psV2Present", "hard.remoteRegistry",

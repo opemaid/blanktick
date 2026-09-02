@@ -331,6 +331,26 @@ data class DesktopFacts(
      */
     val processesWithUnreadablePath: Int? = null,
 
+    /**
+     * Whether the collector could hash a file it definitely should be able to.
+     *
+     * ## Why a check needs a control
+     *
+     * Hashing is the one thing here that can fail *completely and quietly*. It
+     * did: a `PSModulePath` inherited from the launching process removed
+     * `Get-FileHash` from the shell entirely, every file came back un-hashed,
+     * and the malware check reported "not performed" — correctly, and for a
+     * reason that had nothing to do with the machine being scanned. It would
+     * have worked for someone who double-clicked the app and silently not
+     * worked for someone who ran it from a terminal.
+     *
+     * So the probe hashes a file every Windows machine has, and this records
+     * whether that worked. `false` means the malware comparison is not merely
+     * empty, it did not happen — which is a different sentence and the one the
+     * user is owed.
+     */
+    val fileHashingWorks: Boolean? = null,
+
     // ---- Hardening settings ------------------------------------------------
     /**
      * Individually small settings that jointly decide whether a foothold stays
@@ -607,7 +627,21 @@ data class AutoRunEntry(
      * that is unremarkable — most software is downloaded. Paired with "and it
      * now runs every time you sign in", it is worth saying out loud.
      */
-    val downloadedFromInternet: Boolean? = null
+    val downloadedFromInternet: Boolean? = null,
+    /**
+     * SHA-256 of the file this launches, lowercase hex. `null` when it could not
+     * be hashed — unreadable, missing, or above the size cap.
+     */
+    val sha256: String? = null,
+    /**
+     * Whether that hash is in the bundled known-malware table.
+     *
+     * `true` only ever means a positive match. `false` means the table was
+     * consulted and said no — which is **not** "this file is safe", only "it is
+     * not one of the ones we shipped". `null` means no corpus was bundled or
+     * the file was not hashed, and the rule reports the check as not performed.
+     */
+    val matchesKnownMalware: Boolean? = null
 )
 
 /**
@@ -629,5 +663,19 @@ data class ProcessImage(
     val path: String,
     val signatureStatus: String? = null,
     val masqueradingAs: String? = null,
-    val downloadedFromInternet: Boolean? = null
+    val downloadedFromInternet: Boolean? = null,
+    /**
+     * SHA-256 of the file this launches, lowercase hex. `null` when it could not
+     * be hashed — unreadable, missing, or above the size cap.
+     */
+    val sha256: String? = null,
+    /**
+     * Whether that hash is in the bundled known-malware table.
+     *
+     * `true` only ever means a positive match. `false` means the table was
+     * consulted and said no — which is **not** "this file is safe", only "it is
+     * not one of the ones we shipped". `null` means no corpus was bundled or
+     * the file was not hashed, and the rule reports the check as not performed.
+     */
+    val matchesKnownMalware: Boolean? = null
 )

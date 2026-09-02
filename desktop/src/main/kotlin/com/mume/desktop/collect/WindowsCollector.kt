@@ -55,6 +55,26 @@ internal class WindowsCollector : PlatformCollector {
         Shell.powershellKeyValues(WindowsProbe.SCRIPT)
     }
 
+    /**
+     * Set for the duration of one [collect] call so the hash lookups below can
+     * reach the bundled table without every private helper taking a parameter.
+     */
+    private var knownMalware: ((String) -> Boolean?)? = null
+
+    /**
+     * Resolves one file hash against the bundled corpus.
+     *
+     * `null` when there is no corpus, when the file could not be hashed, or
+     * when the table says nothing — three different reasons that all mean the
+     * same thing to a rule: this was not checked. Only a positive match is ever
+     * `true`, because the one output this feature must never produce by
+     * accident is an accusation.
+     */
+    private fun matchesKnownMalware(sha256: String?): Boolean? {
+        val hash = sha256?.trim()?.lowercase()?.takeIf { it.length == 64 } ?: return null
+        return knownMalware?.invoke(hash)
+    }
+
     private fun one(key: String): String? = probe[key]?.firstOrNull()
     private fun all(key: String): List<String>? = probe[key]
     private fun bool(key: String): Boolean? = Shell.parseBoolean(one(key))
@@ -62,7 +82,8 @@ internal class WindowsCollector : PlatformCollector {
 
     override fun osBuild(): String? = one("os.build")
 
-    override fun collect(): DesktopFacts {
+    override fun collect(intel: DesktopIntelSnapshot): DesktopFacts {
+        knownMalware = intel.isKnownMalware
         // The sentinel, not the row count, decides whether this is an answer.
         // Two profiles enumerated and both enabled is not "the firewall is on"
         // -- Windows has three, and the one that failed to read is exactly the
@@ -124,6 +145,10 @@ internal class WindowsCollector : PlatformCollector {
 
             runningProcesses = runningProcesses(),
             processesWithUnreadablePath = int("process.pathUnreadable"),
+            // Emitted against a file every Windows machine has. Without it,
+            // "nothing matched the malware list" and "hashing silently returned
+            // nothing" are the same output.
+            fileHashingWorks = one("hash.selfTest")?.let { it.length == 64 },
             hardening = hardening(),
             antivirusPosture = antivirusPosture(),
 
@@ -348,7 +373,9 @@ internal class WindowsCollector : PlatformCollector {
                 },
                 kind = parts.getOrNull(4)?.takeIf { it.isNotBlank() },
                 usesSystemBinary = parts.getOrNull(5)?.let { it.equals("True", ignoreCase = true) },
-                downloadedFromInternet = parts.getOrNull(6)?.let { it.equals("True", ignoreCase = true) }
+                downloadedFromInternet = parts.getOrNull(6)?.let { it.equals("True", ignoreCase = true) },
+                sha256 = parts.getOrNull(7)?.trim()?.takeIf { it.length == 64 },
+                matchesKnownMalware = matchesKnownMalware(parts.getOrNull(7))
             )
         }
     }
@@ -374,7 +401,9 @@ internal class WindowsCollector : PlatformCollector {
                 path = path,
                 signatureStatus = f.getOrNull(2)?.trim()?.takeIf { it.isNotBlank() },
                 masqueradingAs = f.getOrNull(3)?.trim()?.takeIf { it.isNotBlank() },
-                downloadedFromInternet = f.getOrNull(4)?.trim()?.equals("True", ignoreCase = true)
+                downloadedFromInternet = f.getOrNull(4)?.trim()?.equals("True", ignoreCase = true),
+                sha256 = f.getOrNull(5)?.trim()?.takeIf { it.length == 64 },
+                matchesKnownMalware = matchesKnownMalware(f.getOrNull(5))
             )
         }
     }

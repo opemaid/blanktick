@@ -98,14 +98,14 @@ rather than presenting meaningless password and link verdicts as findings.
 
 ## What it checks
 
-**61 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
+**62 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
 rather than estimated:
 
 | Platform | Eligible | Run on an *idealised* device | Not checkable |
 |---|---|---|---|
-| Android | 29 | 29 | 32 (the desktop-only rules) |
-| iPhone | 15 | 12 | 49 |
-| Desktop | 43 | 42 | 19 |
+| Android | 29 | 29 | 33 (the desktop-only rules) |
+| iPhone | 15 | 12 | 50 |
+| Desktop | 44 | 43 | 19 |
 
 Those are fixture numbers — a device that answers every question it can. **A real
 machine answers fewer.** On the development laptop (Windows 11, standard user, no
@@ -189,6 +189,30 @@ The asymmetry is real and every app says so on screen — listing what it could
   Roughly a third of running processes will not reveal their path to a program
   without administrator rights — 179 of them on the development machine. That
   number is shown, because "I checked everything" would not be true.
+- **A bundled list of known-malicious files.** The closest thing here to
+  conventional antivirus, and worth being exact about. Mume ships a table of
+  SHA-256 hashes and compares it against the programs that start themselves and
+  the ones running from your personal folders — about sixty files, not your
+  whole disk.
+
+  It is **stale the day it is built**, it will never approach a real scanner,
+  and **it is defeated by recompiling the file**: one changed byte, different
+  hash. It earns its place because it costs about eight bytes an entry and
+  catches the commodity case — a file that has been sitting unchanged on a disk
+  since somebody else already identified it.
+
+  The table is an exact sorted set rather than a Bloom filter, unlike the
+  password corpus. A false positive there means "change a password that was
+  fine"; a false positive here tells someone a legitimate program on their
+  computer is malware, which is the one output this product must never produce
+  by accident.
+
+  It ships containing the EICAR test signature — a 68-byte string every scanner
+  has recognised since 1991, and not malware — so the feature can be proven to
+  work by anyone, on any machine, with nothing dangerous on disk. To load a real
+  corpus: `python tools/build_intel.py --malware hashes.txt`, where the file
+  holds one SHA-256 per line (or CSV with the hash first). Any line that is not
+  64 hex characters is skipped.
 - **Machine hardening**: User Account Control, whether sign-in credentials are
   left readable in memory, SMBv1, LLMNR, remote-administration services, and
   whether an auto-logon password is sitting in the registry in cleartext. Mume

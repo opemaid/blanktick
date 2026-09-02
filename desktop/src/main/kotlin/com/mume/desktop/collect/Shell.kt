@@ -295,10 +295,30 @@ internal object Shell {
         // unanswerable question.
         val exe = resolve(command.first())
         if (exe == null) null else {
-            val process = ProcessBuilder(listOf(exe) + command.drop(1))
+            val builder = ProcessBuilder(listOf(exe) + command.drop(1))
                 .directory(workingDir)
                 .redirectErrorStream(false)
-                .start()
+
+            // PSModulePath is inherited, and inheriting the wrong one silently
+            // removes cmdlets.
+            //
+            // Launch Mume from a PowerShell 7 terminal, an IDE or a build tool
+            // and the environment carries PowerShell 7's module directories.
+            // The Windows PowerShell 5.1 child we spawn then looks for its
+            // modules in the wrong place, finds three, and `Get-FileHash`
+            // ceases to exist -- in a shell that works perfectly when a person
+            // starts it. Measured here, not theorised: the malware hash check
+            // reported "not performed" for every file, correctly by the null
+            // contract and for a reason that had nothing to do with the machine
+            // being scanned.
+            //
+            // Removing the variable makes PowerShell compute its own default,
+            // which is the behaviour of a shell nobody has interfered with.
+            // That is what a probe should measure against: a scan must not
+            // depend on what launched the app.
+            builder.environment().remove("PSModulePath")
+
+            val process = builder.start()
 
             // stdin is closed immediately: nothing here is interactive, and a
             // tool that decides to prompt should hit EOF and exit rather than

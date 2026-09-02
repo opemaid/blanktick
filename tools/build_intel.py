@@ -196,6 +196,10 @@ def main() -> int:
                     help="one password per line, most common first")
     ap.add_argument("--domains", type=pathlib.Path,
                     help="blocklist: plain list or hosts-file format")
+    ap.add_argument("--malware", type=pathlib.Path,
+                    help="file of SHA-256 hashes, one per line, of known-malicious "
+                         "files. Lines may be bare hex or CSV with the hash first; "
+                         "anything that is not 64 hex characters is skipped.")
     ap.add_argument("--allowlist", type=pathlib.Path,
                     help="domains that must never be blocked")
     ap.add_argument("--password-limit", type=int, default=2_000_000)
@@ -270,6 +274,57 @@ def main() -> int:
     (out / "allowlist.mus").write_bytes(blob)
     print(f"Allowlist: {len(allow):,} input · {len(blob) / 1024:.1f} KiB")
 
+    # ---- known-malware hashes --------------------------------------------
+    #
+    # ## Why an exact table and not a Bloom filter
+    #
+    # Passwords use a Bloom filter because its only error mode is a false
+    # positive, and a false positive there says "change a password that was
+    # actually fine" -- harmless. Here a false positive accuses a legitimate
+    # program on someone's computer of being malware. That is the one output
+    # this product must never produce by accident, so the same exact sorted-u64
+    # table the domain blocklist uses is the right structure: no false
+    # positives at all, at roughly 8 bytes per entry.
+    #
+    # 64-bit truncation is not a meaningful risk here. The chance that any
+    # given legitimate file collides with any of a million entries is about
+    # one in twenty trillion.
+    #
+    # ## The corpus is nobody's competitive advantage
+    #
+    # It is stale the moment it ships and it will never approach a real
+    # antivirus. It is worth having because it costs 8 MiB and catches the
+    # commodity case -- a file that has been sitting on disk unchanged since
+    # somebody else already identified it. Recompiled or packed malware walks
+    # straight past, and the app says so rather than implying coverage it does
+    # not have.
+    hashes = []
+    if args.malware and args.malware.exists():
+        for line in read_lines(args.malware):
+            candidate = line.split(",")[0].strip().strip('"').lower()
+            if len(candidate) == 64 and all(c in "0123456789abcdef" for c in candidate):
+                hashes.append(candidate)
+
+    # The EICAR test file, always. Not malware -- a 68-byte string every
+    # scanner has agreed to recognise since 1991 -- and its presence means the
+    # feature can be proven to work end to end by anyone, on any machine, with
+    # no corpus and nothing dangerous on disk. A detection feature nobody can
+    # verify is indistinguishable from one that does nothing.
+    #
+    # This value was computed from the published signature rather than copied:
+    #   python -c "import hashlib;print(hashlib.sha256(EICAR.encode()).hexdigest())"
+    hashes.append("275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f")
+
+    # normalize=False: these are already canonical lowercase hex, and the
+    # domain normaliser would mangle them. The Kotlin side queries with
+    # SortedHashSet64.contains(hex), which does not normalise either -- the two
+    # have to agree, and this is the pair that agrees.
+    blob = build_sorted_set(hashes, normalize=False)
+    (out / "malware.mus").write_bytes(blob)
+    print(f"Malware:   {len(hashes):,} hashes · {len(blob) / 1024:.1f} KiB"
+          + ("  (EICAR only -- pass --malware to add a real corpus)"
+             if len(hashes) == 1 else ""))
+
     # ---- signers ---------------------------------------------------------
     seed_signers = SEEDS / "signers-seed.txt"
     if seed_signers.exists():
@@ -288,6 +343,7 @@ def main() -> int:
         f"builtOn={date.today().isoformat()}",
         f"passwords={bloom.inserted}",
         f"domains={len(domains)}",
+        f"malware={len(hashes)}",
         "version=1",
         f"synthetic={'true' if synthetic else 'false'}",
         "",

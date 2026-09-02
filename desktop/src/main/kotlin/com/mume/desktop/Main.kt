@@ -280,12 +280,36 @@ private fun printScan() {
         return
     }
 
-    val intel = DesktopIntel.load().snapshot(LocalDate.now().toString())
-    val report = com.mume.core.MumeScanner().scan(collector.collect(intel))
+    val loaded = DesktopIntel.load()
+    val intel = loaded.snapshot(LocalDate.now().toString())
+    val snapshot = collector.collect(intel)
+    val report = com.mume.core.MumeScanner().scan(snapshot)
     val result = report.result
 
     println("Mume scan - ${collector.os.displayName}")
     println("=".repeat(72))
+    // Which corpora are actually bundled. A check that reports "not performed"
+    // because a table is missing looks identical to one the machine could not
+    // answer, and telling those apart is the difference between a bug and a
+    // build choice.
+    println("intel bundle     built ${loaded.manifest?.builtOn ?: "(absent)"}" +
+        (if (loaded.manifest?.synthetic == true) "  SYNTHETIC" else "") +
+        "  malware hashes: " + (loaded.manifest?.malwareCount ?: 0) +
+        "  lookup: " + (if (intel.isKnownMalware != null) "available" else "NOT LOADED"))
+
+    // How much of the machine the hash check actually reached. "Not performed"
+    // because nothing could be hashed and "not performed" because no corpus is
+    // bundled are different answers, and both are different from "nothing
+    // found".
+    snapshot.desktop?.let { d ->
+        val auto = d.autoRunEntries.orEmpty()
+        val procs = d.runningProcesses.orEmpty()
+        println("hash check       " +
+            auto.count { it.sha256 != null } + "/" + auto.size + " startup entries, " +
+            procs.count { it.sha256 != null } + "/" + procs.size + " processes hashed; " +
+            (auto.count { it.matchesKnownMalware != null } +
+                procs.count { it.matchesKnownMalware != null }) + " compared against the corpus")
+    }
     println("score            ${result.score}/100   grade ${result.grade}")
     println("checks run       ${result.checksRun}")
     println("not checkable    ${result.checksSkipped}  " +

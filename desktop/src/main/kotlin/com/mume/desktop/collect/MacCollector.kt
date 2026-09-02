@@ -42,7 +42,7 @@ internal class MacCollector : PlatformCollector {
         Shell.stdout("sw_vers", "-productVersion")?.trim()?.takeIf { it.isNotBlank() }
             ?.let { "macOS $it" }
 
-    override fun collect(): DesktopFacts = DesktopFacts(
+    override fun collect(intel: DesktopIntelSnapshot): DesktopFacts = DesktopFacts(
         os = os,
         osBuild = osBuild(),
 

@@ -195,10 +195,20 @@ object Snapshots {
             // leaving their pass path untested by the fixture whose whole job is
             // to prove a healthy machine scores 100.
             runningProcesses = listOf(
-                ProcessImage("Code", "C:/Users/x/AppData/Local/Programs/Microsoft VS Code/Code.exe", "Valid"),
-                ProcessImage("Update", "C:/Users/x/AppData/Local/SquirrelTemp/Update.exe", "Valid")
+                // matchesKnownMalware = false, not null: the corpus was consulted
+                // and said no. Null would make DSK-MAL-004 report not-checkable
+                // and leave its pass path untested.
+                ProcessImage(
+                    "Code", "C:/Users/x/AppData/Local/Programs/Microsoft VS Code/Code.exe", "Valid",
+                    matchesKnownMalware = false
+                ),
+                ProcessImage(
+                    "Update", "C:/Users/x/AppData/Local/SquirrelTemp/Update.exe", "Valid",
+                    matchesKnownMalware = false
+                )
             ),
             processesWithUnreadablePath = 179,
+            fileHashingWorks = true,
             hardening = HardeningFacts(
                 uacEnabled = true,
                 uacPromptsForElevation = true,
