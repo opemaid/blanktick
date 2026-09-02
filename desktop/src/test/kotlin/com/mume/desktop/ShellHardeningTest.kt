@@ -4,6 +4,7 @@ import com.mume.desktop.collect.Shell
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -78,6 +79,93 @@ class ShellHardeningTest {
         } finally {
             dir.deleteRecursively()
         }
+    }
+
+    /**
+     * The POSIX half of the guard, which is the half that was never run.
+     *
+     * The allow-list encodes a *belief* about who owns a directory, and the
+     * belief is not reliably true: `/usr/local/bin` is root-owned on a stock
+     * Linux and **owned by the logged-in user on an Intel Mac with Homebrew**.
+     * On that machine a "trusted" directory is writable by exactly the account
+     * an attacker already has.
+     *
+     * So ownership is checked against the filesystem rather than inferred from
+     * the path. This runs for real on Linux and macOS and is skipped on
+     * Windows, which has no POSIX view to read.
+     */
+    @Test
+    fun `on POSIX a tool must be root-owned all the way up`() {
+        if (onWindows) return
+
+        val resolved = Shell.resolve("id")
+        assertNotNull(resolved, "id(1) should exist on any POSIX system")
+
+        // Walk the same chain the guard walks and assert the property it relies
+        // on, so a failure here names the directory rather than just the tool.
+        var p: java.nio.file.Path? = java.nio.file.Paths.get(resolved).toRealPath()
+        while (p != null) {
+            val attrs = java.nio.file.Files.readAttributes(
+                p, java.nio.file.attribute.PosixFileAttributes::class.java
+            )
+            assertEquals("root", attrs.owner().name, "$p is not owned by root")
+            assertFalse(
+                java.nio.file.attribute.PosixFilePermission.GROUP_WRITE in attrs.permissions() ||
+                    java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE in attrs.permissions(),
+                "$p is writable by someone other than its owner"
+            )
+            p = p.parent
+        }
+    }
+
+    /**
+     * A root-owned binary in a directory anyone can write is not safe: the file
+     * can be unlinked and replaced without ever being modified. The guard walks
+     * upwards for that reason, and this proves the walk is load-bearing.
+     */
+    @Test
+    fun `a tool under a world-writable directory is rejected`() {
+        if (onWindows) return
+
+        val dir = java.nio.file.Files.createTempDirectory("mume-perm-test-")
+        try {
+            java.nio.file.Files.setPosixFilePermissions(
+                dir,
+                java.nio.file.attribute.PosixFilePermissions.fromString("rwxrwxrwx")
+            )
+            val tool = File(dir.toFile(), "id")
+            tool.writeText("#!/bin/sh\necho pwned\n")
+            tool.setExecutable(true)
+
+            assertNull(
+                Shell.resolve(tool.absolutePath),
+                "a tool in a world-writable directory resolved anyway"
+            )
+        } finally {
+            dir.toFile().deleteRecursively()
+        }
+    }
+
+    /**
+     * The allow-list is built from `%SystemRoot%`, which the *parent* of this
+     * process chooses. Launching Mume with `SystemRoot=C:ttacker` would
+     * otherwise aim the whole trusted set at a directory the attacker owns —
+     * the same forged-report outcome by a shorter route.
+     */
+    @Test
+    fun `a bogus SystemRoot does not move the trusted set`() {
+        if (!onWindows) return
+        val resolved = Shell.resolve("powershell.exe")
+        assertNotNull(resolved)
+        // Whatever the environment claimed, resolution has to have landed inside
+        // a directory that actually contains the Windows kernel — the one file a
+        // planted "SystemRoot" would not have.
+        val root = generateSequence(File(resolved).parentFile) { it.parentFile }
+            .firstOrNull { File(it, "System32\\kernel32.dll").isFile }
+        assertNotNull(
+            root,
+            "resolved to $resolved, which is not inside a real Windows directory"
+        )
     }
 
     // ------------------------------------------------------ timeout evasion

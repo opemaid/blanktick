@@ -34,6 +34,7 @@ fun main(args: Array<String>) {
     when {
         "--probe" in args -> printProbe()
         "--script" in args -> printScript()
+        "--tools" in args -> printTools()
         else -> ui()
     }
 }
@@ -205,6 +206,63 @@ private fun printProbe() {
  * Paste the output into a terminal and compare. A security app that asks to be
  * trusted about privacy should be the easiest thing in the world to check.
  */
+/**
+ * Where every system tool Mume runs actually resolves, and whether that
+ * location could have been written by an unprivileged process.
+ *
+ * ## Why this is a shipped command and not a test
+ *
+ * The binary-resolution guard is the difference between reading the operating
+ * system and reading whatever an attacker put on `PATH`, and it depends on
+ * facts that vary by machine: where a distribution puts `ss`, whether
+ * `/usr/local/bin` belongs to root or to the logged-in user, whether Homebrew
+ * has been near it. Those are not things a unit test on a build machine can
+ * answer for someone else's computer.
+ *
+ * A test proves the guard works where it ran. This proves it works *here*, in
+ * one command, for anyone who has the machine — which is the only honest way to
+ * back the claim on a platform the author cannot test.
+ */
+private fun printTools() {
+    val os = DesktopCollector.detectOs()
+    println("Mume tool resolution - " + (os?.name?.lowercase() ?: "unknown OS"))
+    println("=".repeat(72))
+    println()
+    println("A tool that does not resolve is not run at all: the checks that need it")
+    println("report as NOT CHECKABLE rather than guessing. That is the safe failure,")
+    println("but if something below is missing that you know is installed, the")
+    println("trusted-directory list in Shell.kt is wrong for this machine.")
+    println()
+
+    val tools = when (os) {
+        com.mume.core.model.DesktopOs.WINDOWS -> listOf("powershell.exe")
+        com.mume.core.model.DesktopOs.MACOS -> listOf(
+            "sw_vers", "spctl", "csrutil", "fdesetup", "systemsetup", "scutil",
+            "defaults", "dscl", "id", "lsof"
+        )
+        com.mume.core.model.DesktopOs.LINUX -> listOf(
+            "id", "lsof", "lsblk", "ss", "systemctl", "resolvectl",
+            "gsettings", "nft", "ufw", "mokutil"
+        )
+        null -> emptyList()
+    }
+
+    var unresolved = 0
+    for (t in tools) {
+        val where = com.mume.desktop.collect.Shell.resolve(t)
+        if (where == null) unresolved++
+        println("  %-14s %s".format(t, where ?: "NOT RESOLVED - checks needing it report not checkable"))
+    }
+
+    println()
+    println("$unresolved of ${tools.size} did not resolve.")
+    println()
+    println("Every path above must sit in a directory only an administrator can")
+    println("write. On macOS and Linux that is verified against the filesystem at")
+    println("run time - owner root, not group- or world-writable, all the way up -")
+    println("rather than assumed from the path. Confirm with:  ls -ld <dir>")
+}
+
 private fun printScript() {
     when (DesktopCollector.detectOs()) {
         com.mume.core.model.DesktopOs.WINDOWS ->

@@ -99,7 +99,7 @@ internal object Shell {
         val osName = System.getProperty("os.name").orEmpty().lowercase()
         when {
             osName.contains("win") -> {
-                val root = System.getenv("SystemRoot")?.takeIf { it.isNotBlank() } ?: "C:\\Windows"
+                val root = windowsRoot()
                 listOf(
                     "$root\\System32",
                     "$root\\System32\\WindowsPowerShell\\v1.0",
@@ -109,10 +109,88 @@ internal object Shell {
                 )
             }
             // /usr/libexec carries several of the tools macOS keeps off PATH.
+            // /usr/local/bin is deliberately absent here: on an Intel Mac with
+            // Homebrew it belongs to the logged-in user, which would make it
+            // precisely the writable directory this list exists to exclude.
             osName.contains("mac") || osName.contains("darwin") ->
                 listOf("/usr/bin", "/bin", "/usr/sbin", "/sbin", "/usr/libexec")
+            // /usr/local/bin is included on Linux, where it is conventionally
+            // root-owned — but the convention is not trusted. [isTamperProof]
+            // checks the actual ownership at runtime and drops it if not.
             else -> listOf("/usr/bin", "/bin", "/usr/sbin", "/sbin", "/usr/local/bin")
         }
+    }
+
+    /**
+     * `%SystemRoot%`, but only if it really is one.
+     *
+     * The whole allow-list is built from this string, and it comes from the
+     * environment — which the parent of this process chooses. Anything able to
+     * launch Mume with `SystemRoot=C:\attacker` would otherwise get the entire
+     * trusted set pointed at a directory it owns, which is the same forged-report
+     * outcome by a shorter route.
+     *
+     * Whoever can set that environment can usually do worse, so this is a cheap
+     * lock rather than a deep one: the value is accepted only if it contains the
+     * file every Windows install has, and falls back to the literal default
+     * otherwise.
+     */
+    private fun windowsRoot(): String {
+        val fromEnv = System.getenv("SystemRoot")?.takeIf { it.isNotBlank() }
+        val looksReal = fromEnv != null &&
+            runCatching { File(fromEnv, "System32\\kernel32.dll").isFile }.getOrDefault(false)
+        return if (looksReal) fromEnv!! else "C:\\Windows"
+    }
+
+    /**
+     * Asks the operating system whether an unprivileged process could have put
+     * this file here — rather than assuming it from the path.
+     *
+     * ## Why the allow-list alone is not enough
+     *
+     * A list of directory names encodes a belief about who owns them, and the
+     * belief is not always right. `/usr/local/bin` is root-owned on a stock
+     * Linux and **owned by the logged-in user on an Intel Mac running
+     * Homebrew** — on that machine the "trusted" directory is writable by
+     * exactly the account an attacker already controls. Distributions and
+     * package managers move this ground around, and a hardcoded list cannot
+     * follow it.
+     *
+     * So on POSIX the check is made against reality: the file, and every
+     * directory above it, must be owned by `root` and must not be writable by
+     * group or by others. The walk goes all the way up because a root-owned
+     * binary inside a user-writable directory can simply be unlinked and
+     * replaced.
+     *
+     * On Windows there is no POSIX view to read, and the allow-list resolves
+     * inside `%SystemRoot%`, whose ACLs are administrator-only by construction;
+     * [windowsRoot] is what keeps that anchored.
+     *
+     * @return true when the path cannot have been planted without administrator
+     *   rights, or when the platform gives us no way to tell (Windows).
+     */
+    private fun isTamperProof(file: File): Boolean {
+        val path = runCatching { file.toPath().toRealPath() }.getOrNull() ?: return false
+        val view = java.nio.file.Files.getFileAttributeView(
+            path, java.nio.file.attribute.PosixFileAttributeView::class.java
+        ) ?: return true    // not a POSIX filesystem: the allow-list is the check
+
+        var current: java.nio.file.Path? = path
+        while (current != null) {
+            val ok = runCatching {
+                val attrs = java.nio.file.Files.readAttributes(
+                    current, java.nio.file.attribute.PosixFileAttributes::class.java
+                )
+                val perms = attrs.permissions()
+                attrs.owner().name == "root" &&
+                    java.nio.file.attribute.PosixFilePermission.GROUP_WRITE !in perms &&
+                    java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE !in perms
+            }.getOrDefault(false)
+
+            if (!ok) return false
+            current = current.parent
+        }
+        return true
     }
 
     /** Windows will run `foo` when handed `foo.exe`; everywhere else, extensions are literal. */
@@ -150,7 +228,9 @@ internal object Shell {
                     runCatching {
                         f.canonicalPath.startsWith(File(d).canonicalPath + File.separator, ignoreCase = true)
                     }.getOrDefault(false)
-                }
+                } &&
+                // And the directory has to actually be what the list assumes.
+                isTamperProof(f)
         } ?: return null
 
         val path = runCatching { found.canonicalPath }.getOrDefault(found.absolutePath)
