@@ -579,3 +579,20 @@ problems are not present. The app says that too.
 | `docs/architecture-desktop.md` | ADR-003 — the desktop build; D-13…D-15 |
 | `docs/design-meeting-2026-08-28.md` | Design panel; decisions DD-01…DD-13 |
 | `docs/design-meeting-2026-08-29.md` | Desktop dashboard panel; DD-14…DD-20, and what the shipped code was not delivering |
+
+## Connecting a language model
+
+Mume speaks [MCP](https://modelcontextprotocol.io) over stdio, so any model with
+an MCP client can ask about this computer and get real answers rather than
+guesses: `Mume.exe --mcp`. Four tools, all read-only — a scan, the raw facts
+including the nulls, the exact script it runs, and its coverage on this platform.
+
+Stdio, not HTTP: your client launches Mume and talks to it over standard input
+and output. No socket is opened and the bytecode gate that forbids networking
+code still passes. And **every tool is a question** — nothing there fixes,
+removes, disables or quarantines anything, which is the same promise the app has
+made since its first commit and is enforced by a test.
+
+Setup and the reasoning: [`docs/mcp.md`](docs/mcp.md).
+
+## What Mume will not do

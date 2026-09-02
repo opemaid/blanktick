@@ -36,6 +36,9 @@ fun main(args: Array<String>) {
         "--script" in args -> printScript()
         "--tools" in args -> printTools()
         "--scan" in args -> printScan()
+        // stdio, not a socket. See McpServer: standard output IS the protocol,
+        // so nothing else in this branch may print.
+        "--mcp" in args -> com.mume.desktop.mcp.McpServer().run()
         else -> ui()
     }
 }
