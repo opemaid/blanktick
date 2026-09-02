@@ -104,7 +104,14 @@ class WindowsProbeTest {
      */
     @Test
     fun `every key the probe emits is one the collector consumes`() {
-        val emitted = Regex("""Emit '([a-zA-Z.]+)'""")
+        // Digits are in the character class deliberately. The first version of
+        // this pattern was `[a-zA-Z.]+`, which cannot match `hard.smb1` or
+        // `hard.psV2Present` — so those two keys were invisible to the guard
+        // entirely, and a typo in either would have produced a permanently null
+        // fact that the null contract would have reported, quite honestly, as
+        // "not checkable". A parity test with a blind spot is worse than none,
+        // because it is trusted.
+        val emitted = Regex("""Emit '([A-Za-z0-9._]+)'""")
             .findAll(script)
             .map { it.groupValues[1] }
             .toSortedSet()
@@ -114,13 +121,21 @@ class WindowsProbeTest {
                 "acct.admin", "acct.adminEnumerated", "acct.currentPasswordRequired", "acct.guestEnabled",
                 "acct.passwordless", "acct.sessionIsAdmin", "acct.userCount",
                 "autorun", "autorun.read", "autorun.failed",
-                "av.defenderPresent", "av.realtimeEnabled", "av.registered", "av.signatureAgeDays",
+                "av.antispyware", "av.behaviorMonitor", "av.defenderPresent",
+                "av.exclusion", "av.exclusionsReadable", "av.ioavProtection",
+                "av.networkInspection", "av.realtimeEnabled", "av.registered",
+                "av.signatureAgeDays", "av.tamperProtected", "av.threatActive",
+                "av.threatsKnown", "av.threatsRead",
                 "bitlocker.protection",
                 "cert", "cert.storeRead",
                 "dns", "dns.enumerated",
                 "drive", "drive.enumerated",
                 "fw.enumerated",
                 "fw.profile",
+                "hard.autoAdminLogon", "hard.autoLogonPasswordStored", "hard.consentPrompt",
+                "hard.enableLua", "hard.llmnr", "hard.psV2Present", "hard.remoteRegistry",
+                "hard.runAsPPL", "hard.settingsRead", "hard.smb1", "hard.wdigest",
+                "hard.winrmStatus",
                 "lock.screenSaverActive", "lock.screenSaverIsSecure", "lock.screenSaverTimeout",
                 "os.build", "ps.languageMode", "probe.complete",
                 "port", "port.enumerated",

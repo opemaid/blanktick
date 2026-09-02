@@ -560,6 +560,211 @@ internal object WindowsProbe {
           }
         }
 
+        # ---- persistence, the quiet half ------------------------------------
+        #
+        # ## Why these look different from the Run keys above
+        #
+        # Everything below is a place where Windows itself keeps a list, and
+        # where the STOCK CONTENTS ARE KNOWN AND NARROW. Printing the list would
+        # be useless -- 20 netsh helpers, 18 per-user COM registrations, 6 print
+        # monitors, all of them legitimate on a machine nobody has touched. That
+        # is the difference between this and Autoruns: Autoruns shows you four
+        # hundred rows and declines to say which matter, which is the right
+        # choice for an expert tool and the wrong one here.
+        #
+        # So each source below reports its DELTA FROM STOCK, the same design as
+        # the certificate check further up, which reports the user store minus
+        # the machine store rather than the 52 certificates a naive query
+        # returns. Measured on the development machine: every one of these
+        # yields ZERO rows on a healthy install, which is what makes them
+        # shippable rather than noise.
+
+        # WMI event subscriptions: a filter, a consumer, and a binding between
+        # them. Fileless, survives reboot, invisible to every Run-key checker,
+        # and the reason "check your startup folder" stopped being adequate
+        # advice a decade ago.
+        #
+        # Windows ships exactly one, the SCM event log filter, and it is
+        # excluded by name -- without that, this rule would fire on every
+        # machine alive.
+        Source 'WMI event subscriptions' {
+          foreach (${'$'}b in Get-CimInstance -Namespace root/subscription -ClassName __FilterToConsumerBinding -ErrorAction Stop) {
+            ${'$'}fname = ''
+            ${'$'}query = ''
+            foreach (${'$'}f in Get-CimInstance -Namespace root/subscription -ClassName __EventFilter -ErrorAction SilentlyContinue) {
+              if (${'$'}b.Filter -match [regex]::Escape(${'$'}f.Name)) { ${'$'}fname = ${'$'}f.Name; ${'$'}query = ${'$'}f.Query }
+            }
+            if (${'$'}fname -eq 'SCM Event Log Filter') { continue }
+            EmitAuto ${'$'}fname 'WMI subscription' 'WMI subscription' "${'$'}(${'$'}b.Consumer) :: ${'$'}query"
+          }
+        }
+
+        # COM hijacking. A CLSID registered under HKEY_CURRENT_USER SHADOWS the
+        # machine-wide one of the same ID, so a component Windows loads for its
+        # own reasons quietly loads someone else's DLL instead. It needs no
+        # administrator rights whatsoever.
+        #
+        # The shadow is the whole signal. A per-user CLSID that exists ONLY in
+        # HKCU is an ordinary private registration -- there are 18 of them here.
+        # One that also exists in HKLM is overriding something.
+        Source 'COM registrations' {
+          foreach (${'$'}k in Get-ChildItem 'HKCU:\Software\Classes\CLSID' -ErrorAction Stop) {
+            ${'$'}ip = Get-ItemProperty "${'$'}(${'$'}k.PSPath)\InprocServer32" -ErrorAction SilentlyContinue
+            if (-not ${'$'}ip) { continue }
+            if (-not (Test-Path "HKLM:\Software\Classes\CLSID\${'$'}(${'$'}k.PSChildName)\InprocServer32")) { continue }
+            EmitAuto ${'$'}k.PSChildName 'HKCU COM class' 'COM hijack' "${'$'}(${'$'}ip.'(default)')"
+          }
+        }
+
+        # AppInit_DLLs loads a library into essentially every process that uses
+        # user32. Empty on a healthy machine; anything at all here is worth a
+        # look.
+        Source 'AppInit DLLs' {
+          foreach (${'$'}p in @('HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows',
+                            'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Windows')) {
+            ${'$'}v = Reg ${'$'}p 'AppInit_DLLs'
+            if (${'$'}v -and "${'$'}v".Trim() -ne '') { EmitAuto 'AppInit_DLLs' ${'$'}p 'AppInit DLL' "${'$'}v" }
+          }
+        }
+
+        # Active Setup runs a command once per user at first sign-in. Filtered
+        # to StubPath values that name a file somewhere other than the system
+        # directories -- the ten Microsoft entries here are switches and
+        # fragments like '/UserInstall', not paths, and a naive filter reports
+        # two of them.
+        Source 'Active Setup' {
+          foreach (${'$'}k in Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components' -ErrorAction Stop) {
+            ${'$'}sp = (Get-ItemProperty ${'$'}k.PSPath -Name StubPath -ErrorAction SilentlyContinue).StubPath
+            if (-not ${'$'}sp) { continue }
+            if (${'$'}sp -notmatch '[\\/]') { continue }
+            if (${'$'}sp -match 'system32|SysWOW64|Program Files') { continue }
+            EmitAuto ${'$'}k.PSChildName 'Active Setup' 'Active Setup' "${'$'}sp"
+          }
+        }
+
+        # Winlogon Notify packages, and the per-user Load/Run values that
+        # predate the Run keys. Both keys are absent on a modern install, so
+        # anything present is by definition not stock.
+        Source 'Winlogon notify and legacy Load/Run' {
+          foreach (${'$'}k in Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify' -ErrorAction SilentlyContinue) {
+            ${'$'}dll = (Get-ItemProperty ${'$'}k.PSPath -Name DllName -ErrorAction SilentlyContinue).DllName
+            if (${'$'}dll) { EmitAuto ${'$'}k.PSChildName 'Winlogon Notify' 'Winlogon notify' "${'$'}dll" }
+          }
+          foreach (${'$'}n in @('Load', 'Run')) {
+            ${'$'}v = Reg 'HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Windows' ${'$'}n
+            if (${'$'}v) { EmitAuto ${'$'}n 'Windows NT CurrentVersion Windows' 'Legacy Load/Run' "${'$'}v" }
+          }
+          foreach (${'$'}h in @('HKCU:', 'HKLM:')) {
+            ${'$'}props = Get-ItemProperty "${'$'}h\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run" -ErrorAction SilentlyContinue
+            if (-not ${'$'}props) { continue }
+            foreach (${'$'}p in ${'$'}props.PSObject.Properties) {
+              if (${'$'}p.Name -like 'PS*') { continue }
+              EmitAuto ${'$'}p.Name "${'$'}h Explorer policy Run" 'Policy Run' "${'$'}(${'$'}p.Value)"
+            }
+          }
+        }
+
+        # Three lists Windows loads DLLs from, each with a known stock value.
+        # A print monitor or time provider is named by a bare filename when it
+        # lives in system32; a path separator means it does not.
+        Source 'System DLL lists' {
+          ${'$'}np = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa' -Name 'Notification Packages' -ErrorAction Stop).'Notification Packages'
+          foreach (${'$'}n in ${'$'}np) {
+            # scecli is stock everywhere; rassfm appears on domain controllers.
+            if (${'$'}n -in @('scecli', 'rassfm')) { continue }
+            EmitAuto ${'$'}n 'LSA Notification Packages' 'LSA package' "${'$'}n.dll"
+          }
+          foreach (${'$'}k in Get-ChildItem 'HKLM:\SYSTEM\CurrentControlSet\Control\Print\Monitors' -ErrorAction SilentlyContinue) {
+            ${'$'}d = (Get-ItemProperty ${'$'}k.PSPath -Name Driver -ErrorAction SilentlyContinue).Driver
+            if (${'$'}d -and ${'$'}d -match '[\\/]') { EmitAuto ${'$'}k.PSChildName 'Print monitor' 'Print monitor' "${'$'}d" }
+          }
+          foreach (${'$'}k in Get-ChildItem 'HKLM:\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders' -ErrorAction SilentlyContinue) {
+            ${'$'}d = (Get-ItemProperty ${'$'}k.PSPath -Name DllName -ErrorAction SilentlyContinue).DllName
+            if (${'$'}d -and ${'$'}d -notmatch 'system32') { EmitAuto ${'$'}k.PSChildName 'Time provider' 'Time provider' "${'$'}d" }
+          }
+          ${'$'}nsh = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\NetSh' -ErrorAction SilentlyContinue
+          if (${'$'}nsh) {
+            foreach (${'$'}p in ${'$'}nsh.PSObject.Properties) {
+              if (${'$'}p.Name -like 'PS*') { continue }
+              # Stock helpers are bare DLL names resolved out of system32.
+              if ("${'$'}(${'$'}p.Value)" -match '^[A-Za-z0-9_.-]+\.dll${'$'}') { continue }
+              EmitAuto ${'$'}p.Name 'Netsh helper' 'Netsh helper' "${'$'}(${'$'}p.Value)"
+            }
+          }
+          ${'$'}be = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' -Name BootExecute -ErrorAction SilentlyContinue).BootExecute
+          foreach (${'$'}b in ${'$'}be) {
+            if (${'$'}b -eq 'autocheck autochk *') { continue }
+            EmitAuto 'BootExecute' 'Session Manager' 'Boot execute' "${'$'}b"
+          }
+        }
+
+        # ---- hardening settings ----------------------------------------------
+        # Individually small, jointly the difference between a machine that
+        # resists a foothold and one that hands over cached credentials. All
+        # readable without elevation.
+        Emit 'hard.enableLua'          (Reg 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' 'EnableLUA')
+        Emit 'hard.consentPrompt'      (Reg 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' 'ConsentPromptBehaviorAdmin')
+        Emit 'hard.runAsPPL'           (Reg 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa' 'RunAsPPL')
+        Emit 'hard.wdigest'            (Reg 'HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest' 'UseLogonCredential')
+        Emit 'hard.smb1'               (Reg 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters' 'SMB1')
+        Emit 'hard.llmnr'              (Reg 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\DNSClient' 'EnableMulticast')
+        Emit 'hard.autoAdminLogon'     (Reg 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' 'AutoAdminLogon')
+        # The VALUE is never emitted, only whether one exists. It is a password
+        # in cleartext; an app that reads it into its own output has made the
+        # problem worse in the course of reporting it.
+        if (Reg 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' 'DefaultPassword') {
+          Emit 'hard.autoLogonPasswordStored' 'True'
+        } else {
+          Emit 'hard.autoLogonPasswordStored' 'False'
+        }
+        Emit 'hard.psV2Present' (Test-Path 'HKLM:\SOFTWARE\Microsoft\PowerShell\1\PowerShellEngine')
+        Emit 'hard.winrmStatus'        (Get-Service -Name WinRM).Status
+        Emit 'hard.remoteRegistry'     (Get-Service -Name RemoteRegistry).Status
+        Emit 'hard.settingsRead' 'True'
+
+        # ---- what the antivirus itself is doing -------------------------------
+        # Mume is not a malware scanner and never will be: it has no network, so
+        # no reputation lookup, and no file scanner. What it CAN do -- and what
+        # nothing else on a consumer machine seems to -- is audit the scanner
+        # that IS installed. A disabled behaviour monitor, tamper protection
+        # switched off, or a threat the product found and never resolved are all
+        # local facts, and all of them mean the AV is not doing what its own
+        # dashboard implies.
+        if (${'$'}mp) {
+          Emit 'av.tamperProtected'  ${'$'}mp.IsTamperProtected
+          Emit 'av.behaviorMonitor'  ${'$'}mp.BehaviorMonitorEnabled
+          Emit 'av.ioavProtection'   ${'$'}mp.IoavProtectionEnabled
+          Emit 'av.networkInspection' ${'$'}mp.NISEnabled
+          Emit 'av.antispyware'      ${'$'}mp.AntispywareEnabled
+        }
+        # IsActive is the signal, and it had to be measured to find that out.
+        # ActionSuccess reads True even for detections whose status says the
+        # action failed, so a rule built on it could never fire. Get-MpThreat
+        # models current state rather than history, and IsActive is the field
+        # that means "this is still here".
+        ${'$'}threats = Get-MpThreat
+        if (${'$'}null -ne ${'$'}threats) {
+          Emit 'av.threatsKnown' (${'$'}threats | Measure-Object).Count
+          foreach (${'$'}t in ${'$'}threats) {
+            if (${'$'}t.IsActive) { Emit 'av.threatActive' (San ${'$'}t.ThreatName) }
+          }
+          Emit 'av.threatsRead' 'True'
+        }
+        # Defender exclusion paths are the single highest-signal thing here --
+        # adding one is a standard step in a compromise -- and they are NOT
+        # readable without elevation: Get-MpPreference returns the literal
+        # string "N/A: Must be an administrator to view exclusions". Emitted as
+        # a known blind spot rather than as an empty list, because an empty list
+        # would read as "no exclusions configured", which is a different and
+        # much more reassuring claim than the truth.
+        ${'$'}excl = (Get-MpPreference).ExclusionPath
+        if (${'$'}excl -and "${'$'}excl" -notmatch 'must be an administrator') {
+          Emit 'av.exclusionsReadable' 'True'
+          foreach (${'$'}e in ${'$'}excl) { Emit 'av.exclusion' (San ${'$'}e) }
+        } else {
+          Emit 'av.exclusionsReadable' 'False'
+        }
+
         # ---- completion ------------------------------------------------------
         # The last line of the script, and the one that says the rest can be
         # believed. PowerShell can be killed partway through -- by a crash, by a

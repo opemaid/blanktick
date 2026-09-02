@@ -98,14 +98,14 @@ rather than presenting meaningless password and link verdicts as findings.
 
 ## What it checks
 
-**49 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
+**58 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
 rather than estimated:
 
 | Platform | Eligible | Run on an *idealised* device | Not checkable |
 |---|---|---|---|
-| Android | 29 | 29 | 20 (the desktop-only rules) |
-| iPhone | 15 | 12 | 37 |
-| Desktop | 31 | 30 | 19 |
+| Android | 29 | 29 | 29 (the desktop-only rules) |
+| iPhone | 15 | 12 | 46 |
+| Desktop | 40 | 39 | 19 |
 
 Those are fixture numbers — a device that answers every question it can. **A real
 machine answers fewer.** On the development laptop (Windows 11, standard user, no
@@ -169,6 +169,20 @@ The asymmetry is real and every app says so on screen — listing what it could
   attached right now is encrypted. Nothing plugged in reports as *not checkable*,
   never as a pass. It also shows every drive and phone the computer still
   remembers — not a finding, never scored, just your machine's memory of you.
+- **Machine hardening**: User Account Control, whether sign-in credentials are
+  left readable in memory, SMBv1, LLMNR, remote-administration services, and
+  whether an auto-logon password is sitting in the registry in cleartext. Mume
+  never reads that password — only whether one exists. An app that copied a
+  stored credential into its own report would have made the problem worse in
+  the course of describing it.
+- **An audit of the antivirus you already have.** Mume is not an antivirus and
+  cannot become one: no network means no reputation lookup, and it has no file
+  scanner. What it can do is check whether the scanner already installed has
+  been quietly switched off in part — a disabled behaviour monitor, tamper
+  protection off, or a threat the product found and never resolved. Malware
+  disables one component rather than the whole suite, because the whole suite
+  going dark gets noticed, and from the outside a partly-disabled antivirus
+  looks exactly like a working one.
 - **Installed software**, read from the OS's own uninstall registry. Two things
   are checkable offline and Mume checks exactly those: software **past its
   vendor's security support** (matched against a catalogue of products whose EOL

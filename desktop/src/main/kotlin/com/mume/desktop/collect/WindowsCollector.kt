@@ -1,10 +1,12 @@
 package com.mume.desktop.collect
 
 import com.mume.core.analysis.DisplaySafe
+import com.mume.core.model.AntivirusPosture
 import com.mume.core.model.AutoRunEntry
 import com.mume.core.model.CaCertificate
 import com.mume.core.model.DesktopFacts
 import com.mume.core.model.DesktopOs
+import com.mume.core.model.HardeningFacts
 import com.mume.core.model.InstalledProgram
 import com.mume.core.model.ListeningPort
 import com.mume.core.model.RemoteAccessService
@@ -118,6 +120,9 @@ internal class WindowsCollector : PlatformCollector {
             autoRunBlockedForRemovable = bool("usb.autorunBlocked"),
             removableDrives = removableDrives(),
             rememberedUsbDevices = all("usbdevice")?.map { DisplaySafe.label(it) }?.distinct()?.sorted(),
+
+            hardening = hardening(),
+            antivirusPosture = antivirusPosture(),
 
             // Emitted as the probe's last line. Absent means it did not get
             // there, and every fact above is however far it happened to reach.
@@ -342,6 +347,80 @@ internal class WindowsCollector : PlatformCollector {
                 usesSystemBinary = parts.getOrNull(5)?.let { it.equals("True", ignoreCase = true) }
             )
         }
+    }
+
+    // ------------------------------------------------------------- hardening
+
+    /**
+     * Settings that decide how far an attacker gets after arriving.
+     *
+     * ## Absence means different things in different rows, and that is the work
+     *
+     * Three of these are absent from the registry on a perfectly healthy
+     * machine, and absence does **not** carry the same meaning in each:
+     *
+     * - `WDigest` absent means **off**. Microsoft changed the default in 2014,
+     *   so the key is only written when someone re-enables plaintext credential
+     *   caching. Absence is a pass.
+     * - `SMB1` absent means **off**, same reasoning.
+     * - `LLMNR` absent means **on**. Disabling it requires writing the policy,
+     *   so the missing key is the insecure state, not the safe one.
+     *
+     * Treating all three the same way would either accuse every machine alive
+     * or quietly reassure about the one that is actually exposed. This is the
+     * same asymmetry the AutoRun policy has, and it is why each of these is
+     * resolved here rather than by a generic "absent means secure" helper.
+     */
+    private fun hardening(): HardeningFacts? {
+        if (one("hard.settingsRead") == null) return null
+        return HardeningFacts(
+            uacEnabled = one("hard.enableLua")?.let { it == "1" },
+            // 0 = elevate silently, with no prompt at all.
+            uacPromptsForElevation = one("hard.consentPrompt")?.let { it != "0" },
+            // 0, 1 and 2 are all "protected"; only an absent value is unknown.
+            lsaProtected = one("hard.runAsPPL")?.let { it != "0" },
+            plaintextCredentialsInMemory = one("hard.wdigest")?.let { it == "1" } ?: false,
+            smb1Enabled = one("hard.smb1")?.let { it == "1" } ?: false,
+            // Absent = enabled. The inverse of the two above.
+            llmnrEnabled = one("hard.llmnr")?.let { it != "0" } ?: true,
+            powerShellV2Available = Shell.parseBoolean(one("hard.psV2Present")),
+            autoLogonEnabled = one("hard.autoAdminLogon")?.let { it == "1" } ?: false,
+            autoLogonPasswordStored = Shell.parseBoolean(one("hard.autoLogonPasswordStored")),
+            remoteManagementRunning = one("hard.winrmStatus")?.equals("Running", true),
+            remoteRegistryRunning = one("hard.remoteRegistry")?.equals("Running", true)
+        )
+    }
+
+    /**
+     * What the antivirus is doing, which is a different question from what is
+     * on the disk.
+     *
+     * Mume has no scanner and no network, so it cannot offer a second opinion
+     * about files. It can read whether the scanner already present has been
+     * quietly switched off in part, and whether it found something it never
+     * finished dealing with — both entirely local, and neither surfaced by any
+     * consumer tool this project has looked at.
+     */
+    private fun antivirusPosture(): AntivirusPosture? {
+        val defender = one("av.defenderPresent") ?: return null
+        if (defender.isBlank()) return null
+        return AntivirusPosture(
+            tamperProtectionEnabled = bool("av.tamperProtected"),
+            behaviourMonitoringEnabled = bool("av.behaviorMonitor"),
+            downloadScanningEnabled = bool("av.ioavProtection"),
+            networkInspectionEnabled = bool("av.networkInspection"),
+            antiSpywareEnabled = bool("av.antispyware"),
+            knownThreatCount = int("av.threatsKnown"),
+            // Only an answer if the threat list was actually readable; an empty
+            // list from a failed query would read as "nothing active".
+            activeThreatNames = if (one("av.threatsRead") == null) null
+            else all("av.threatActive").orEmpty(),
+            // Almost always null on Windows: the exclusion list needs
+            // administrator rights, and Mume does not ask for them. Reported as
+            // a blind spot rather than as "no exclusions are configured".
+            exclusionPaths = if (bool("av.exclusionsReadable") == true) all("av.exclusion").orEmpty()
+            else null
+        )
     }
 
     // -------------------------------------------------------- removable media

@@ -22,10 +22,10 @@ class PlatformCoverageTest {
 
     @Test
     fun `rule counts match what we publish`() {
-        assertEquals(49, DefaultRules.COUNT, "total rule count changed — update README and web/")
+        assertEquals(58, DefaultRules.COUNT, "total rule count changed — update README and web/")
         assertEquals(29, DefaultRules.countFor(Platform.ANDROID))
         assertEquals(15, DefaultRules.countFor(Platform.IOS), "rules iOS is even allowed to attempt")
-        assertEquals(31, DefaultRules.countFor(Platform.DESKTOP))
+        assertEquals(40, DefaultRules.countFor(Platform.DESKTOP))
     }
 
     /**
@@ -53,21 +53,21 @@ class PlatformCoverageTest {
         val desktop = scanner.scan(Snapshots.healthyDesktop()).result
 
         assertEquals(29, android.checksRun)
-        assertEquals(20, android.checksSkipped, "the 20 desktop-only rules")
-        assertEquals(49, android.checksRun + android.checksSkipped)
+        assertEquals(29, android.checksSkipped, "the 29 desktop-only rules")
+        assertEquals(58, android.checksRun + android.checksSkipped)
 
         // Three of the fifteen iOS-eligible rules still skip, because iOS
         // cannot supply their inputs even though the rule is not gated by
         // platform: the patch-level table, the DNS list and the Wi-Fi gateway
         // history are all null there.
         assertEquals(12, ios.checksRun)
-        assertEquals(37, ios.checksSkipped)
-        assertEquals(49, ios.checksRun + ios.checksSkipped)
+        assertEquals(46, ios.checksSkipped)
+        assertEquals(58, ios.checksRun + ios.checksSkipped)
 
-        // 31 eligible, minus SIP which does not exist off macOS.
-        assertEquals(30, desktop.checksRun)
+        // 40 eligible, minus SIP which does not exist off macOS.
+        assertEquals(39, desktop.checksRun)
         assertEquals(19, desktop.checksSkipped)
-        assertEquals(49, desktop.checksRun + desktop.checksSkipped)
+        assertEquals(58, desktop.checksRun + desktop.checksSkipped)
     }
 
     @Test

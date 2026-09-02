@@ -35,6 +35,7 @@ fun main(args: Array<String>) {
         "--probe" in args -> printProbe()
         "--script" in args -> printScript()
         "--tools" in args -> printTools()
+        "--scan" in args -> printScan()
         else -> ui()
     }
 }
@@ -261,6 +262,48 @@ private fun printTools() {
     println("write. On macOS and Linux that is verified against the filesystem at")
     println("run time - owner root, not group- or world-writable, all the way up -")
     println("rather than assumed from the path. Confirm with:  ls -ld <dir>")
+}
+
+/**
+ * Runs a full scan and prints the scored result as text.
+ *
+ * The same report the dashboard renders, in a form that can be diffed between
+ * builds. That is what it is for: a rule added without measuring is how a
+ * security tool ends up crying wolf on a healthy machine, and the cheapest way
+ * to check is to run every rule against a machine known to be fine and count
+ * what fires.
+ */
+private fun printScan() {
+    val collector = DesktopCollector.forCurrentOs()
+    if (collector == null) {
+        println("Mume does not know this operating system: ${System.getProperty("os.name")}")
+        return
+    }
+
+    val intel = DesktopIntel.load().snapshot(LocalDate.now().toString())
+    val report = com.mume.core.MumeScanner().scan(collector.collect(intel))
+    val result = report.result
+
+    println("Mume scan - ${collector.os.displayName}")
+    println("=".repeat(72))
+    println("score            ${result.score}/100   grade ${result.grade}")
+    println("checks run       ${result.checksRun}")
+    println("not checkable    ${result.checksSkipped}  " +
+        "(${report.skippedWrongPlatform.size} wrong platform, " +
+        "${report.skippedUnobservable.size} this machine would not say)")
+    println("findings         ${result.actionableFindings.size}")
+    println()
+
+    result.actionableFindings
+        .sortedBy { it.finding.severity.ordinal }
+        .forEach { s ->
+            val f = s.finding
+            println("[%-8s] -%-3d %-14s %s".format(f.severity, s.deduction, f.ruleId, f.title))
+        }
+
+    println()
+    println("--- checks that could not be performed ---")
+    report.skippedUnobservable.forEach { println("  ${it.ruleId}  ${it.description}") }
 }
 
 private fun printScript() {

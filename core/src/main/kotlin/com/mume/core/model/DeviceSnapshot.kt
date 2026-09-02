@@ -311,6 +311,29 @@ data class DesktopFacts(
      */
     val autoRunSourcesUnread: List<String>? = null,
 
+    // ---- Hardening settings ------------------------------------------------
+    /**
+     * Individually small settings that jointly decide whether a foothold stays
+     * a foothold.
+     *
+     * Grouped into one object for the same reason [DesktopFacts] itself is
+     * grouped: on a platform that cannot report them the whole block is `null`
+     * once, rather than a dozen separate nulls that each have to be explained.
+     */
+    val hardening: HardeningFacts? = null,
+
+    /**
+     * What the installed antivirus is actually doing, as opposed to what its
+     * dashboard implies.
+     *
+     * Mume is not a malware scanner and cannot become one — no network means no
+     * reputation lookup, and there is no file scanner. Auditing the scanner
+     * that *is* installed is the honest version of the same job, and it is
+     * entirely local: a switched-off behaviour monitor, tamper protection
+     * disabled, or a threat the product found and never resolved.
+     */
+    val antivirusPosture: AntivirusPosture? = null,
+
     // ---- Integrity of the collection itself --------------------------------
     /**
      * Whether the collector ran all the way to the end.
@@ -446,6 +469,91 @@ data class ListeningPort(
  * @param signedByKnownVendor null when the platform could not verify a
  *   signature, which is common on Linux and must not read as "unsigned".
  */
+/**
+ * Machine settings that decide how much an attacker gets *after* they arrive.
+ *
+ * Every field is nullable under the same contract as the rest of the model:
+ * `null` means the setting could not be read, never that it is off. Several of
+ * these are absent from the registry on a healthy machine *because the safe
+ * behaviour is the default*, so each field below documents which reading
+ * absence carries — getting that backwards would either accuse every machine
+ * alive or reassure about a setting nobody checked.
+ */
+data class HardeningFacts(
+    /** User Account Control master switch. Absent is not stock; it is always written. */
+    val uacEnabled: Boolean? = null,
+    /**
+     * `ConsentPromptBehaviorAdmin`. 0 means elevation happens with no prompt at
+     * all, which removes the one moment a person might notice it.
+     */
+    val uacPromptsForElevation: Boolean? = null,
+    /** LSA run as a protected process, which stops most credential dumpers. */
+    val lsaProtected: Boolean? = null,
+    /**
+     * WDigest caching plaintext credentials in memory.
+     *
+     * Absent means off — Microsoft changed the default in 2014 — so absence is
+     * a pass here, and only an explicitly written `1` is a finding.
+     */
+    val plaintextCredentialsInMemory: Boolean? = null,
+    /** SMBv1, deprecated and the transport EternalBlue used. Absent means off. */
+    val smb1Enabled: Boolean? = null,
+    /**
+     * LLMNR, which broadcasts "does anyone know this name?" to the local
+     * network and accepts the first answer. The basis of Responder-style
+     * credential capture on any shared Wi-Fi.
+     *
+     * Absent means **enabled**: switching it off requires writing the policy.
+     * The inverse of the WDigest case, which is why they are separate fields.
+     */
+    val llmnrEnabled: Boolean? = null,
+    /** Windows PowerShell 2.0 engine, which can be invoked to bypass v5 logging. */
+    val powerShellV2Available: Boolean? = null,
+    /** Automatic sign-in configured. */
+    val autoLogonEnabled: Boolean? = null,
+    /**
+     * Whether an auto-logon password sits in the registry in cleartext.
+     *
+     * The value itself is never collected. An app that read a stored password
+     * into its own output would have made the problem worse in the course of
+     * reporting it.
+     */
+    val autoLogonPasswordStored: Boolean? = null,
+    /** Windows Remote Management, listening for remote command execution. */
+    val remoteManagementRunning: Boolean? = null,
+    /** Remote Registry service, which exposes the registry over the network. */
+    val remoteRegistryRunning: Boolean? = null
+)
+
+/**
+ * The state of the antivirus that is installed, rather than a second opinion
+ * about the files on disk.
+ *
+ * @param exclusionPaths folders the scanner has been told to ignore. `null`
+ *   when they could not be read, which on Windows is the ordinary case: the
+ *   query returns "must be an administrator to view exclusions", and reporting
+ *   that as an empty list would turn "I could not look" into "there are none".
+ */
+data class AntivirusPosture(
+    val tamperProtectionEnabled: Boolean? = null,
+    val behaviourMonitoringEnabled: Boolean? = null,
+    /** Scanning of downloads and attachments as they arrive. */
+    val downloadScanningEnabled: Boolean? = null,
+    val networkInspectionEnabled: Boolean? = null,
+    val antiSpywareEnabled: Boolean? = null,
+    /** Threats the product knows about, resolved or not. Context, not a finding. */
+    val knownThreatCount: Int? = null,
+    /**
+     * Threats the product still considers present.
+     *
+     * `IsActive` is the field that means this, and it had to be measured to
+     * establish that: `ActionSuccess` reads true even for detections whose own
+     * status says the action failed, so a check built on it could never fire.
+     */
+    val activeThreatNames: List<String>? = null,
+    val exclusionPaths: List<String>? = null
+)
+
 data class AutoRunEntry(
     val name: String,
     val location: String,

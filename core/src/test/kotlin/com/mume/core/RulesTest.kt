@@ -5,7 +5,9 @@ import com.mume.core.intel.ClusterRulePack
 import com.mume.core.intel.Perms
 import com.mume.core.model.AutoRunEntry
 import com.mume.core.model.CaCertificate
+import com.mume.core.model.AntivirusPosture
 import com.mume.core.model.DesktopFacts
+import com.mume.core.model.HardeningFacts
 import com.mume.core.model.DesktopOs
 import com.mume.core.model.DeviceSnapshot
 import com.mume.core.model.ListeningPort
@@ -181,6 +183,41 @@ object Snapshots {
                     "Microsoft Visual Studio Code", "1.99.0", "Microsoft Corporation",
                     "C:/Users/x/AppData/Local/Programs/Microsoft VS Code", userWritableLocation = true
                 )
+            ),
+            // Populated rather than left null so the hardening and AV-posture
+            // rules are actually exercised by the fixture that exists to prove a
+            // healthy machine scores 100. A fixture that omits a fact block
+            // makes every rule reading it report not-checkable, which passes the
+            // suite while testing nothing.
+            hardening = HardeningFacts(
+                uacEnabled = true,
+                uacPromptsForElevation = true,
+                lsaProtected = true,
+                plaintextCredentialsInMemory = false,
+                smb1Enabled = false,
+                // The one setting a healthy Windows machine still has switched
+                // on, because Microsoft ships it that way. Set false here so the
+                // fixture scores 100; the real-machine behaviour is covered by
+                // its own test in HardeningRulesTest.
+                llmnrEnabled = false,
+                powerShellV2Available = false,
+                autoLogonEnabled = false,
+                autoLogonPasswordStored = false,
+                remoteManagementRunning = false,
+                remoteRegistryRunning = false
+            ),
+            antivirusPosture = AntivirusPosture(
+                tamperProtectionEnabled = true,
+                behaviourMonitoringEnabled = true,
+                downloadScanningEnabled = true,
+                networkInspectionEnabled = true,
+                antiSpywareEnabled = true,
+                knownThreatCount = 0,
+                activeThreatNames = emptyList(),
+                // Null even on a healthy machine: reading Defender's exclusion
+                // list needs administrator rights Mume does not ask for, so this
+                // is a permanent blind spot rather than an empty list.
+                exclusionPaths = null
             )
         ),
         intelBundleDate = "2026-08-20",
