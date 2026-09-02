@@ -170,8 +170,23 @@ object DesktopRules {
 
         override fun check(s: DeviceSnapshot) = facts(s) { d ->
             val ports = d.listeningPorts ?: return@facts RuleOutcome.NotApplicable
-            val exposed = ports
-                .filter { it.isPubliclyBound && it.port !in EXPECTED }
+
+            // ## Listening is not reachable, and the firewall already knows
+            //
+            // This rule used to report every publicly-bound socket. On the
+            // development machine that was "17 services are reachable from the
+            // whole network" for 9 points -- and it was not true. Windows blocks
+            // inbound by default; of 25 sockets bound to all interfaces, exactly
+            // 2 belonged to a program the firewall actually permits, and both
+            // were the developer's own HTTP servers.
+            //
+            // So when the firewall's answer is available, it is used, and the
+            // finding describes what is genuinely reachable. Without it the old
+            // behaviour stands, because "bound to every interface" remains the
+            // honest worst case when nothing better can be established.
+            val reachable = d.reachableFromNetwork
+            val exposed = (reachable ?: ports.filter { it.isPubliclyBound })
+                .filter { it.port !in EXPECTED }
                 .distinctBy { it.port }
                 .sortedBy { it.port }
             if (exposed.isEmpty()) return@facts RuleOutcome.Pass
@@ -184,7 +199,9 @@ object DesktopRules {
                     ruleId = id,
                     category = category,
                     severity = if (exposed.size >= 4) Severity.MEDIUM else Severity.LOW,
-                    title = exposed.size.toString() + " service(s) are reachable from the whole network",
+                    title = exposed.size.toString() +
+                        (if (reachable != null) " service(s) are reachable from the network"
+                        else " service(s) are listening to the whole network"),
                     detail = "These are listening on every network interface rather than only on " +
                         "this machine: " + listed + ". That is fine at home behind a router, and " +
                         "not fine on shared Wi-Fi.",

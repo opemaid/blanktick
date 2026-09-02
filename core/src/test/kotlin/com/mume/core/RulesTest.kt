@@ -209,6 +209,14 @@ object Snapshots {
             ),
             processesWithUnreadablePath = 179,
             fileHashingWorks = true,
+            // Empty, not null: a healthy machine's root store has no additions
+            // Windows cannot account for. Null would make DSK-CA-001 report
+            // not-checkable and leave its pass path untested.
+            machineAddedRootCerts = emptyList(),
+            // Two of the listening sockets are permitted inbound by a firewall
+            // rule, which is the real shape of a developer machine.
+            reachableFromNetwork = emptyList(),
+            listeningPortsUnattributed = 23,
             hardening = HardeningFacts(
                 uacEnabled = true,
                 uacPromptsForElevation = true,

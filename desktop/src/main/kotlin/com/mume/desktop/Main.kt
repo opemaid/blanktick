@@ -315,7 +315,17 @@ private fun printScan() {
                 (auto.count { it.antivirusVerdict == "threat" } +
                     procs.count { it.antivirusVerdict == "threat" }) + " flagged"))
     }
-    println("score            ${result.score}/100   grade ${result.grade}")
+    // A score is a percentage of deductions from a hundred. With two checks out
+    // of sixty-three actually performed it is not a low number or a high one,
+    // it is meaningless — and it renders as 100/100 STRONG, which is the single
+    // most reassuring thing this app could possibly say about a machine it
+    // failed to examine. Seen for real when the probe overran its timeout.
+    if (snapshot.desktop?.collectionCompleted == false) {
+        println("score            NOT SHOWN — the collection did not finish, so any number here")
+        println("                 would describe how little was read, not this computer.")
+    } else {
+        println("score            ${result.score}/100   grade ${result.grade}")
+    }
     println("checks run       ${result.checksRun}")
     println("not checkable    ${result.checksSkipped}  " +
         "(${report.skippedWrongPlatform.size} wrong platform, " +

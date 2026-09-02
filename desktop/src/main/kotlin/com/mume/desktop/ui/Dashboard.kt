@@ -416,12 +416,31 @@ private fun StatusSidebar(
         modifier.fillMaxHeight(),
         verticalArrangement = Arrangement.spacedBy(MumeTokens.Space.s4)
     ) {
-        ScoreGauge(
-            score = result.score,
-            grade = result.grade.label,
-            previous = state.previousScore,
-            color = gradeColor(result.score)
-        )
+        // No score when the collection did not finish.
+        //
+        // A score is a percentage of deductions from a hundred, so a scan that
+        // read almost nothing scores almost a hundred. Seen for real: the probe
+        // overran its timeout, two checks of sixty-three ran, and the gauge
+        // read 100 STRONG — the most reassuring thing this app could possibly
+        // say about a machine it had failed to examine. The caveat banner above
+        // the findings explains what happened; showing a number beside it would
+        // be inviting the reader to believe the number instead.
+        if (state.collectionCaveats.isEmpty()) {
+            ScoreGauge(
+                score = result.score,
+                grade = result.grade.label,
+                previous = state.previousScore,
+                color = gradeColor(result.score)
+            )
+        } else {
+            Box(Modifier.fillMaxWidth().padding(vertical = MumeTokens.Space.s4)) {
+                Notice(
+                    "No score this time. The scan did not finish, and a score built from a " +
+                        "partial reading would describe how little was checked rather than " +
+                        "this computer."
+                )
+            }
+        }
 
         CoverageMeter(
             ran = result.checksRun,

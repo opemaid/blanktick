@@ -62,7 +62,9 @@ class HardeningRulesTest {
     fun `absent facts produce not-applicable, never a pass`() {
         val base = Snapshots.healthyDesktop()
         val blind = base.copy(
-            desktop = base.desktop!!.copy(hardening = null, antivirusPosture = null)
+            desktop = base.desktop!!.copy(
+                hardening = null, antivirusPosture = null, machineAddedRootCerts = null
+            )
         )
         HardeningRules.ALL.forEach { rule ->
             assertTrue(

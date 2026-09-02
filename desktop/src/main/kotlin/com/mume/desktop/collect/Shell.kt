@@ -464,7 +464,19 @@ internal object Shell {
      */
     fun powershellKeyValues(
         script: String,
-        timeoutSeconds: Long = 90
+        // Four minutes, not ninety seconds, and the number is measured rather
+        // than guessed.
+        //
+        // The probe grew to about 133 seconds of real work on the development
+        // machine -- most of it Get-AuthenticodeSignature, which costs roughly
+        // 410 milliseconds a file and is asked about sixty-six of them. At the
+        // old ceiling the run was killed, powershellKeyValues returned an empty
+        // map, every check reported not-checkable, and the app printed a
+        // confident 100/100 off two checks. A ceiling that truncates the entire
+        // collection is far worse than a scan that takes longer, and the score
+        // is now suppressed when the collection does not finish -- but the
+        // right fix is for it to finish.
+        timeoutSeconds: Long = 240
     ): Map<String, List<String>> {
         lastRunTruncated = false
         val raw = powershell(script, timeoutSeconds) ?: return emptyMap()

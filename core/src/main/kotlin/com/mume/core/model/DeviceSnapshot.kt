@@ -311,6 +311,41 @@ data class DesktopFacts(
      */
     val autoRunSourcesUnread: List<String>? = null,
 
+    /**
+     * Listening sockets the firewall actually allows inbound, keyed by port.
+     *
+     * ## Listening is not reachable
+     *
+     * "25 services are listening on every interface" is true on a stock Windows
+     * machine and says almost nothing, because Windows blocks inbound by
+     * default. This is the subset the firewall lets through — the question a
+     * person was actually asking.
+     *
+     * `null` when the firewall rules could not be read.
+     */
+    val reachableFromNetwork: List<ListeningPort>? = null,
+    /**
+     * Listening sockets that could not be attributed to a program, and so could
+     * not be matched against a firewall rule either way.
+     *
+     * Most of them, on an ordinary machine: system processes do not reveal
+     * their path to an unprivileged caller. Counted and shown rather than
+     * assumed safe or assumed exposed — "2 reachable and 23 I could not
+     * attribute" are both true; "17 reachable" was not.
+     */
+    val listeningPortsUnattributed: Int? = null,
+    /**
+     * Root certificates trusted machine-wide that Windows did not put there.
+     *
+     * Closes a gap the probe previously documented as unanswerable. Windows
+     * lists the roots it delivers under its auto-update mechanism, and records
+     * when each root was written; a certificate that appeared after the OS was
+     * installed and did not arrive through Microsoft's channel was installed by
+     * somebody. Group-policy deployments are excluded, because on a managed
+     * laptop those are normal.
+     */
+    val machineAddedRootCerts: List<CaCertificate>? = null,
+
     // ---- What is running ----------------------------------------------------
     /**
      * Running programs worth a second look — not an inventory of all of them.

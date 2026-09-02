@@ -454,7 +454,74 @@ object HardeningRules {
         }
     }
 
+    /**
+     * A root certificate trusted by the whole machine that Windows did not put
+     * there.
+     *
+     * ## The gap this closes, and how it closed without a bundled list
+     *
+     * The per-user trust check has always worked by subtraction: a certificate
+     * in the user store and not the machine store was added for that user. The
+     * machine store had no equivalent, and the probe said so — telling
+     * Microsoft's roots from an injected one "needs a pinned list of thumbprints
+     * this build does not bundle", and matching on subject name would be worse
+     * than useless because the name is the part an attacker controls.
+     *
+     * It never needed a bundled list. **Windows already knows which roots it
+     * delivered** — they are enumerated under its own auto-update mechanism —
+     * and it records when each root's registry entry was written. A root that
+     * appeared *after* the operating system was installed and did *not* arrive
+     * through Microsoft's channel was put there by somebody.
+     *
+     * Neither oracle works alone: the auto-update list by itself flags 14
+     * certificates on a healthy machine, all of them legitimate roots shipped
+     * inside the Windows image rather than auto-updated. Together they produce
+     * zero, measured.
+     *
+     * Group-policy deployments are excluded before the rule ever sees them. On
+     * a managed laptop a root pushed by IT is normal, and accusing the IT
+     * department is how a security tool gets uninstalled.
+     */
+    val MachineWideRootCertificate = object : BaseRule(
+        id = "DSK-CA-001",
+        category = Category.NETWORK,
+        description = "No unexpected authority is trusted by the whole computer",
+        platforms = Platforms.DESKTOP_ONLY
+    ) {
+        override fun check(s: DeviceSnapshot) = facts(s) { d ->
+            val added = d.machineAddedRootCerts ?: return@facts RuleOutcome.NotApplicable
+            if (added.isEmpty()) return@facts RuleOutcome.Pass
+
+            RuleOutcome.Fail(
+                added.take(5).map { cert ->
+                    Finding(
+                        ruleId = id,
+                        category = category,
+                        severity = Severity.HIGH,
+                        title = "Something added a certificate authority this whole computer trusts",
+                        detail = "\"" + cert.subject + "\" is trusted for every user on this " +
+                            "machine, it was added after Windows was installed, and it did not " +
+                            "come from Microsoft or from a workplace policy. An authority in " +
+                            "this list can vouch for any website, which means whoever holds its " +
+                            "key can read traffic you believe is private.",
+                        remediation = "If you installed this yourself — some development tools and " +
+                            "corporate proxies do — it is expected. If you did not, remove it " +
+                            "from the computer's Trusted Root store and change the passwords for " +
+                            "anything important you have used since.",
+                        subjectId = cert.sha256,
+                        evidence = mapOf(
+                            "subject" to cert.subject,
+                            "issuer" to cert.issuer,
+                            "thumbprint" to cert.sha256
+                        )
+                    )
+                }
+            )
+        }
+    }
+
     val ALL: List<Rule> = listOf(
+        MachineWideRootCertificate,
         UacDisabled,
         CredentialsExposedInMemory,
         AutoLogonPasswordStored,

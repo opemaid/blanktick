@@ -122,6 +122,12 @@ internal object WindowsProbe {
         # one instance.
         function FileHash(${'$'}path) {
           if (-not ${'$'}path) { return '' }
+          # Skipped entirely when the installed scanner is available to
+          # answer instead. The bundled table exists as the fallback for
+          # a machine whose antivirus is absent or disabled, so computing
+          # it alongside a working scanner is work whose answer is
+          # already known and weaker.
+          if (${'$'}script:defenderUsable) { return '' }
           try {
             ${'$'}f = Get-Item -LiteralPath ${'$'}path -ErrorAction Stop
             if (${'$'}f.Length -gt 209715200) { return '' }
@@ -187,6 +193,20 @@ internal object WindowsProbe {
           Emit 'av.realtimeEnabled' ${'$'}mp.RealTimeProtectionEnabled
           Emit 'av.signatureAgeDays' ${'$'}mp.AntivirusSignatureAge
         }
+        # Whether the installed scanner can be asked. Determined HERE, next to
+        # the Defender status it depends on, because two things later in the
+        # script branch on it -- and one of them, the hashing, runs long
+        # before the scan block. Set it late and the hash is computed for
+        # every file anyway, which is the work this flag exists to avoid.
+        ${'$'}script:mpCmdRun = Join-Path ${'$'}env:ProgramFiles 'Windows Defender\MpCmdRun.exe'
+        ${'$'}script:defenderUsable = ${'$'}false
+        if ((Test-Path -LiteralPath ${'$'}script:mpCmdRun) -and ${'$'}mp -and ${'$'}mp.AntivirusEnabled) {
+          ${'$'}script:defenderUsable = ${'$'}true
+          Emit 'av.scannerAvailable' 'True'
+        } else {
+          Emit 'av.scannerAvailable' 'False'
+        }
+
         Emit 'smartscreen.policy'   (Reg 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System' 'EnableSmartScreen')
         Emit 'smartscreen.explorer' (Reg 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer' 'SmartScreenEnabled')
 
@@ -267,6 +287,139 @@ internal object WindowsProbe {
           }
         } catch { ${'$'}portOk = ${'$'}false }
         if (${'$'}portOk) { Emit 'port.enumerated' 'True' }
+
+        # ---- is anything actually reachable? ---------------------------------
+        #
+        # ## Listening is not the same as reachable, and the firewall knows
+        #
+        # "25 services are listening on every interface" is true on a stock
+        # Windows machine and tells a person almost nothing, because Windows
+        # blocks inbound by default. The question worth answering is which of
+        # them the firewall actually lets through -- and the firewall is right
+        # there, holding the answer.
+        #
+        # The join is on the PROGRAM, not the port. That took a measurement to
+        # get right: joining on port says everything is allowed, because
+        # Windows' rules are overwhelmingly per-application with LocalPort=Any.
+        # 254 inbound allow rules on this machine, 72 naming a specific program.
+        #
+        # Measured result: of 25 sockets bound to all interfaces, 2 belong to a
+        # program with an inbound allow rule -- and they are the developer's own
+        # HTTP servers. The old rule called that "17 services reachable from the
+        # whole network" and charged 9 points for it.
+        #
+        # The honesty half matters as much: most listening sockets belong to
+        # system processes whose path an unprivileged caller cannot read, so
+        # they cannot be attributed to a rule at all. Those are counted and
+        # reported as unattributed rather than assumed either way. "2 reachable"
+        # and "23 I could not attribute" are both true; "17 reachable" was not.
+        ${'$'}fwAppOk = ${'$'}true
+        try {
+          # ONE pipeline, not one per rule.
+          #
+          # The obvious loop -- foreach rule, pipe that rule to the filter
+          # cmdlet -- costs about 0.4 seconds EACH, and there are 254 inbound
+          # allow rules on an ordinary machine. That is 100 seconds, which took
+          # the whole probe past its 90-second ceiling, so it returned nothing,
+          # so every check reported not-checkable, and the app printed a
+          # confident 100/100 off two checks. Piping the whole set through once
+          # costs about three seconds.
+          #
+          # Only the SET of permitted programs is needed, so which rule a filter
+          # came from does not matter, and the association can be thrown away.
+          ${'$'}allowedApps = @{}
+          foreach (${'$'}af in (Get-NetFirewallRule -Enabled True -Direction Inbound -Action Allow -PolicyStore ActiveStore -ErrorAction Stop |
+                            Get-NetFirewallApplicationFilter -ErrorAction SilentlyContinue)) {
+            if (${'$'}af.Program -and ${'$'}af.Program -ne 'Any') { ${'$'}allowedApps[${'$'}af.Program.ToLower()] = ${'$'}true }
+          }
+          ${'$'}unattributed = 0
+          foreach (${'$'}c in Get-NetTCPConnection -State Listen -ErrorAction Stop) {
+            if (${'$'}c.LocalAddress -notin @('0.0.0.0', '::')) { continue }
+            ${'$'}pp = ${'$'}null
+            try { ${'$'}pp = (Get-Process -Id ${'$'}c.OwningProcess -ErrorAction Stop).Path } catch { ${'$'}pp = ${'$'}null }
+            if (-not ${'$'}pp) { ${'$'}unattributed++; continue }
+            if (${'$'}allowedApps.ContainsKey(${'$'}pp.ToLower())) {
+              Emit 'reachable' ("{0}`t{1}" -f ${'$'}c.LocalPort, (San ${'$'}pp))
+            }
+          }
+          Emit 'reachable.unattributed' ${'$'}unattributed
+        } catch { ${'$'}fwAppOk = ${'$'}false }
+        if (${'$'}fwAppOk) { Emit 'reachable.enumerated' 'True' }
+
+        # ---- machine-wide root certificates ----------------------------------
+        #
+        # Closes a gap this probe documented and could not previously answer. A
+        # certificate installed machine-wide sits in LocalMachine\Root beside
+        # Microsoft's own roots, and the comment above says telling them apart
+        # needs a pinned list of thumbprints this build does not bundle.
+        #
+        # It does not need one. Windows already knows which roots it delivered:
+        # they are listed under AuthRoot, the auto-update mechanism. And Windows
+        # records when each root's registry key was written. A root that was
+        # added AFTER the operating system was installed and did NOT arrive
+        # through Microsoft's own update channel was put there by somebody.
+        #
+        # Two oracles rather than one, because either alone is wrong. AuthRoot
+        # by itself flags 14 certificates on this machine -- all legitimate,
+        # all shipped inside the Windows image rather than auto-updated. Install
+        # date by itself would miss nothing but explain nothing. Together: zero
+        # on a healthy machine, measured.
+        #
+        # Enterprise-deployed roots are excluded. On a managed laptop a root
+        # pushed by group policy is normal, and accusing the IT department is
+        # how a security tool gets uninstalled.
+        ${'$'}rootOk = ${'$'}true
+        try {
+          ${'$'}installed = (Get-CimInstance Win32_OperatingSystem -ErrorAction Stop).InstallDate
+          ${'$'}autoRoots = @{}
+          foreach (${'$'}k in Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\SystemCertificates\AuthRoot\Certificates' -ErrorAction SilentlyContinue) {
+            ${'$'}autoRoots[${'$'}k.PSChildName] = ${'$'}true
+          }
+          ${'$'}enterprise = @{}
+          foreach (${'$'}k in Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\EnterpriseCertificates\ROOT\Certificates' -ErrorAction SilentlyContinue) {
+            ${'$'}enterprise[${'$'}k.PSChildName] = ${'$'}true
+          }
+          foreach (${'$'}k in Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\SystemCertificates\ROOT\Certificates' -ErrorAction Stop) {
+            if (${'$'}autoRoots.ContainsKey(${'$'}k.PSChildName)) { continue }
+            if (${'$'}enterprise.ContainsKey(${'$'}k.PSChildName)) { continue }
+            if (${'$'}k.LastWriteTime -le ${'$'}installed.AddDays(1)) { continue }
+            ${'$'}cert = Get-ChildItem Cert:\LocalMachine\Root -ErrorAction SilentlyContinue |
+              Where-Object { ${'$'}_.Thumbprint -eq ${'$'}k.PSChildName }
+            if (${'$'}cert) {
+              Emit 'machinecert' ("{0}`t{1}`t{2}" -f (San ${'$'}cert.Subject), (San ${'$'}cert.Issuer), ${'$'}cert.Thumbprint)
+            }
+          }
+        } catch { ${'$'}rootOk = ${'$'}false }
+        if (${'$'}rootOk) { Emit 'machinecert.enumerated' 'True' }
+
+        # ---- pending updates, without asking Microsoft -----------------------
+        #
+        # This check was previously reported as permanently not-performed,
+        # because enumerating pending updates means the Windows Update Agent,
+        # and the Agent contacts Microsoft.
+        #
+        # It does not have to. The Agent keeps a local catalogue of what it
+        # already knows applies to this machine, and setting Online to false
+        # searches that cache without opening a connection. So the honest answer
+        # changes from "we will not ask" to "here is what your computer already
+        # knows is waiting" -- which is what the user wanted in the first place.
+        #
+        # The offline flag is load-bearing and WindowsProbeTest asserts it. With
+        # it left at the default this becomes a network call inside an app whose
+        # central promise is that it never makes one.
+        ${'$'}wuOk = ${'$'}true
+        try {
+          ${'$'}wuSession = New-Object -ComObject Microsoft.Update.Session
+          ${'$'}wuSearcher = ${'$'}wuSession.CreateUpdateSearcher()
+          ${'$'}wuSearcher.Online = ${'$'}false
+          ${'$'}wuResult = ${'$'}wuSearcher.Search("IsInstalled=0 AND Type='Software' AND IsHidden=0")
+          Emit 'update.pendingCount' ${'$'}wuResult.Updates.Count
+          foreach (${'$'}u in ${'$'}wuResult.Updates) {
+            ${'$'}sev = ${'$'}u.MsrcSeverity
+            if (${'$'}sev) { Emit 'update.pendingSeverity' (San ${'$'}sev) }
+          }
+        } catch { ${'$'}wuOk = ${'$'}false }
+        if (${'$'}wuOk) { Emit 'update.pendingRead' 'True' }
 
         # ---- network --------------------------------------------------------
         ${'$'}dnsOk = ${'$'}true
@@ -828,13 +981,17 @@ internal object WindowsProbe {
             }
             # Only the interesting ones are signature-checked: doing it for all
             # 337 costs seconds and tells us nothing about Windows' own files.
-            ${'$'}script:scanTargets += ${'$'}path
             ${'$'}userland = ${'$'}path -match 'AppData|\\Temp\\|\\Downloads\\|\\Users\\Public'
             ${'$'}sig = ''
             if (${'$'}masq -or ${'$'}userland) {
               try { ${'$'}sig = (Get-AuthenticodeSignature -LiteralPath ${'$'}path -ErrorAction Stop).Status } catch { ${'$'}sig = '' }
             }
             if (${'$'}masq -or ${'$'}userland) {
+              # Only the shortlist, matching what this block claims to
+              # examine. Adding every process with a readable path put
+              # ~150 files through the scanner instead of the twenty
+              # that the comment above promises.
+              ${'$'}script:scanTargets += ${'$'}path
               Emit 'process' ("{0}`t{1}`t{2}`t{3}`t{4}`t{5}" -f (San ${'$'}p.ProcessName), (San ${'$'}path), ${'$'}sig, (San ${'$'}masq), (FromInternet ${'$'}path), (FileHash ${'$'}path))
             }
           }
@@ -896,23 +1053,15 @@ internal object WindowsProbe {
         # plainly rather than buried, because "we never touch the network" and
         # "we never cause anything to touch the network" are different claims
         # and only the first one is true.
-        ${'$'}mpCmdRun = Join-Path ${'$'}env:ProgramFiles 'Windows Defender\MpCmdRun.exe'
-        ${'$'}defenderUsable = ${'$'}false
-        if ((Test-Path -LiteralPath ${'$'}mpCmdRun) -and ${'$'}mp -and ${'$'}mp.AntivirusEnabled) {
-          ${'$'}defenderUsable = ${'$'}true
-          Emit 'av.scannerAvailable' 'True'
-        } else {
-          Emit 'av.scannerAvailable' 'False'
-        }
 
         function AskDefender(${'$'}path) {
-          if (-not ${'$'}defenderUsable) { return '' }
+          if (-not ${'$'}script:defenderUsable) { return '' }
           if (-not ${'$'}path) { return '' }
           # Confirmed to exist first: a missing file exits 2, exactly like a
           # detection, so skipping this check would invent threats.
           if (-not (Test-Path -LiteralPath ${'$'}path -PathType Leaf)) { return '' }
           try {
-            ${'$'}out = & ${'$'}mpCmdRun -Scan -ScanType 3 -File ${'$'}path -DisableRemediation 2>&1 | Out-String
+            ${'$'}out = & ${'$'}script:mpCmdRun -Scan -ScanType 3 -File ${'$'}path -DisableRemediation 2>&1 | Out-String
             if (${'$'}out -match 'found\s+(\d+)\s+threat') {
               if ([int]${'$'}Matches[1] -gt 0) { return 'threat' }
             }
@@ -925,7 +1074,7 @@ internal object WindowsProbe {
           ${'$'}verdict = AskDefender ${'$'}t
           if (${'$'}verdict) { Emit 'avscan' ("{0}`t{1}" -f (San ${'$'}t), ${'$'}verdict) }
         }
-        if (${'$'}defenderUsable) { Emit 'avscan.enumerated' 'True' }
+        if (${'$'}script:defenderUsable) { Emit 'avscan.enumerated' 'True' }
 
         # ---- hardening settings ----------------------------------------------
         # Individually small, jointly the difference between a machine that

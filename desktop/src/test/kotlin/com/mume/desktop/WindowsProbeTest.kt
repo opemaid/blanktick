@@ -40,8 +40,11 @@ class WindowsProbeTest {
     @Test
     fun `the probe never changes anything`() {
         val offenders = statements
-            // The single sanctioned exception, pinned by the next test.
-            .filterNot { it.contains("New-Object -ComObject Shell.Application") }
+            // The two sanctioned exceptions, pinned by the next test.
+            .filterNot {
+                it.contains("New-Object -ComObject Shell.Application") ||
+                    it.contains("New-Object -ComObject Microsoft.Update.Session")
+            }
             .filter { line -> mutatingVerbs.any { verb -> line.contains(verb) } }
         assertTrue(
             offenders.isEmpty(),
@@ -50,17 +53,48 @@ class WindowsProbeTest {
     }
 
     /**
-     * `New-Object -ComObject Shell.Application` is the one exception, and it is
-     * asserted explicitly so that the blanket ban above stays meaningful.
+     * Two COM handles are allowed, and they are named here so that the blanket
+     * ban above stays meaningful.
      *
-     * It creates an in-process COM handle to read a shell property (BitLocker
-     * status without elevation). It creates nothing on the machine.
+     * Both create an in-process handle and change nothing: `Shell.Application`
+     * reads BitLocker status without elevation, `Microsoft.Update.Session`
+     * reads the update agent's local catalogue.
      */
     @Test
-    fun `the only New- in the probe is the shell handle`() {
+    fun `every New- in the probe is one of the two sanctioned COM handles`() {
         val newObjects = statements.filter { it.contains("New-Object") }
-        assertEquals(1, newObjects.size, "unexpected New-Object: $newObjects")
-        assertTrue(newObjects.single().contains("-ComObject Shell.Application"))
+        assertEquals(2, newObjects.size, "unexpected New-Object: $newObjects")
+
+        // Shell.Application reads BitLocker status without elevation.
+        // Microsoft.Update.Session reads the update agent's LOCAL catalogue.
+        // Both create an in-process handle and change nothing on the machine;
+        // listing them explicitly is what keeps the blanket ban meaningful.
+        val sanctioned = listOf("Shell.Application", "Microsoft.Update.Session")
+        val unexpected = newObjects.filterNot { line -> sanctioned.any { line.contains(it) } }
+        assertTrue(unexpected.isEmpty(), "unsanctioned COM object: $unexpected")
+    }
+
+    /**
+     * The update agent must be asked offline.
+     *
+     * Enumerating pending updates normally means contacting Microsoft, which is
+     * why this check was reported as never-performed for so long. The agent
+     * keeps a local catalogue and `Online = false` searches only that. Left at
+     * its default this becomes a network call inside an app whose central
+     * promise is that it never makes one — and it would not look like one,
+     * because there is no URL and no cmdlet for the other guards to catch.
+     */
+    @Test
+    fun `the update search is explicitly offline`() {
+        val usesAgent = statements.any { it.contains("Microsoft.Update.Session") }
+        if (!usesAgent) return
+
+        assertTrue(
+            statements.any { it.contains("Online") && it.contains("false") },
+            "the update searcher must set Online = false, or the probe reaches the network"
+        )
+        val searches = statements.filter { it.contains(".Search(") }
+        assertTrue(searches.isNotEmpty(), "the search call has gone missing")
     }
 
     /**
@@ -131,6 +165,9 @@ class WindowsProbeTest {
                 "dns", "dns.enumerated",
                 "drive", "drive.enumerated",
                 "fw.enumerated", "hash.selfTest",
+                "reachable", "reachable.enumerated", "reachable.unattributed",
+                "machinecert", "machinecert.enumerated",
+                "update.pendingCount", "update.pendingSeverity", "update.pendingRead",
                 "fw.profile",
                 "hard.autoAdminLogon", "hard.autoLogonPasswordStored", "hard.consentPrompt",
                 "hard.enableLua", "hard.llmnr", "hard.psV2Present", "hard.remoteRegistry",

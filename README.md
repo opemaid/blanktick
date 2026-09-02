@@ -98,14 +98,14 @@ rather than presenting meaningless password and link verdicts as findings.
 
 ## What it checks
 
-**63 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
+**64 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
 rather than estimated:
 
 | Platform | Eligible | Run on an *idealised* device | Not checkable |
 |---|---|---|---|
-| Android | 29 | 29 | 34 (the desktop-only rules) |
-| iPhone | 15 | 12 | 51 |
-| Desktop | 45 | 44 | 19 |
+| Android | 29 | 29 | 35 (the desktop-only rules) |
+| iPhone | 15 | 12 | 52 |
+| Desktop | 46 | 45 | 19 |
 
 Those are fixture numbers — a device that answers every question it can. **A real
 machine answers fewer.** On the development laptop (Windows 11, standard user, no
@@ -189,6 +189,26 @@ The asymmetry is real and every app says so on screen — listing what it could
   Roughly a third of running processes will not reveal their path to a program
   without administrator rights — 179 of them on the development machine. That
   number is shown, because "I checked everything" would not be true.
+- **Which services are actually reachable — asked of the firewall, not guessed.**
+  "25 things are listening on every interface" is true on a stock Windows machine
+  and tells you almost nothing, because Windows blocks inbound by default. The
+  firewall knows which programs it lets through, so Mume asks it: on the
+  development machine, 2 of 25 — and both were the developer's own web servers.
+  The old check called that "17 services reachable from the whole network".
+  Sockets whose owning program cannot be identified are counted and reported as
+  unattributed rather than assumed either way.
+- **Certificate authorities the whole computer trusts that Windows did not
+  install.** This was previously a documented blind spot: telling Microsoft's
+  roots from an injected one looked like it needed a bundled list of thumbprints.
+  It does not — Windows already records which roots it delivered, and when each
+  one was written. A root that appeared after the OS was installed, did not come
+  through Microsoft's update channel, and was not deployed by workplace policy
+  was put there by somebody.
+- **Updates waiting to install, without asking Microsoft.** Also previously
+  refused, because enumerating pending updates means the Windows Update Agent
+  and the Agent contacts Microsoft. It does not have to: the Agent keeps a local
+  catalogue of what it already knows applies to this machine, and it can be
+  searched offline. A test asserts the offline flag can never be dropped.
 - **The verdict of the antivirus you already have.** Windows ships a scanner
   whose signatures are hours old, and it is already installed. Mume asks it
   about the sixty-odd files it has identified as worth asking about — the

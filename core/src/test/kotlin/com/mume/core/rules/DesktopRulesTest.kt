@@ -154,10 +154,52 @@ class DesktopRulesTest {
         assertIs<RuleOutcome.Pass>(outcome)
     }
 
+    /**
+     * The firewall's answer beats the socket table when it is available.
+     *
+     * "Bound to every interface" is not "reachable" — Windows blocks inbound by
+     * default. On the development machine the old rule reported 17 services
+     * reachable from the whole network, for 9 points; of 25 sockets bound to
+     * all interfaces, exactly 2 belonged to a program the firewall permits.
+     */
+    @Test
+    fun `ports the firewall blocks are not reported as reachable`() {
+        val noneReachable = outcome(DesktopRules.PubliclyBoundServices, with {
+            copy(
+                reachableFromNetwork = emptyList(),
+                listeningPorts = listOf(
+                    ListeningPort("0.0.0.0", 8080, "node"),
+                    ListeningPort("0.0.0.0", 5432, "postgres")
+                )
+            )
+        })
+        assertIs<RuleOutcome.Pass>(
+            noneReachable,
+            "sockets the firewall does not permit inbound must not be called reachable"
+        )
+
+        val oneReachable = outcome(DesktopRules.PubliclyBoundServices, with {
+            copy(
+                reachableFromNetwork = listOf(ListeningPort("0.0.0.0", 8080, "node")),
+                listeningPorts = listOf(
+                    ListeningPort("0.0.0.0", 8080, "node"),
+                    ListeningPort("0.0.0.0", 5432, "postgres")
+                )
+            )
+        })
+        val f = assertIs<RuleOutcome.Fail>(oneReachable).findings.single()
+        assertTrue("8080" in f.detail && "5432" !in f.detail, "only the permitted port belongs here")
+    }
+
     @Test
     fun `an unexpected public port is one aggregate finding, not one per port`() {
+        // reachableFromNetwork = null on purpose: this exercises the FALLBACK
+        // path, where the firewall's answer was unavailable and "bound to every
+        // interface" is the honest worst case. The precise path has its own
+        // test below.
         val outcome = outcome(DesktopRules.PubliclyBoundServices, with {
             copy(
+                reachableFromNetwork = null,
                 listeningPorts = listOf(
                     ListeningPort("0.0.0.0", 8080, "node"),
                     ListeningPort("0.0.0.0", 5432, "postgres"),

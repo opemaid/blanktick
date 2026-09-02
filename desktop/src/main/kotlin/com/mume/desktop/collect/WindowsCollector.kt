@@ -138,7 +138,12 @@ internal class WindowsCollector : PlatformCollector {
             // calling the Windows Update Agent, which contacts Microsoft. That
             // is a network operation, so Mume does not do it, and reports the
             // check as not performed rather than as "nothing pending".
-            pendingSecurityUpdates = null,
+            // No longer permanently null. The Windows Update Agent keeps a local
+            // catalogue of what it already knows applies here, and searching it
+            // with Online = false opens no connection -- so the answer changes
+            // from "we will not ask" to what the machine already knows.
+            pendingSecurityUpdates = if (one("update.pendingRead") == null) null
+            else int("update.pendingCount"),
             daysSinceLastUpdate = int("update.daysSinceLast"),
 
             sessionIsAdministrator = bool("acct.sessionIsAdmin"),
@@ -151,6 +156,9 @@ internal class WindowsCollector : PlatformCollector {
 
             remoteAccessServices = remoteAccessServices(),
             listeningPorts = listeningPorts(),
+            reachableFromNetwork = reachableFromNetwork(),
+            listeningPortsUnattributed = int("reachable.unattributed"),
+            machineAddedRootCerts = machineAddedRootCerts(),
 
             autoRunEntries = autoRunEntries(),
             autoRunSourcesUnread = if (all("autorun.read").isNullOrEmpty()) null
@@ -323,6 +331,42 @@ internal class WindowsCollector : PlatformCollector {
             port = port,
             process = parts.getOrNull(2)?.takeIf { it.isNotBlank() }
         )
+        }
+    }
+
+    /**
+     * Listening sockets an inbound firewall rule actually permits.
+     *
+     * Joined on the PROGRAM rather than the port, which is how Windows firewall
+     * rules are written: 254 inbound allow rules on the development machine,
+     * only 72 naming a specific program, and almost all of them with
+     * `LocalPort=Any`. Joining on port concludes everything is allowed.
+     */
+    private fun reachableFromNetwork(): List<ListeningPort>? {
+        if (one("reachable.enumerated") == null) return null
+        return all("reachable").orEmpty().mapNotNull { row ->
+            val f = row.split('	')
+            val port = f.getOrNull(0)?.trim()?.toIntOrNull() ?: return@mapNotNull null
+            ListeningPort(
+                address = "0.0.0.0",
+                port = port,
+                process = f.getOrNull(1)?.trim()?.takeIf { it.isNotBlank() }
+                    ?.substringAfterLast('\\')?.let { DisplaySafe.label(it) }
+            )
+        }
+    }
+
+    /** Machine-wide roots Windows did not deliver and policy did not deploy. */
+    private fun machineAddedRootCerts(): List<CaCertificate>? {
+        if (one("machinecert.enumerated") == null) return null
+        return all("machinecert").orEmpty().mapNotNull { row ->
+            val f = row.split('	')
+            val subject = f.getOrNull(0)?.trim()?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            CaCertificate(
+                subject = DisplaySafe.label(subject),
+                issuer = DisplaySafe.label(f.getOrNull(1)?.trim().orEmpty()),
+                sha256 = f.getOrNull(2)?.trim().orEmpty()
+            )
         }
     }
 
