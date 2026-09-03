@@ -99,9 +99,15 @@ def canonical() -> dict[str, int]:
 # Claims worth policing: a regex over prose, and the canonical key it must match.
 # Deliberately narrow. A pattern that matches too much produces false alarms and
 # gets switched off, which is worse than not having it.
+# Only TOTAL claims. An earlier pattern matched any "N checks", which fired
+# on subset labels like "18 checks" in a table group header -- a true
+# statement about a subgroup, reported as a contradiction. A guard that
+# cannot tell a part from a whole gets switched off, which is worse than not
+# having one. Same failure as a probe test that tripped on a comment quoting
+# the bug it guards against.
 CLAIMS = [
     (r"\*\*(\d+) checks in total", "checks_total"),
-    (r"(\d+) checks?\b(?![^.]*Android)", "checks_total"),
+    (r"There are (?:\*\*)?(\d+)(?:\*\*)? checks\b", "checks_total"),
     (r"read from (\w+) places", "persistence_sources"),
     (r"(\w+)-source sweep", "persistence_sources"),
 ]

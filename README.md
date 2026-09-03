@@ -69,10 +69,10 @@ If that *passes*, the gate is dead and its silence means nothing.
 
 | Component | State |
 |---|---|
-| `core/` — scoring engine, rules, filters, URL analysis, EXIF | **Builds. 208 tests, 0 failures.** |
+| `core/` — scoring engine, rules, filters, URL analysis, EXIF | **Builds. 265 tests, 0 failures.** |
 | `app/` — Android, Compose | **Builds. 26.6 MB APK produced. 30 tests, 0 failures.** |
-| `desktop/` — Compose Multiplatform | **Builds and runs. `Mume.exe` produced. 11 tests, 0 failures.** |
-| Windows collector | **Runs on real hardware.** 17 of 27 desktop checks answered on the dev machine. |
+| `desktop/` — Compose Multiplatform | **Builds and runs. `Mume.exe` produced. 46 tests, 0 failures.** |
+| Windows collector | **Runs on real hardware.** 38 of 68 checks answered on the dev machine; 30 reported as not checkable. |
 | macOS collector | **Written, never executed.** No Mac available. |
 | Linux collector | **Written, exercised only under WSL.** Not a real desktop session. |
 | Intel bundle pipeline (Python → Kotlin ×2) | **Working. Cross-language parity proven.** |
@@ -80,7 +80,7 @@ If that *passes*, the gate is dead and its silence means nothing.
 | `design/` — tokens, interactive prototype | **Working.** |
 | `ios/MumeCore/` — Swift mirror | **Written, not compiled.** No Swift toolchain on Windows. |
 
-**249 tests across the three JVM modules, 0 failures.** `gradlew check` is green, including both network gates and Android lint.
+**341 tests across the three JVM modules, 0 failures.** `gradlew check` is green, including both network gates and Android lint.
 
 **Honest caveats.** The Swift sources mirror the Kotlin line for line and pin the
 identical hash vectors, but have never been through a compiler — a reviewed
@@ -147,7 +147,7 @@ The asymmetry is real and every app says so on screen — listing what it could
 - **Secure Boot**, **SIP** on macOS, **automatic updates**, **update staleness**.
 - **Accounts**: passwordless sign-in (critical), the guest account, and whether
   your everyday account holds administrator rights.
-- **Programs that start themselves**, read from seven places: the Run and
+- **Programs that start themselves**, read from twelve places: the Run and
   RunOnce keys (per-user, machine, and the 32-bit views of both), the Startup
   folders, Winlogon's `Shell` and `Userinit`, Image File Execution Options
   debugger hijacks, scheduled tasks, and auto-start services outside the system
@@ -271,7 +271,7 @@ The asymmetry is real and every app says so on screen — listing what it could
   is allowed to run. That is the more interesting one: an entry in it executes
   commands, and it appears in no Run key, no scheduled task and no service — so
   every autorun checker ever written looks straight past it, including the
-  thirteen-source sweep above. Mume does not judge whether the tools are
+  twelve-source sweep above. Mume does not judge whether the tools are
   appropriate; you chose them. It reports what was granted, because hardly
   anyone has reread that file since the day they pasted something into it.
 
@@ -316,7 +316,7 @@ offline phishing-link checker.
 core/                Pure Kotlin/JVM · no I/O · no Android · no network
   model/             DeviceSnapshot, DesktopFacts, Finding, Severity, Category
   scoring/           ScoringEngine + ScoringPolicy  (the normative one)
-  rules/             45 rules, stable IDs, platform-gated
+  rules/             68 rules, stable IDs, platform-gated
   filters/           BloomFilter, SortedHashSet64, Hashing
   analysis/          UrlAnalyzer, Punycode, Confusables, PublicSuffix, ExifGps
 app/                 Android · Compose · collectors only

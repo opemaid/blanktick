@@ -1,444 +1,398 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mume — the security app with no internet permission</title>
-<meta name="description" content="Mume checks your phone for real security problems. It works entirely offline: no account, no upload, no server. The app has no permission to reach the internet at all.">
-<meta property="og:title" content="Mume — the security app with no internet permission">
-<meta property="og:description" content="A phone security checkup that runs entirely on your device. Verifiable, because the app cannot reach the network.">
+<title>Mume — a security scanner that tells you what it could not check</title>
+<meta name="description" content="A free, offline security scanner for Windows and Android. It reports what it found, and separately reports what it never managed to look at.">
+
 <!--
-  Fonts load asynchronously. A render-blocking stylesheet on a third-party CDN
-  means a slow or blocked font host leaves the page blank — which is both a
-  performance problem and, for this site in particular, an embarrassing one.
-  The stack in styles.css degrades to the system UI face, so the page is fully
-  readable before (or without) the webfonts ever arriving.
+  There is deliberately no <link> to a font service here.
+
+  A previous version of this page loaded typefaces from api.fontshare.com and
+  fonts.googleapis.com, while a paragraph further down invited the reader to
+  "open your network tab if you like — there is no request to make". Someone
+  was always going to open the network tab. System font stacks only, so the
+  sentence is now true and this page makes no third-party request at all.
 -->
-<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
 <link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" media="print" onload="this.media='all'"
-      href="https://api.fontshare.com/v2/css?f[]=clash-display@600,500&f[]=switzer@400,500,600&display=swap">
-<link rel="stylesheet" media="print" onload="this.media='all'"
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
-<!--
-  Reveal fail-safe.
-
-  [data-reveal] starts at opacity:0 and is revealed by an IntersectionObserver.
-  If that observer never runs -- JavaScript disabled, a crawler, reader mode, an
-  older browser -- every section below the hero stays permanently invisible. The
-  page does not look broken; it looks like a one-screen site, which is how this
-  went unnoticed: every headless capture of it showed only the hero.
-
-  So the hidden state is applied BY script and only when the script is alive.
-  No JS, no hiding.
--->
-<script>document.documentElement.classList.add('js-reveal');</script>
-<noscript>
-  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@600,500&f[]=switzer@400,500,600&display=swap">
-</noscript>
 </head>
+
 <body>
+<a class="skip" href="#main">Skip to content</a>
 
-<nav class="nav">
-  <div class="nav-inner">
-    <span class="nav-mark">Mume</span>
-    <div class="nav-links">
-      <a href="#checks">What it checks</a>
-      <a href="#try">Try it</a>
-      <a href="#platforms">Android &amp; iPhone</a>
-      <a href="#privacy">Privacy</a>
-      <a href="#download">Download</a>
-    </div>
-    <button class="theme-btn" id="theme" aria-label="Switch between light and dark">◐</button>
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#main">mume</a>
+    <nav aria-label="Primary">
+      <ul>
+        <li><a href="#coverage">Coverage</a></li>
+        <li><a href="#looks">What it checks</a></li>
+        <li><a href="#offline">Offline</a></li>
+        <li><a href="#download">Download</a></li>
+      </ul>
+    </nav>
   </div>
-</nav>
+</header>
 
-<!-- ============================ HERO ============================ -->
-<section class="hero">
-  <div class="wrap hero-grid">
-    <div>
-      <span class="eyebrow" data-reveal>Offline by construction</span>
-      <h1 data-reveal>A security app that <em>can't</em> phone home.</h1>
-      <p class="lede" data-reveal>
-        Mume checks your phone for the things that actually get people robbed —
-        cloned banking apps, hidden permissions, intercepted traffic, breached
-        passwords. Then it tells you exactly what it found and exactly what it
-        could not see.
-      </p>
-      <p class="lede" data-reveal style="margin-top:1.25rem">
-        It does all of it without an internet connection, because the app was
-        never granted one.
-      </p>
-      <div class="hero-cta" data-reveal>
-        <a class="btn" href="#try">Try the link checker<span class="icon" aria-hidden="true">↗</span></a>
-        <a class="btn btn-quiet" href="#platforms">See what it can't do<span class="icon" aria-hidden="true">→</span></a>
-      </div>
-    </div>
+<main id="main" tabindex="-1">
 
-    <div data-reveal>
-      <div class="shell">
-        <div class="core" style="padding:var(--shell-pad)">
-          <div class="terminal">
-            <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
-<pre><span class="p">$</span> <span class="c">aapt dump permissions mume.apk</span>
-<span class="o">package: com.mume.app</span>
-<span class="o">uses-permission: READ_EXTERNAL_STORAGE</span>
-<span class="o">uses-permission: PACKAGE_USAGE_STATS</span>
-<span class="o">uses-permission: QUERY_ALL_PACKAGES</span>  <span class="hl">← not declared</span>
-
-<span class="p">$</span> <span class="c">aapt dump permissions mume.apk | grep INTERNET</span>
-<span class="p">$</span> <span class="caret"></span></pre>
-          </div>
-        </div>
-      </div>
-      <p class="proof-note">
-        No output. Every other security app on your phone can talk to a server.
-        Mume physically cannot — Android will not let it open a socket, because
-        it never asked for the permission. You can verify this yourself in about
-        ten seconds.
-      </p>
-    </div>
-  </div>
-</section>
-
-<!-- ============================ STATS ============================ -->
-<section style="padding-block:0">
-  <div class="wrap stats">
-    <div class="shell" data-reveal><div class="core stat">
-      <div class="n">0</div>
-      <div class="l">Network requests during a scan. Not "encrypted", not "anonymised" — zero, enforced by the operating system.</div>
-    </div></div>
-    <div class="shell" data-reveal><div class="core stat">
-      <div class="n">29</div>
-      <div class="l">Checks. All 29 run on Android; 12 run on iPhone. We publish both numbers and name every one of the 17 we cannot run there.</div>
-    </div></div>
-    <div class="shell" data-reveal><div class="core stat">
-      <div class="n">2M</div>
-      <div class="l">Breached passwords built into the app, so yours is compared on the phone and never leaves it — not even as a hash prefix.</div>
-    </div></div>
-  </div>
-</section>
-
-<!-- ============================ CHECKS ============================ -->
-<section id="checks">
+<!-- =============================================================== hero -->
+<section id="hero" aria-labelledby="hero-h">
   <div class="wrap">
-    <span class="eyebrow" data-reveal>What it checks</span>
-    <h2 style="font-size:clamp(2.25rem,5vw,3.75rem);max-width:18ch" data-reveal>
-      The things that actually cost people money.
-    </h2>
-    <p class="lede" data-reveal style="margin-top:1.5rem;margin-bottom:4rem">
-      Not a virus scanner. Phones do not get viruses the way computers did —
-      they get cloned apps, over-permissioned apps, and hostile networks.
+    <p class="micro">Offline by construction</p>
+    <h1 id="hero-h">A green tick can mean &ldquo;we checked, it&rsquo;s fine.&rdquo;<br>
+      Or it can mean &ldquo;we never looked.&rdquo;</h1>
+    <p class="lede" style="margin-top:24px">
+      Mume is a free, open-source security scanner for Windows and Android.
+      It tells you which one you are looking at.
     </p>
 
-    <div class="bento">
-      <div class="shell w8" data-reveal><div class="core card">
-        <div class="card-k">Highest signal · Android</div>
-        <h3>An app pretending to be your bank</h3>
-        <p>
-          A repackaged app keeps the real one's identity but is signed with a
-          different key. Mume carries the genuine signing keys for thousands of
-          well-known apps and compares them on the device. Cloud scanners
-          routinely miss this because they match file hashes, which a repacker
-          changes for free. It is the single most common route to a stolen
-          banking login on Android, and detecting it needs no server at all.
-        </p>
-      </div></div>
+    <p style="margin-top:32px">
+      <a class="cta" href="#download">Download for Windows</a>
+      <a class="cta-quiet" href="#coverage" style="margin-left:12px">See the full coverage list</a>
+    </p>
 
-      <div class="shell" data-reveal><div class="core card">
-        <div class="card-k">Network</div>
-        <h3>Someone reading your encrypted traffic</h3>
-        <p>
-          An interception proxy has to install its own certificate authority on
-          your device. Mume lists every certificate authority that did not ship
-          with the OS — and tells you when it was your employer.
-        </p>
-      </div></div>
-
-      <div class="shell" data-reveal><div class="core card">
-        <div class="card-k">Apps · Android</div>
-        <h3>Permission combinations, not permissions</h3>
-        <p>
-          Reading your texts is what a messaging app does. Drawing over other
-          apps is what a chat head does. Controlling the screen is what a screen
-          reader does. All three at once is a banking trojan, and almost nothing
-          legitimate needs them together.
-        </p>
-      </div></div>
-
-      <div class="shell w6" data-reveal><div class="core card">
-        <div class="card-k">Passwords</div>
-        <h3>Breached passwords, checked without sending anything</h3>
-        <p>
-          Two million of the most commonly breached passwords ship inside the
-          app as a compact filter. Your password is tested against it on the
-          phone. Other tools send a hash prefix to a server; Mume sends nothing,
-          so there is no request to log, correlate or subpoena.
-        </p>
-      </div></div>
-
-      <div class="shell w6" data-reveal><div class="core card">
-        <div class="card-k">Personal data</div>
-        <h3>Photos that carry your home address</h3>
-        <p>
-          Most photos record the exact coordinates where they were taken.
-          Messaging apps usually strip that; email attachments and many
-          platforms do not. Mume finds them and can write location-free copies
-          without touching the originals.
-        </p>
-      </div></div>
-
-      <div class="shell w12" data-reveal><div class="core card">
-        <div class="card-k">Scoring</div>
-        <h3>A score you can audit</h3>
-        <p style="max-width:75ch">
-          Every point deducted traces to one finding, the per-finding numbers sum
-          exactly to <span class="mono">100 − score</span>, and tapping the score
-          shows the arithmetic. Categories are capped so one bad area cannot make
-          an otherwise sound phone read as a disaster, and repeat findings decay
-          so ten small issues never outweigh one serious one. None of that is
-          hidden — it is in the app, on a screen we called
-          <em>“These add up. Check us.”</em>
-        </p>
-      </div></div>
-    </div>
+    <!--
+      The score and the not-checked count at identical visual weight.
+      If the 81 were large and the 30 were a grey footnote, this page would be
+      the thing it is criticising, with an asterisk attached.
+    -->
+    <dl class="receipt">
+      <div>
+        <dt><span class="figure ran">38</span></dt>
+        <dt class="lbl-ran">Checks ran</dt>
+        <dd>Score 81 out of 100, from five findings. The 81 is computed over the
+          38 that ran &mdash; it is not a percentage of your security, it is a
+          percentage of what was looked at.</dd>
+      </div>
+      <div>
+        <dt><span class="figure gap">30</span></dt>
+        <dt class="lbl-gap">Could not be checked</dt>
+        <dd>18 are written for a phone and will never apply to a laptop. 12 are
+          questions this computer declined to answer. All 30 are named on screen,
+          each with its reason.</dd>
+      </div>
+    </dl>
+    <p class="small" style="margin-top:24px">
+      A real scan of the developer&rsquo;s own Windows 11 laptop, unedited.
+      38 + 30 = 68, which is every check Mume has.
+    </p>
   </div>
 </section>
 
-<!-- ============================ LIVE CHECKER ============================ -->
-<section id="try">
+<!-- ============================================================ not an AV -->
+<section id="notav" aria-labelledby="notav-h">
   <div class="wrap">
-    <span class="eyebrow" data-reveal>Try it — nothing is sent</span>
-    <h2 style="font-size:clamp(2.25rem,5vw,3.5rem);max-width:20ch" data-reveal>
-      Paste a suspicious link.
-    </h2>
-    <p class="lede" data-reveal style="margin-top:1.5rem;margin-bottom:2.5rem">
-      This runs the same logic the app uses, here in your browser. Open your
-      network tab if you like — there is no request to make.
+    <h2 id="notav-h">Mume is not an antivirus, and does not replace one.</h2>
+    <p style="margin-top:16px; color:var(--ink-muted)">
+      It has no file scanner and no real-time protection. If you turn Defender
+      off to run this instead, you have made your computer worse. Mume inspects
+      how your machine is <em>configured</em>, and asks the antivirus you already
+      have about a short list of files. It reports; it never changes anything.
     </p>
-
-    <div class="shell" data-reveal><div class="core">
-      <div class="checker-in">
-        <input id="url" type="text" spellcheck="false" autocomplete="off"
-               placeholder="https://…" aria-label="Link to check"
-               value="https://standardbank.co.za.verify-account.top/login">
-        <button class="btn" id="check">Check<span class="icon" aria-hidden="true">→</span></button>
-      </div>
-
-      <div class="samples">
-        <button data-url="https://standardbank.co.za.verify-account.top/login">Brand in a subdomain</button>
-        <button data-url="https://paypal.com@evil-site.ru/signin">Hidden real destination</button>
-        <button data-url="https://xn--pypal-4ve.com/login">Homoglyph domain</button>
-        <button data-url="https://gogle.com">Typosquat</button>
-        <button data-url="https://bit.ly/3xYzAbC">Shortened link</button>
-        <button data-url="http://192.168.4.20/bank/login">Raw IP address</button>
-        <button data-url="https://www.google.com/search?q=hello">Something fine</button>
-      </div>
-
-      <div class="result" id="result" role="status" aria-live="polite"></div>
-    </div></div>
   </div>
 </section>
 
-<!-- ============================ PLATFORMS ============================ -->
-<section id="platforms">
+<!-- =========================================================== coverage -->
+<section id="coverage" aria-labelledby="coverage-h">
   <div class="wrap">
-    <span class="eyebrow" data-reveal>The honest part</span>
-    <h2 style="font-size:clamp(2.25rem,5vw,3.5rem);max-width:22ch" data-reveal>
-      Mume does less on iPhone. Here is exactly how much less.
-    </h2>
-    <p class="lede" data-reveal style="margin-top:1.5rem;margin-bottom:3rem">
-      iOS forbids any app from inspecting other apps. That is a good rule and
-      Mume follows it — which means 17 of our 29 checks simply cannot run there.
-      Below is every one of them, not a flattering selection. Most apps hide
-      this behind a feature list with ticks in both columns; we would rather you
-      could tell the difference between <em>“checked and fine”</em> and
-      <em>“never looked”</em>.
+    <h2 id="coverage-h">Every scanner tells you what it found. Mume also tells you what it never saw.</h2>
+
+    <p style="margin-top:20px; color:var(--ink-muted)">
+      A list of green ticks is only useful if the ticks all mean the same thing,
+      and usually they do not. Some mean &ldquo;we looked, it is fine.&rdquo;
+      Some mean &ldquo;this does not apply on your device.&rdquo; A few mean
+      &ldquo;we asked and got nothing back.&rdquo; All three print as a tick and
+      you cannot tell them apart.
+    </p>
+    <p style="color:var(--ink-muted)">
+      Mume splits them. There are <strong>68 checks</strong>. Every one ends in a
+      result, or in the not-checked list with a reason attached to it. Not all 68
+      are eligible everywhere: <strong>29 can run on Android, 15 on an iPhone,
+      50 on a desktop.</strong> On any particular machine, fewer than that will
+      actually answer.
+    </p>
+    <p style="color:var(--ink-muted)">
+      It is the difference between a mechanic who hands your keys back and says
+      &ldquo;all fine&rdquo;, and one who says &ldquo;brakes and tyres are good,
+      I could not get the gearbox up on the ramp.&rdquo; The second gives you
+      worse news and a more useful day.
     </p>
 
-    <div class="shell" data-reveal><div class="core">
-      <table class="captable">
-        <thead><tr><th>Check</th><th>Android</th><th>iPhone</th></tr></thead>
+    <div class="tablewrap">
+      <table aria-describedby="coverage-h">
+        <caption>
+          Why 30 checks did not run on the developer&rsquo;s Windows 11 machine.
+          Grouped by reason, because eighteen rows saying the same thing is the
+          point: that is a platform boundary, not eighteen separate failures.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Check</th>
+            <th scope="col">Result</th>
+          </tr>
+        </thead>
         <tbody>
-          <tr><td>Root / jailbreak detection</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-          <tr><td>Code-injection framework detection</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-          <tr><td>Screen lock strength</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-          <tr><td>Storage encryption</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-          <tr><td>Auto-lock delay</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-          <tr><td>Wi-Fi encryption assessment</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-          <tr><td>Traffic proxy detection</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-          <tr><td>Breached password check</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-          <tr><td>Reused password check</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-          <tr><td>Photo location scan</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-          <tr><td>Lock-screen message previews</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-          <tr><td>Threat-data freshness</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-          <tr><td>Cloned / repackaged app detection</td><td class="yes">Yes</td><td class="no">No API</td></tr>
-          <tr><td>Installed-app permission audit</td><td class="yes">Yes</td><td class="no">No API</td></tr>
-          <tr><td>Dangerous permission combinations</td><td class="yes">Yes</td><td class="no">No API</td></tr>
-          <tr><td>Sideloaded app sources</td><td class="yes">Yes</td><td class="no">No API</td></tr>
-          <tr><td>Insecure app build flags</td><td class="yes">Yes</td><td class="no">No API</td></tr>
-          <tr><td>Apps opting out of protections</td><td class="yes">Yes</td><td class="no">No API</td></tr>
-          <tr><td>Dormant apps holding permissions</td><td class="yes">Yes</td><td class="no">No API</td></tr>
-          <tr><td>Extra certificate authorities</td><td class="yes">Yes</td><td class="no">Not enumerable</td></tr>
-          <tr><td>Security patch level</td><td class="yes">Yes</td><td class="no">Not published</td></tr>
-          <tr><td>End-of-life OS detection</td><td class="yes">Yes</td><td class="no">Not published</td></tr>
-          <tr><td>DNS resolver inspection</td><td class="yes">Yes</td><td class="no">Not exposed</td></tr>
-          <tr><td>Encrypted DNS setting</td><td class="yes">Yes</td><td class="no">Not exposed</td></tr>
-          <tr><td>VPN owner</td><td class="yes">Yes</td><td class="no">Not exposed</td></tr>
-          <tr><td>Wi-Fi router change (evil twin)</td><td class="yes">Yes</td><td class="no">Not exposed</td></tr>
-          <tr><td>Bootloader lock state</td><td class="yes">Yes</td><td class="no">No equivalent</td></tr>
-          <tr><td>Wireless debugging exposure</td><td class="yes">Yes</td><td class="no">No ADB on iOS</td></tr>
-          <tr><td>USB debugging &amp; developer options</td><td class="yes">Yes</td><td class="no">No equivalent</td></tr>
+          <tr><th scope="rowgroup" colspan="2">Written for a phone &mdash; 18 checks</th></tr>
+          <tr><th scope="row">Root / jailbreak detection</th><td class="cannot"><span class="g" aria-hidden="true">&mdash;</span>Not checked &mdash; a laptop cannot be rooted</td></tr>
+          <tr><th scope="row">USB debugging &amp; developer options</th><td class="cannot"><span class="g" aria-hidden="true">&mdash;</span>Not checked &mdash; written for a phone</td></tr>
+          <tr><th scope="row">Cloned / repackaged app detection</th><td class="cannot"><span class="g" aria-hidden="true">&mdash;</span>Not checked &mdash; there is no installed-app list in the Android sense</td></tr>
+          <tr><th scope="row">Android security-patch level</th><td class="cannot"><span class="g" aria-hidden="true">&mdash;</span>Not checked &mdash; a desktop uses a different update model</td></tr>
+          <tr><th scope="row">Lock-screen notification previews</th><td class="cannot"><span class="g" aria-hidden="true">&mdash;</span>Not checked &mdash; a phone concept</td></tr>
+        </tbody>
+        <tbody>
+          <tr><th scope="rowgroup" colspan="2">This computer would not answer &mdash; 12 checks</th></tr>
+          <tr><th scope="row">System Integrity Protection</th><td class="cannot"><span class="g" aria-hidden="true">&mdash;</span>Not checked &mdash; macOS only; this machine is Windows</td></tr>
+          <tr><th scope="row">Password required when the screen wakes</th><td class="cannot"><span class="g" aria-hidden="true">&mdash;</span>Not checked &mdash; Windows will not tell an unprivileged app</td></tr>
+          <tr><th scope="row">Downloaded programs are checked before they run</th><td class="cannot"><span class="g" aria-hidden="true">&mdash;</span>Not checked &mdash; the setting is absent, which is both the default and what a failed read looks like</td></tr>
+          <tr><th scope="row">Attached removable drives are encrypted</th><td class="cannot"><span class="g" aria-hidden="true">&mdash;</span>Not checked &mdash; nothing was plugged in, which is not the same as nothing being wrong</td></tr>
+          <tr><th scope="row">Saved passwords appear in known breaches</th><td class="cannot"><span class="g" aria-hidden="true">&mdash;</span>Not checked &mdash; see the note on placeholder data below</td></tr>
         </tbody>
       </table>
-    </div></div>
+    </div>
+    <p class="small" style="margin-top:20px">
+      Ten of the thirty shown. The app lists all of them, by name, on screen.
+    </p>
   </div>
 </section>
 
-<!-- ============================ PRIVACY ============================ -->
-<!-- ========================== DOWNLOAD =========================== -->
-<section id="download">
+<!-- ============================================================== refusal -->
+<section id="noscore" aria-labelledby="noscore-h">
   <div class="wrap">
-    <h2 data-reveal>Download it, then check what you downloaded.</h2>
+    <h2 id="noscore-h">If the scan does not finish, there is no score.</h2>
+    <p style="margin-top:20px; color:var(--ink-muted)">
+      An interrupted scan still has real findings in it, and it would be easy to
+      average what we got and print a number anyway. Mume does not. A score
+      calculated over an unknown fraction of the checks is a number that looks
+      like information and is not &mdash; and it is worse than no number, because
+      you would act on it.
+    </p>
+    <p style="color:var(--ink-muted)">
+      So an unfinished scan shows the findings it has, the checks it got through,
+      and a blank where the score goes. This is the one place a security app is
+      supposed to look unfinished, because it is.
+    </p>
+    <p class="small">
+      This is not hypothetical. It was found by a scan that overran its own time
+      limit and reported 100 out of 100 from two checks of sixty-eight, because a
+      score is deductions subtracted from a hundred and almost nothing had been
+      deducted. That build never shipped.
+    </p>
+  </div>
+</section>
 
-    <p class="lede" data-reveal>Mume for Windows is a portable folder. Unzip it anywhere and run
-      <code>Mume.exe</code> &mdash; nothing is installed, no service is registered, nothing is
-      written outside the folder except one settings file you can read.</p>
+<!-- ============================================================= what it -->
+<section id="looks" aria-labelledby="looks-h">
+  <div class="wrap">
+    <h2 id="looks-h">What it actually looks at</h2>
+    <div class="grid2" style="margin-top:40px">
 
-    <div class="dl-grid" data-reveal>
-      <div class="dl-card">
-        <div class="dl-head">
-          <span class="dl-os">Windows 10 / 11</span>
-          <span class="dl-size">55.6&nbsp;MB &middot; x64</span>
-        </div>
-        <a class="btn" href="dist/Mume-0.1.0-windows-x64-portable.zip" download>
-          Download Mume 0.1.0<span class="icon" aria-hidden="true">&darr;</span>
-        </a>
-        <p class="dl-note">Includes its own Java runtime. Nothing else to install.</p>
+      <div class="item">
+        <h3>Programs that start themselves</h3>
+        <p>Twelve places, not the four most tools check: Run and RunOnce keys in
+          both registry views, Startup folders, Winlogon, Image File Execution
+          Options, scheduled tasks, services, WMI subscriptions, COM hijacks,
+          AppInit DLLs, Active Setup and three system DLL lists. On the
+          development machine that found <strong>47 entries</strong>. The four
+          usual locations found nine.</p>
       </div>
 
-      <div class="dl-card">
-        <div class="dl-head"><span class="dl-os">macOS &amp; Linux</span></div>
-        <p class="dl-note">
-          <strong>Not offered yet, deliberately.</strong> The macOS collector has never been run on
-          a Mac and the Linux one has only run under WSL. Both are written to report
-          &ldquo;not checkable&rdquo; rather than guess, so they would be safe &mdash; and nearly
-          useless. Build from source if you want to try them.
-        </p>
+      <div class="item">
+        <h3>The verdict of the antivirus you already have</h3>
+        <p>Mume hands the roughly seventy files it considers worth asking about
+          to the scanner already on your machine &mdash; read-only, with
+          remediation switched off, so nothing is quarantined or moved. Its
+          signatures are hours old. Anything Mume could bundle would be stale the
+          day it shipped.</p>
       </div>
+
+      <div class="item">
+        <h3>The AI surface</h3>
+        <p>A local model server listening on every interface rather than just
+          your machine. The programs an AI tool-config file has been granted
+          permission to run &mdash; a grant that executes commands and appears in
+          no Run key, no scheduled task and no service, so every startup checker
+          ever written looks past it, including Mume&rsquo;s own. API keys
+          sitting in those files, counted and never read. Windows Recall.</p>
+      </div>
+
+      <div class="item">
+        <h3>Certificate authorities your machine trusts</h3>
+        <p>Windows records which roots it delivered and when each one was
+          written. A root that appeared after the operating system was installed,
+          did not arrive through Microsoft&rsquo;s update channel and was not
+          deployed by workplace policy was put there by somebody.</p>
+      </div>
+
+      <div class="item">
+        <h3>What is reachable, asked of the firewall</h3>
+        <p>&ldquo;Twenty-five things are listening&rdquo; is true on a stock
+          Windows machine and tells you almost nothing, because Windows blocks
+          inbound by default. The firewall knows which programs it permits, so
+          Mume asks it. On the development machine: two, and both were the
+          developer&rsquo;s own web servers.</p>
+      </div>
+
+      <div class="item">
+        <h3>Machine hardening</h3>
+        <p>User Account Control, whether sign-in credentials are left readable in
+          memory, SMBv1, LLMNR, remote-administration services, and whether an
+          auto-logon password is sitting in the registry in cleartext. Mume never
+          reads that password &mdash; only whether one exists.</p>
+      </div>
+
     </div>
-
-    <h3 data-reveal>Verify it before you run it</h3>
-    <p data-reveal>A security tool asking to be trusted should be the easiest thing in the world
-      to check. Compare the hash of what you downloaded against the one published here.</p>
-
-<pre class="term" data-reveal><span class="term-c">PS&gt;</span> Get-FileHash .\Mume-0.1.0-windows-x64-portable.zip -Algorithm SHA256
-
-SHA256  15BAB8554974231A21BB2827C6A50E2A5878BBE073750E9756DA1C1F3CBF3980
-Mume.exe   AEBBA00579FB8EAFBB89E343339D18579F26CEF1438F74B551C0902357FD1847</pre>
-
-    <h3 data-reveal>Windows will warn you. Here is exactly why.</h3>
-    <p data-reveal>You will see <strong>&ldquo;Windows protected your PC&rdquo;</strong>, and you
-      may need to click <em>More info &rarr; Run anyway</em>. That is SmartScreen, and it is
-      behaving correctly: <strong>this build is not code-signed.</strong> A signing certificate
-      costs a few hundred pounds a year, and Mume has not bought one.</p>
-
-    <p data-reveal>We are not going to tell you to ignore a security warning &mdash; that is the
-      habit every piece of malware relies on. What we will do is give you a way to check
-      instead of trusting: the hashes above, and the source below. If the hash matches what is
-      published here and here matches what is in the repository, you know what you have.
-      If either does not, do not run it.</p>
-
-    <h3 data-reveal>Or build it yourself and skip all of that</h3>
-<pre class="term" data-reveal><span class="term-c">$</span> git clone https://github.com/&lt;user&gt;/mume
-<span class="term-c">$</span> cd mume
-<span class="term-c">$</span> ./gradlew check                       <span class="term-d"># 253 tests + both network gates</span>
-<span class="term-c">$</span> ./gradlew :desktop:createDistributable</pre>
-
-    <p data-reveal>The build fails if any Mume class so much as references a networking API, and
-      fails again if the set of third-party jars changes. You do not have to take the offline
-      claim on faith &mdash; you can watch it be enforced.
-      <a href="#privacy">How that works &rarr;</a></p>
-
-    <p class="dl-foot" data-reveal>Mume is free and
-      <a href="https://www.gnu.org/licenses/agpl-3.0.html">AGPL-3.0</a>. No account, no telemetry,
-      no paid tier. If someone ships a modified Mume, the licence obliges them to publish their
-      changes &mdash; which is the only way &ldquo;you can verify this&rdquo; survives a fork.</p>
   </div>
 </section>
 
-<section id="privacy">
+<!-- ============================================================= offline -->
+<section id="offline" aria-labelledby="offline-h">
   <div class="wrap">
-    <div class="bento">
-      <div class="shell w6" data-reveal><div class="core card">
-        <span class="eyebrow">What Mume does not have</span>
-        <h3 style="margin-top:0.5rem">No account. No server. No SDK.</h3>
-        <p style="margin-top:1rem">
-          There is nothing to sign up for, because there is nothing to sign up
-          to. No analytics library, no crash-reporting SDK, no advertising ID,
-          no third-party code of any kind in the app. A security app that ships
-          someone else's telemetry has lost the argument before it starts.
-        </p>
-      </div></div>
+    <h2 id="offline-h">Offline by construction, not by promise</h2>
 
-      <div class="shell w6" data-reveal><div class="core card">
-        <span class="eyebrow">The trade-off</span>
-        <h3 style="margin-top:0.5rem">What we give up for it</h3>
-        <p style="margin-top:1rem">
-          Threat data ships inside the app and refreshes when the app updates,
-          so it is days old rather than minutes old — Mume shows you the date on
-          every scan. Shortened links cannot be followed, so they are reported
-          as <em>unknown</em>, never as <em>safe</em>. And because we collect
-          nothing, we genuinely do not know how many people use which feature.
-        </p>
-      </div></div>
+    <p style="margin-top:20px; color:var(--ink-muted)">
+      The Android build never declares <code>android.permission.INTERNET</code>,
+      so the kernel refuses it a socket. You do not have to believe that:
+    </p>
+<pre>$ aapt dump permissions mume.apk | grep INTERNET
+<b>(no output)</b></pre>
 
-      <div class="shell w12" data-reveal><div class="core card">
-        <span class="eyebrow">Free</span>
-        <h3 style="margin-top:0.5rem">All of it, at no cost, with nothing to upsell</h3>
-        <p style="margin-top:1rem;max-width:75ch">
-          Every check is available to everyone. There is no paid tier, no
-          advertising, and no data to sell — the architecture makes selling data
-          impossible rather than merely against policy. If that sounds too good
-          to be true, note that a product with no servers and no accounts costs
-          almost nothing to run.
-        </p>
-      </div></div>
-    </div>
-  </div>
-</section>
+    <p style="margin-top:28px; color:var(--ink-muted)">
+      On desktop there is no permission to give up, so the guarantee is a build
+      gate instead. <code>assertNoNetworkBytecode</code> fails the build if any
+      Mume class references a networking API, and all 42 third-party jars on the
+      runtime classpath are pinned and contain none either. The gate is
+      positive-controlled: run it with <code>-PmumeNetworkGateSelfTest</code> and
+      it must <em>fail</em>, or its silence means nothing.
+    </p>
 
-<!-- ============================ CTA ============================ -->
-<section style="padding-bottom:clamp(4rem,8vw,7rem)">
-  <div class="wrap" style="text-align:center">
-    <h2 style="font-size:clamp(2.5rem,7vw,5rem);max-width:16ch;margin-inline:auto" data-reveal>
-      Find out what's on your phone.
-    </h2>
-    <div class="hero-cta" data-reveal style="justify-content:center;margin-top:2.5rem">
-      <a class="btn" href="#">Google Play<span class="icon" aria-hidden="true">↗</span></a>
-      <a class="btn btn-quiet" href="#">App Store<span class="icon" aria-hidden="true">↗</span></a>
-    </div>
-    <p class="proof-note" data-reveal style="margin-top:2rem">Android 10 and later · iOS 17 and later · about 24 MB</p>
-  </div>
-</section>
-
-<footer>
-  <div class="wrap foot-grid">
-    <div>
-      <div class="nav-mark" style="font-size:1.5rem">Mume</div>
-      <p class="small" style="margin-top:0.75rem">
-        Mume checks a specific list of things about your device. Passing every
-        check does not mean you are safe — it means these particular problems
-        are not present. We would rather say that than imply otherwise.
+    <div class="warn">
+      <strong>One thing we would rather say than have pointed out.</strong>
+      <p style="color:var(--ink-muted); margin:0">
+        Mume opens no network connection. But &ldquo;nothing on your computer
+        touches the network because of Mume&rdquo; would be false. On Windows it
+        asks the Defender that is already running about roughly seventy files,
+        and Defender then does what Defender always does &mdash; which, depending
+        on the cloud-protection setting <em>you</em> chose, may include contacting
+        Microsoft. That is Defender&rsquo;s connection, made under your settings.
+        But it happens because Mume asked.
       </p>
     </div>
+
     <p class="small">
-      Not affiliated with any bank or platform named in this app.<br>
-      Store listings and availability are placeholders pending release.
+      This page makes no third-party request either. No fonts, no analytics, no
+      embeds. Open your network tab.
+    </p>
+  </div>
+</section>
+
+<!-- ========================================================= placeholder -->
+<section id="placeholder" aria-labelledby="placeholder-h">
+  <div class="wrap">
+    <h2 id="placeholder-h">Two features are built but not yet loaded</h2>
+    <p style="margin-top:20px; color:var(--ink-muted)">
+      Mume has a breached-password check and a malicious-domain check. The code
+      works and is tested. <strong>The data files currently shipping are
+      synthetic placeholders</strong>, so both features are, today, non-functional
+      in any way that would help you.
+    </p>
+    <p style="color:var(--ink-muted)">
+      The app knows this. The bundle is flagged as synthetic, both builds detect
+      the flag, and rather than showing you meaningless verdicts they say on
+      screen that the data is placeholder. Neither feature contributes to your
+      score. Loading real data is one command and no code change &mdash; what is
+      missing is the corpora, and we would rather ship the gap visible than ship
+      a number we cannot stand behind.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================ download -->
+<section id="download" aria-labelledby="download-h">
+  <div class="wrap">
+    <h2 id="download-h">Download it, then check what you downloaded</h2>
+
+    <!--
+      The warning sits ABOVE the button on purpose. A scary dialog that arrives
+      after someone has committed reads as "this site hid something from me".
+      The same dialog, predicted in advance, reads as "they knew exactly what
+      would happen" — which is the same trust mechanism as the coverage table.
+    -->
+    <div class="warn">
+      <strong>Windows will warn you. That is correct.</strong>
+      <p style="color:var(--ink-muted); margin:0">
+        You will see <em>&ldquo;Windows protected your PC&rdquo;</em> and you will
+        need <em>More info &rarr; Run anyway</em>. That is SmartScreen, working.
+        This build is <strong>not code-signed</strong> &mdash; a certificate costs
+        a few hundred pounds a year and Mume, which is free and has no revenue,
+        has not bought one. Every unsigned program gets that warning, harmless or
+        not, which is also why the warning by itself does not tell you much in
+        either direction.
+      </p>
+    </div>
+
+    <p style="color:var(--ink-muted)">
+      We are not going to tell you to click past a security warning &mdash; that
+      is the habit every piece of malware relies on. Here is what to do instead.
+    </p>
+
+    <p style="margin-top:24px">
+      <a class="cta" href="#download">Download Mume for Windows &middot; x64 &middot; .zip</a>
+    </p>
+    <p class="small">Portable. Nothing is installed, no service is registered, and
+      nothing is written outside the folder except one settings file you can open
+      and read.</p>
+
+    <h3 style="margin-top:48px">Then check the hash</h3>
+<pre>PS&gt; Get-FileHash .\mume-windows-x64.zip -Algorithm SHA256</pre>
+    <div class="warn" style="margin-top:24px">
+      <strong>This proves less than it looks like it does.</strong>
+      <p style="color:var(--ink-muted); margin:0">
+        The file and the hash are served by the same website. Anyone who can
+        replace the download can replace the hash next to it, and you would find
+        them in perfect agreement. What the hash rules out is a corrupted or
+        intercepted download. It does not rule out this site being compromised
+        &mdash; for that, compare against the release tag in the repository,
+        which is a second host an attacker would also have to own.
+      </p>
+    </div>
+
+    <h3 style="margin-top:48px">Or build it and trust none of this</h3>
+<pre>git clone &lt;repo&gt; &amp;&amp; cd mume
+gradlew check                       <b># the full test suite, including both network gates</b>
+gradlew :desktop:createDistributable</pre>
+    <p class="small" style="margin-top:16px">
+      Needs JDK 17. This is the only option on this page that does not require
+      trusting us, and it is the one we would use.
+    </p>
+
+    <h3 style="margin-top:48px">macOS, Linux and Android</h3>
+    <p style="color:var(--ink-muted)">
+      Not offered yet, deliberately. The macOS collector has never been run on a
+      Mac and the Linux one has only run under WSL &mdash; both would report
+      almost everything as not checkable, which is safe and nearly useless. The
+      Android build is not on Google Play; build it from source.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>
+      Mume is free and open source under AGPL-3.0. It has had no third-party
+      security audit; it is one person&rsquo;s code, and the build gates exist so
+      you do not have to take our word for the part that matters.
+    </p>
+    <p style="margin-top:16px">
+      Passing every check is not the same as being safe. It means the checks that
+      ran, ran clean &mdash; and the list of the ones that did not is on the same
+      screen, at the same size, on purpose.
     </p>
   </div>
 </footer>
 
-<script src="app.js"></script>
 </body>
 </html>
