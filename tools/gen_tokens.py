@@ -122,7 +122,14 @@ def emit_css(tokens: dict) -> str:
     lines.append("  --font-display: var(--type-family-display-web);")
     lines.append("  --pass-on-dark: var(--color-severity-pass-on-dark);")
     lines.append("  --duration: var(--motion-base);")
-    lines.append("}")
+    # NOTE: :root is deliberately NOT closed here. The alias block below belongs
+    # inside it, and an earlier version closed the rule at this line -- which put
+    # ~41 declarations at stylesheet top level, where the CSS parser discards
+    # them silently. Eleven of those were in active use by web/styles.css, so the
+    # site's whole text hierarchy rendered flat: --inkMuted and --inkFaint
+    # resolved to nothing and inherited full ink. No console error, no visual
+    # glitch obvious enough to chase. The closing brace is emitted after the
+    # aliases, once.
     # ---- compatibility aliases ------------------------------------------
     #
     # The site was hand-written against camelCase names (--inkMuted,

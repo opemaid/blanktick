@@ -112,7 +112,6 @@
   --font-display: var(--type-family-display-web);
   --pass-on-dark: var(--color-severity-pass-on-dark);
   --duration: var(--motion-base);
-}
 
   /* --- camelCase aliases (kebab-case above is canonical) ------ */
   --color-brand-kelpDeep: var(--color-brand-kelp-deep);

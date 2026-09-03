@@ -63,10 +63,55 @@ def read(path: pathlib.Path) -> str:
     return path.read_text(encoding="utf-8") if path.is_file() else ""
 
 
+def live_declarations(text: str) -> set[str]:
+    """
+    Custom properties that a browser will actually see.
+
+    ## Why this counts braces instead of just matching `--name:`
+
+    The first version of this checker found definitions with a regex and
+    nothing else. That made it blind to the exact bug it was written to
+    prevent: `tools/gen_tokens.py` closed the `:root` rule one line early, so
+    41 declarations -- including `--inkMuted` and `--inkFaint`, used 13 times
+    between them in `web/styles.css` -- sat at stylesheet TOP LEVEL, where the
+    CSS parser discards them.
+
+    They were still present in the file as text, so the checker matched them,
+    reported "all resolve" and exited 0 while the site's entire text hierarchy
+    silently rendered flat. A guard that passes on the failure it exists to
+    catch is worse than no guard, because it is believed.
+
+    A declaration is live only at brace depth >= 1.
+    """
+    live: set[str] = set()
+    depth = 0
+    for line in text.splitlines():
+        stripped = line.strip()
+        m = re.match(r"(--[A-Za-z0-9_-]+)\s*:", stripped)
+        if m and depth >= 1:
+            live.add(m.group(1))
+        depth += line.count("{") - line.count("}")
+    return live
+
+
+def unbalanced(text: str) -> int:
+    """Braces that never close, which is how the declarations got orphaned."""
+    return text.count("{") - text.count("}")
+
+
 def main() -> int:
     defined: set[str] = set()
     for path in DEFINERS:
-        defined.update(DEF.findall(read(path)))
+        body = read(path)
+        if body and unbalanced(body) != 0:
+            print(
+                f"UNBALANCED BRACES in {path.relative_to(ROOT).as_posix()}: "
+                f"{body.count('{')} open, {body.count('}')} close. "
+                "Everything after the surplus brace sits at stylesheet top "
+                "level, where the parser discards it."
+            )
+            return 1
+        defined.update(live_declarations(body))
 
     missing: dict[str, list[str]] = {}
     for path in CONSUMERS:
