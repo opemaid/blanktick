@@ -8,7 +8,7 @@
 
 ## Context
 
-Mume shipped as a phone product. The scoring engine, the rule set and the intel
+Blanktick shipped as a phone product. The scoring engine, the rule set and the intel
 bundle are pure Kotlin/JVM with no Android dependency, which meant a desktop
 build was mostly a matter of writing collectors — but the product's central
 claim does not survive the move unchanged, and pretending otherwise would have
@@ -65,7 +65,7 @@ So the desktop claim is deliberately smaller, and enforced statically:
 
 | Mechanism | What it actually proves |
 |---|---|
-| `assertNoNetworkBytecode` | No compiled Mume class references a networking API. Zero tolerance; one class exempt by exact name. **This is the claim.** |
+| `assertNoNetworkBytecode` | No compiled Blanktick class references a networking API. Zero tolerance; one class exempt by exact name. **This is the claim.** |
 | `auditDependencyNetworkSurface` | Pins the set of third-party jars containing networking code. Measured 2026-08-29: 0 of 43. The build fails if that set changes. |
 | `NoNetwork` runtime blocks | Blocks `java.net.Socket` and http/https URLs. Defence in depth. |
 
@@ -86,7 +86,7 @@ narrower guarantee that keeps working beats a broad one with an expiry date.
 
 ### The scanner is positive-controlled
 
-A broken scanner and a clean codebase produce identical output. `-PmumeNetworkGateSelfTest`
+A broken scanner and a clean codebase produce identical output. `-PblanktickNetworkGateSelfTest`
 drops the `NoNetwork` exemption; the gate must then fail. If it passes, its
 silence means nothing.
 
@@ -104,7 +104,7 @@ This is survivable rather than dangerous because of the null contract: every
 query in every collector returns `null` on anything unexpected, so a wrong guess
 about a tool's output format produces *"not checkable"*, never a false green
 tick. A Mac user running this today sees a short list of checks and a long list
-of things Mume says it could not determine — honest, if not yet useful.
+of things Blanktick says it could not determine — honest, if not yet useful.
 
 An OS that is none of the three is reported as unsupported and no score is
 shown. Falling through to the Linux collector would produce a confident-looking

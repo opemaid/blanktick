@@ -1,6 +1,6 @@
 # Release checklist
 
-Blocking items before Mume is published. Each one is here because it is *not*
+Blocking items before Blanktick is published. Each one is here because it is *not*
 done, not as a reminder that it might be.
 
 ## 1. LICENSE file is missing — BLOCKER
@@ -38,7 +38,7 @@ the current approach and should be revisited before any real launch.
 
 `packageMsi` requires the WiX Toolset, which is not installed. The shipping
 artefact is a ZIP of `createDistributable` output: a folder containing
-`Mume.exe` and a bundled JRE. It runs from anywhere and needs no installation,
+`Blanktick.exe` and a bundled JRE. It runs from anywhere and needs no installation,
 which is arguably better for a tool people are meant to distrust — but it is not
 what most Windows users expect.
 
@@ -63,14 +63,14 @@ page must not imply tested macOS/Linux support.
 
 **The binary-resolution guard is now the exception, and only on Linux.** It was
 the one part where being unrun was a security problem rather than a coverage
-one: it decides whether Mume reads the operating system or reads whatever an
+one: it decides whether Blanktick reads the operating system or reads whatever an
 attacker put on `PATH`, and it depends on filesystem ownership that varies by
 machine. It has now been executed against the real compiled Kotlin on a real
 POSIX filesystem (Ubuntu 24.04 under WSL, `tools/LinuxResolveCheck.java`): all
 seven installed tools resolved to root-owned paths, a binary planted in a
 user-writable directory was refused, a root-owned binary under a world-writable
 parent was refused, and with a hijack directory first on `PATH` the shell's own
-`command -v id` returned the planted copy while Mume returned `/usr/bin/id`.
+`command -v id` returned the planted copy while Blanktick returned `/usr/bin/id`.
 
 **macOS remains unverified**, and there is no Mac here to change that. What can
 be said precisely: a wrong directory in the macOS trusted list makes a tool fail
@@ -79,7 +79,7 @@ acceptable, because ownership is now checked against the filesystem at run time
 rather than inferred from the path, and that check is the part verified above.
 So the residual macOS risk is silently reduced coverage, not a forged pass.
 
-Anyone with a Mac can settle it in one command: `Mume --tools` prints each tool,
+Anyone with a Mac can settle it in one command: `Blanktick --tools` prints each tool,
 where it resolved, and what to compare it against.
 
 ## 6. Screenshots must not come from a real machine

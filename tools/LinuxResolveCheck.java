@@ -1,4 +1,4 @@
-import com.mume.desktop.collect.Shell;
+import com.blanktick.desktop.collect.Shell;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -9,7 +9,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 
 /**
- * Runs Mume's real binary-resolution guard on a real POSIX machine.
+ * Runs Blanktick's real binary-resolution guard on a real POSIX machine.
  *
  * ## Why this exists rather than a unit test
  *
@@ -46,7 +46,7 @@ public class LinuxResolveCheck {
     }
 
     public static void main(String[] args) throws Exception {
-        System.out.println("Mume resolve() on " + System.getProperty("os.name")
+        System.out.println("Blanktick resolve() on " + System.getProperty("os.name")
                 + " (" + System.getProperty("os.version") + "), user "
                 + System.getProperty("user.name"));
         System.out.println("=".repeat(72));
@@ -93,7 +93,7 @@ public class LinuxResolveCheck {
 
         // ---- 3. the attack itself: a planted binary on PATH ---------------
         System.out.println("\n3. A binary planted in a user-writable directory");
-        Path evilDir = Files.createTempDirectory("mume-hijack-");
+        Path evilDir = Files.createTempDirectory("blanktick-hijack-");
         try {
             Path evil = evilDir.resolve("id");
             Files.writeString(evil, "#!/bin/sh\necho PWNED\n");
@@ -101,7 +101,7 @@ public class LinuxResolveCheck {
 
             check(Shell.INSTANCE.resolve(evil.toAbsolutePath().toString()) == null,
                 "an absolute path into a temp dir is refused");
-            check(Shell.INSTANCE.resolve("mume-not-a-real-tool") == null,
+            check(Shell.INSTANCE.resolve("blanktick-not-a-real-tool") == null,
                 "an unknown tool name resolves to nothing");
 
             String realId = Shell.INSTANCE.resolve("id");
@@ -112,7 +112,7 @@ public class LinuxResolveCheck {
             //    itself is fine, but it can be unlinked and replaced, which is
             //    why the guard walks upwards.
             System.out.println("\n4. World-writable parent directory");
-            Path openDir = Files.createTempDirectory("mume-openperm-");
+            Path openDir = Files.createTempDirectory("blanktick-openperm-");
             try {
                 Files.setPosixFilePermissions(openDir,
                     PosixFilePermissions.fromString("rwxrwxrwx"));

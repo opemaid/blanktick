@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blanktick — Security Posture</title>
+<style>
+  :root{
+    --page:#0A0C0B; --panel:#111514; --panel2:#0E1211; --sunk:#0B0F0E; --line:#202623;
+    --ink:#F2F1ED; --muted:#9AA19E; --faint:#6E756F; --good:#5FBFA3;
+    --crit:#F0907E; --high:#F0A467; --med:#D9BC4B; --low:#A3B0C4;
+    --kelp:#1c3b31; --kelp2:#14251f;
+    --sans:-apple-system,"Segoe UI",Roboto,system-ui,sans-serif;
+    --mono:"Cascadia Code","Consolas",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);color:var(--ink);font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;line-height:1.45}
+  .wrap{max-width:1320px;margin:0 auto;padding:22px 26px 48px}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  /* top bar */
+  .top{display:flex;align-items:center;justify-content:space-between;margin:6px 4px 20px}
+  .top h1{font-size:24px;font-weight:700;margin:0;letter-spacing:-.01em}
+  .top .sub{color:var(--faint);font-size:12px;font-weight:500;margin-left:14px}
+  .controls{display:flex;align-items:center;gap:10px}
+  .pill{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    padding:8px 14px;font-size:13px;color:var(--muted)}
+  .pill .num{color:var(--ink)}
+  .btn{background:var(--kelp);border:1px solid #2a5145;border-radius:8px;color:var(--ink);
+    padding:8px 16px;font-size:13px;font-weight:600}
+
+  /* panels */
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:18px}
+  .phead{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+  .phead h2{font-size:14px;font-weight:700;margin:0;letter-spacing:.01em}
+  .phead .i{width:15px;height:15px;border:1px solid var(--faint);border-radius:50%;
+    color:var(--faint);font-size:10px;display:inline-flex;align-items:center;justify-content:center}
+  .phead .sp{flex:1}
+  .phead .dots{color:var(--faint);letter-spacing:2px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+
+  /* pipeline chevrons */
+  .pipe{display:flex;gap:3px}
+  .chev{flex:1;position:relative;padding:18px 26px 18px 40px;
+    background:linear-gradient(180deg,#20302a,#16221d)}
+  .chev:first-child{padding-left:24px;border-radius:10px 0 0 10px}
+  .chev:last-child{border-radius:0 10px 10px 0}
+  .chev{clip-path:polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%, 20px 50%)}
+  .chev:first-child{clip-path:polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%)}
+  .chev:last-child{clip-path:polygon(0 0, 100% 0, 100% 100%, 0 100%, 20px 50%)}
+  .chev:nth-child(1){background:linear-gradient(180deg,#243a32,#182823)}
+  .chev:nth-child(2){background:linear-gradient(180deg,#20332c,#15211c)}
+  .chev:nth-child(3){background:linear-gradient(180deg,#1d2d27,#131d19)}
+  .chev:nth-child(4){background:linear-gradient(180deg,#192723,#101815)}
+  .chev .lbl{font-size:12.5px;color:var(--muted);font-weight:600}
+  .chev .big{font-family:var(--mono);font-size:40px;font-weight:600;line-height:1.1;margin-top:6px}
+  .chev .d{font-size:12px;color:var(--faint);margin-top:6px}
+  .pipe-note{font-size:12px;color:var(--faint);margin-top:12px}
+
+  /* score ring */
+  .scoreRow{display:flex;align-items:center;gap:26px}
+  .ring{position:relative;width:172px;height:172px;flex:none}
+  .ring svg{width:172px;height:172px}
+  .ring .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ring .c b{font-family:var(--mono);font-size:46px;font-weight:600;line-height:1}
+  .ring .c b i{font-style:normal;font-size:18px;color:var(--faint)}
+  .ring .c span{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:6px;color:var(--good)}
+  .scoreMeta{font-size:13px;color:var(--muted)}
+  .scoreMeta .big{font-family:var(--mono);color:var(--ink);font-size:15px}
+  .scoreMeta p{margin:0 0 10px}
+
+  /* bars */
+  .bar{margin-bottom:14px}
+  .bar .r{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
+  .bar .r b{color:var(--ink);font-weight:600}
+  .bar .r .num{color:var(--muted)}
+  .track{height:12px;background:var(--sunk);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+  .fill{height:100%;border-radius:6px}
+
+  /* findings */
+  .finding{display:flex;gap:12px;padding:13px 0;border-top:1px solid var(--line)}
+  .finding:first-of-type{border-top:none}
+  .sevbar{width:4px;border-radius:2px;flex:none}
+  .frow{display:flex;align-items:center;gap:9px}
+  .chip{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;
+    padding:2px 6px;border-radius:5px;border:1px solid currentColor}
+  .rid{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+  .ded{margin-left:auto;font-family:var(--mono);font-size:14px;font-weight:600}
+  .ftitle{margin:4px 0 0;font-size:14px;color:var(--ink);font-weight:600}
+
+  /* status checks */
+  .checks{display:grid;grid-template-columns:1fr 1fr;gap:14px 10px}
+  .chk{display:flex;align-items:center;gap:10px;font-size:13.5px}
+  .dot{width:26px;height:26px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:700}
+  .dot.ran{background:#123a2e;color:var(--good);border:1px solid #1f5a48}
+  .dot.no{background:#181c1a;color:var(--faint);border:1px dashed #39413c}
+  .chk b{color:var(--ink);font-weight:600}
+  .chk span{display:block;color:var(--faint);font-size:11.5px}
+
+  footer{margin-top:6px;font-size:12px;color:var(--faint);max-width:900px}
+  footer b{color:var(--muted);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div style="display:flex;align-items:baseline">
+      <h1>Security Posture</h1>
+      <span class="sub">This computer · Windows · offline scan</span>
+    </div>
+    <div class="controls">
+      <span class="pill">scanned <span class="num">2026-09-23</span></span>
+      <span class="pill num">68 rules</span>
+      <button class="btn">Scan again</button>
+    </div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div class="panel">
+    <div class="phead"><h2>Scan pipeline</h2><span class="i">i</span><span class="sp"></span>
+      <span class="dots">⟳ ⋮</span></div>
+    <div class="pipe">
+      <div class="chev"><div class="lbl">Rules</div><div class="big">68</div><div class="d">shipped checks</div></div>
+      <div class="chev"><div class="lbl">Checks ran</div><div class="big">38</div><div class="d">— no change</div></div>
+      <div class="chev"><div class="lbl">Not checkable</div><div class="big">30</div><div class="d">18 wrong device · 12 wouldn’t answer</div></div>
+      <div class="chev"><div class="lbl">Findings</div><div class="big">4</div><div class="d">— no change</div></div>
+    </div>
+    <div class="pipe-note">A funnel of this scan, not a fleet. “Not checkable” is carried through to
+      the end rather than dropped — it is never folded into “clear”.</div>
+  </div>
+
+  <!-- ROW: score | deductions -->
+  <div class="grid2">
+    <div class="panel">
+      <div class="phead"><h2>Score</h2><span class="i">i</span><span class="sp"></span><span class="dots">⟳ ⋮</span></div>
+      <div class="scoreRow">
+        <div class="ring">
+          <svg viewBox="0 0 320 320" aria-hidden="true">
+            <circle cx="160" cy="160" r="128" pathLength="360" fill="none" stroke="#1b211e"
+              stroke-width="20" stroke-linecap="round" stroke-dasharray="270 90" transform="rotate(135 160 160)"/>
+            <circle cx="160" cy="160" r="128" pathLength="360" fill="none" stroke="var(--good)"
+              stroke-width="20" stroke-linecap="round" stroke-dasharray="221.4 138.6" transform="rotate(135 160 160)"/>
+          </svg>
+          <div class="c"><b>82<i>/100</i></b><span>Good</span></div>
+        </div>
+        <div class="scoreMeta">
+          <p>A score is <span class="big">100 − 18</span> deductions, so it is only meaningful beside
+            coverage.</p>
+          <p><span class="big">30</span> of 68 checks could not run, so 82 partly reflects what was
+            <b>not</b> inspected — not a clean bill.</p>
+          <p style="color:var(--faint);margin:0">Every point traces to one finding, listed below.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>Deductions by area</h2><span class="i">i</span><span class="sp"></span><span class="dots">⟳ ⋮</span></div>
+      <div class="bar">
+        <div class="r"><b>Network</b><span class="num">−12</span></div>
+        <div class="track"><div class="fill" style="width:100%;background:var(--med)"></div></div>
+      </div>
+      <div class="bar">
+        <div class="r"><b>Apps</b><span class="num">−6</span></div>
+        <div class="track"><div class="fill" style="width:50%;background:var(--low)"></div></div>
+      </div>
+      <div style="font-size:12.5px;color:var(--faint);margin-top:16px">
+        Only areas with a deduction appear. Each category is capped so one bad area cannot sink the
+        whole score.</div>
+    </div>
+  </div>
+
+  <!-- ROW: findings | what was checked -->
+  <div class="grid2">
+    <div class="panel">
+      <div class="phead"><h2>Findings</h2><span class="i">i</span><span class="sp"></span>
+        <span class="rid">4 · −18 total</span></div>
+
+      <div class="finding"><div class="sevbar" style="background:var(--med)"></div><div>
+        <div class="frow"><span class="chip" style="color:var(--med)">MEDIUM</span>
+          <span class="rid">NET-DNS-001</span><span class="ded" style="color:var(--med)">−9</span></div>
+        <div class="ftitle">Name lookups go to an unrecognised server</div></div></div>
+
+      <div class="finding"><div class="sevbar" style="background:var(--low)"></div><div>
+        <div class="frow"><span class="chip" style="color:var(--low)">LOW</span>
+          <span class="rid">DSK-AI-002</span><span class="ded" style="color:var(--low)">−4</span></div>
+        <div class="ftitle">An AI assistant can run commands here through “mobile”</div></div></div>
+
+      <div class="finding"><div class="sevbar" style="background:var(--low)"></div><div>
+        <div class="frow"><span class="chip" style="color:var(--low)">LOW</span>
+          <span class="rid">DSK-NET-003</span><span class="ded" style="color:var(--low)">−3</span></div>
+        <div class="ftitle">This computer shouts network lookups to whoever is listening</div></div></div>
+
+      <div class="finding"><div class="sevbar" style="background:var(--low)"></div><div>
+        <div class="frow"><span class="chip" style="color:var(--low)">LOW</span>
+          <span class="rid">DSK-MAL-003</span><span class="ded" style="color:var(--low)">−2</span></div>
+        <div class="ftitle">2 programs are running from personal folders, unsigned</div></div></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h2>What was checked</h2><span class="i">i</span><span class="sp"></span><span class="dots">⟳ ⋮</span></div>
+      <div class="checks">
+        <div class="chk"><span class="dot ran">✓</span><div><b>Firewall</b><span>all profiles read</span></div></div>
+        <div class="chk"><span class="dot ran">✓</span><div><b>Listening ports</b><span>vs firewall rules</span></div></div>
+        <div class="chk"><span class="dot ran">✓</span><div><b>DNS &amp; network</b><span>resolver, LLMNR</span></div></div>
+        <div class="chk"><span class="dot ran">✓</span><div><b>Persistence</b><span>13 autorun sources</span></div></div>
+        <div class="chk"><span class="dot ran">✓</span><div><b>Antivirus</b><span>66 files → Defender · 0 flagged</span></div></div>
+        <div class="chk"><span class="dot ran">✓</span><div><b>Hardening</b><span>UAC, SMB1, WDigest…</span></div></div>
+        <div class="chk"><span class="dot no">⃠</span><div><b>Screen lock</b><span>wouldn’t answer</span></div></div>
+        <div class="chk"><span class="dot no">⃠</span><div><b>Drive encryption</b><span>needs elevation</span></div></div>
+      </div>
+      <div style="font-size:12px;color:var(--faint);margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
+        Threat data is <b style="color:var(--med)">SYNTHETIC</b> (built 2026-09-02) — password &amp; link
+        checks are demonstrations, not real protection yet.</div>
+    </div>
+  </div>
+
+  <footer><b>How to read this.</b> Nothing left this computer to produce this, and the app opened no
+    socket. This is one machine at one moment — a slice of time, not a live monitor. “Not checkable” is
+    reported, never rounded up to “fine”.</footer>
+</div>
+</body>
+</html>

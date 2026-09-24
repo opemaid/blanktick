@@ -1,8 +1,8 @@
 /* ------------------------------------------------------------------ *
-   Mume marketing site.
+   Blanktick marketing site.
 
    The link checker below is a faithful JavaScript port of
-   core/src/main/kotlin/com/mume/core/analysis/UrlAnalyzer.kt — same
+   core/src/main/kotlin/com/blanktick/core/analysis/UrlAnalyzer.kt — same
    signal IDs, same weights, same verdict thresholds, same Punycode
    decoder and confusable table.
 
@@ -373,7 +373,7 @@ function analyze(input) {
 
   const shortener = SHORTENERS.has(reg) || SHORTENERS.has(host);
   if (shortener) signals.push({ w: 0, id: 'SHORT',
-    t: 'This is a shortened link. Mume works offline and cannot follow it to see where it really goes, so it cannot tell you whether the destination is safe.' });
+    t: 'This is a shortened link. Blanktick works offline and cannot follow it to see where it really goes, so it cannot tell you whether the destination is safe.' });
 
   const risk = Math.min(100, signals.reduce((a, s) => a + s.w, 0));
 
@@ -392,8 +392,8 @@ function analyze(input) {
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 
 const COPY = {
-  SAFE:       ['Known good', 'This is a domain Mume recognises. Still check the page itself before typing a password.'],
-  UNKNOWN:    ['Unknown', 'Mume found nothing wrong with the structure of this address — but working offline it cannot confirm the site is genuinely safe, so it will not say so.'],
+  SAFE:       ['Known good', 'This is a domain Blanktick recognises. Still check the page itself before typing a password.'],
+  UNKNOWN:    ['Unknown', 'Blanktick found nothing wrong with the structure of this address — but working offline it cannot confirm the site is genuinely safe, so it will not say so.'],
   SUSPICIOUS: ['Suspicious', 'Several things about this address are unusual. Treat it as untrusted.'],
   DANGEROUS:  ['Dangerous', 'This address is built to be mistaken for something else.']
 };
@@ -466,11 +466,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Theme toggle, remembering the choice for this browser only.
   const root = document.documentElement;
-  const saved = localStorage.getItem('mume-theme');
+  const saved = localStorage.getItem('blanktick-theme');
   if (saved) root.dataset.theme = saved;
   document.getElementById('theme').addEventListener('click', () => {
     const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
     root.dataset.theme = next;
-    localStorage.setItem('mume-theme', next);
+    localStorage.setItem('blanktick-theme', next);
   });
 });

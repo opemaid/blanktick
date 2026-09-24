@@ -37,7 +37,7 @@ dist/
 # ---------------------------------------------------------------- PRIVACY
 # Screenshots captured from a real machine during development.
 #
-# This is not tidiness. A full-screen capture of a Mume scan shows the operator's
+# This is not tidiness. A full-screen capture of a Blanktick scan shows the operator's
 # taskbar, installed applications, clock, weather/location, and — because the app
 # works — their actual findings: local administrator account names, DNS resolver
 # addresses, the services listening on their machine. Publishing those to an open

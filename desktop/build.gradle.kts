@@ -33,14 +33,14 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "com.mume.desktop.MainKt"
+        mainClass = "com.blanktick.desktop.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Dmg, TargetFormat.Deb)
-            packageName = "Mume"
+            packageName = "Blanktick"
             packageVersion = "0.1.0"
             description = "Offline security check for this computer"
-            vendor = "Mume"
+            vendor = "Blanktick"
 
             // macOS installer versions must start at a major > 0, so the DMG
             // carries 1.0.0 while the app itself is still 0.1.0. Keeping the
@@ -54,6 +54,15 @@ compose.desktop {
 tasks.test {
     useJUnitPlatform()
     testLogging { events("passed", "skipped", "failed") }
+}
+
+// Forward this process's stdin to the app when run from source. Without it,
+// `gradlew :desktop:run --args="--mcp"` gives the MCP server an empty stdin that
+// hits EOF immediately, so no client — piped or interactive — can drive it. The
+// packaged executable never had this problem; this only fixes running from a
+// checkout, which docs/mcp.md points at for debugging.
+tasks.withType<JavaExec>().configureEach {
+    standardInput = System.`in`
 }
 
 /* ------------------------------------------------------------------------- *
@@ -112,17 +121,17 @@ val networkApiSignatures = listOf(
  * that a second class cannot quietly join it.
  */
 val networkExemptClasses = setOf(
-    "com/mume/desktop/NoNetwork.class",
-    "com/mume/desktop/NoNetwork\$BlockedSocketImpl.class",
-    "com/mume/desktop/NoNetwork\$BlockingSocketImplFactory.class",
-    "com/mume/desktop/NoNetwork\$BlockedUrlHandler.class",
-    "com/mume/desktop/NoNetwork\$LocalOnlyUrlHandlerFactory.class",
-    "com/mume/desktop/NoNetwork\$BlockedException.class"
+    "com/blanktick/desktop/NoNetwork.class",
+    "com/blanktick/desktop/NoNetwork\$BlockedSocketImpl.class",
+    "com/blanktick/desktop/NoNetwork\$BlockingSocketImplFactory.class",
+    "com/blanktick/desktop/NoNetwork\$BlockedUrlHandler.class",
+    "com/blanktick/desktop/NoNetwork\$LocalOnlyUrlHandlerFactory.class",
+    "com/blanktick/desktop/NoNetwork\$BlockedException.class"
 )
 
 val assertNoNetworkBytecode = tasks.register("assertNoNetworkBytecode") {
     group = "verification"
-    description = "Fails if any Mume class references a networking API."
+    description = "Fails if any Blanktick class references a networking API."
 
     // Captured as plain values so the task body touches nothing reachable from
     // Project, which is what keeps it usable under the configuration cache.
@@ -139,17 +148,17 @@ val assertNoNetworkBytecode = tasks.register("assertNoNetworkBytecode") {
      * same output, and this one currently reports zero across 43 dependency
      * jars -- a result worth distrusting until proven. Running
      *
-     *     gradlew :desktop:assertNoNetworkBytecode -PmumeNetworkGateSelfTest
+     *     gradlew :desktop:assertNoNetworkBytecode -PblanktickNetworkGateSelfTest
      *
      * drops the exemption for NoNetwork, which definitionally DOES reference
      * java.net.Socket. The gate must then fail. If it passes, the gate is dead
      * and its silence means nothing.
      */
-    val selfTest = providers.gradleProperty("mumeNetworkGateSelfTest").isPresent
+    val selfTest = providers.gradleProperty("blanktickNetworkGateSelfTest").isPresent
     val exempt = if (selfTest) emptySet<String>() else networkExemptClasses
 
     dependsOn(tasks.named("classes"), project(":core").tasks.named("classes"))
-    inputs.files(classDirs).withPropertyName("mumeClasses")
+    inputs.files(classDirs).withPropertyName("blanktickClasses")
     outputs.upToDateWhen { false }
 
     doLast {
@@ -171,7 +180,7 @@ val assertNoNetworkBytecode = tasks.register("assertNoNetworkBytecode") {
         if (offenders.isNotEmpty()) {
             throw GradleException(
                 buildString {
-                    appendLine("Mume must contain no networking code, but these compiled classes")
+                    appendLine("Blanktick must contain no networking code, but these compiled classes")
                     appendLine("reference a network API:")
                     appendLine()
                     offenders.forEach { appendLine("    $it") }
@@ -179,7 +188,7 @@ val assertNoNetworkBytecode = tasks.register("assertNoNetworkBytecode") {
                     appendLine("If this is the NoNetwork blocker gaining a nested class, add it to")
                     appendLine("`networkExemptClasses` by exact name, never by package prefix.")
                     appendLine()
-                    appendLine("If it is anything else, Mume cannot ship it. The offline guarantee")
+                    appendLine("If it is anything else, Blanktick cannot ship it. The offline guarantee")
                     appendLine("is the product, not a feature of it.")
                 }
             )
@@ -191,7 +200,7 @@ val assertNoNetworkBytecode = tasks.register("assertNoNetworkBytecode") {
                     "scanner is broken and its clean verdict is worthless."
             )
         }
-        logger.lifecycle("  Mume: no Mume class references a networking API.")
+        logger.lifecycle("  Blanktick: no Blanktick class references a networking API.")
     }
 }
 
@@ -249,7 +258,7 @@ val auditDependencyNetworkSurface = tasks.register("auditDependencyNetworkSurfac
         val scanned = runtimeJars.files.count { it.name.endsWith(".jar") }
         val withNetworking = rows.count { it.contains("[contains networking code]") }
         logger.lifecycle(
-            "  Mume: pinned $scanned runtime jars, $withNetworking contain networking code."
+            "  Blanktick: pinned $scanned runtime jars, $withNetworking contain networking code."
         )
 
         val actual = actualFile.get().asFile
@@ -259,7 +268,7 @@ val auditDependencyNetworkSurface = tasks.register("auditDependencyNetworkSurfac
         val expected = expectedFile.asFile
         if (!expected.exists()) {
             expected.writeText(rows.joinToString("\n", postfix = "\n"))
-            logger.lifecycle("  Mume: wrote initial network-surface.txt (${rows.size} jars). Review it.")
+            logger.lifecycle("  Blanktick: wrote initial network-surface.txt (${rows.size} jars). Review it.")
             return@doLast
         }
 
@@ -295,7 +304,7 @@ val auditDependencyNetworkSurface = tasks.register("auditDependencyNetworkSurfac
             )
         }
 
-        logger.lifecycle("  Mume: dependency network surface unchanged (${rows.size} jars).")
+        logger.lifecycle("  Blanktick: dependency network surface unchanged (${rows.size} jars).")
     }
 }
 
@@ -320,7 +329,7 @@ tasks.register("writeRuntimeClasspath") {
     val runtime: FileCollection = configurations.getByName("runtimeClasspath")
     val classesDir = layout.buildDirectory.dir("classes/kotlin/main")
     val resourcesDir = layout.buildDirectory.dir("resources/main")
-    val outFile = layout.buildDirectory.file("mume-classpath.txt")
+    val outFile = layout.buildDirectory.file("blanktick-classpath.txt")
 
     dependsOn(tasks.named("classes"))
     inputs.files(runtime)
@@ -331,6 +340,6 @@ tasks.register("writeRuntimeClasspath") {
         val file = outFile.get().asFile
         file.parentFile.mkdirs()
         file.writeText(entries.joinToString(File.pathSeparator) { it.absolutePath })
-        logger.lifecycle("  Mume: classpath written to ${file.absolutePath}")
+        logger.lifecycle("  Blanktick: classpath written to ${file.absolutePath}")
     }
 }

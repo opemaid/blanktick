@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Builds the intel bundle that ships inside the Mume APK.
+Builds the intel bundle that ships inside the Blanktick APK.
 
     python tools/build_intel.py --demo
     python tools/build_intel.py --passwords pwned-top10m.txt --domains hosts.txt
@@ -52,7 +52,7 @@ import sys
 from datetime import date
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from mume_hash import digest, h1, h2, normalize_domain, to_punycode  # noqa: E402
+from blanktick_hash import digest, h1, h2, normalize_domain, to_punycode  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "app" / "src" / "main" / "assets" / "intel"

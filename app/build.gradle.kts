@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.mume.app"
+    namespace = "com.blanktick.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.mume.app"
+        applicationId = "com.blanktick.app"
         // Android 10. Matches the floor our own APP-SDK-001 rule enforces on
         // other apps -- it would be poor form to ship below the bar we set.
         minSdk = 29
@@ -104,7 +104,7 @@ tasks.withType<Test>().configureEach {
 /* ------------------------------------------------------------------------- *
  * The guarantee, enforced.
  *
- * Mume's central claim is that the app has no network permission (ADR-002).
+ * Blanktick's central claim is that the app has no network permission (ADR-002).
  * Checking our own AndroidManifest.xml is not enough: manifest merging means
  * any dependency, at any depth, can inject `<uses-permission INTERNET/>` into
  * the shipped APK without a line of our source changing.
@@ -145,7 +145,7 @@ androidComponents {
                 if (offenders.isNotEmpty()) {
                     throw GradleException(
                         buildString {
-                            appendLine("Mume must ship with no network permission, but the merged")
+                            appendLine("Blanktick must ship with no network permission, but the merged")
                             appendLine("manifest for '$variantName' declares:")
                             offenders.forEach { appendLine("    $it") }
                             appendLine()
@@ -153,12 +153,12 @@ androidComponents {
                             appendLine("Run: gradle :app:dependencies --configuration ${variantName}RuntimeClasspath")
                             appendLine()
                             appendLine("Do not resolve this with tools:node=\"remove\". If a dependency")
-                            appendLine("needs the network, Mume cannot ship it -- that is the product.")
+                            appendLine("needs the network, Blanktick cannot ship it -- that is the product.")
                         }
                     )
                 }
                 logger.lifecycle(
-                    "  Mume: merged manifest for '$variantName' declares no network permission."
+                    "  Blanktick: merged manifest for '$variantName' declares no network permission."
                 )
             }
         }

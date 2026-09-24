@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mume — app prototype</title>
+<title>Blanktick — app prototype</title>
 <link rel="stylesheet" href="tokens.css">
 <style>
 /* ------------------------------------------------------------------ *
-   Mume app prototype.
+   Blanktick app prototype.
 
    Every screen state from the design meeting, rendered rather than
    described. Open it in a browser -- no build step, no network.
@@ -423,7 +423,7 @@ input[type=range] { width: 100%; accent-color: var(--color-brand-kelp); }
 <body>
 
 <aside class="rail">
-  <h1>Mume</h1>
+  <h1>Blanktick</h1>
   <p class="sub">App prototype — every state from the design meeting, rendered rather than described.</p>
 
   <h2>Screen</h2>
@@ -512,7 +512,7 @@ const NOT_CHECKABLE = [
 const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 function statusBar() {
-  return `<div class="status-bar"><span class="brandmark">Mume</span><span>Offline · no network permission</span></div>`;
+  return `<div class="status-bar"><span class="brandmark">Blanktick</span><span>Offline · no network permission</span></div>`;
 }
 
 function dial(score, grade, gradeColor, prev) {
@@ -554,7 +554,7 @@ const SCREENS = {
   first: () => `
     ${statusBar()}
     <div class="hero-first">
-      <h2>Mume checks this phone.<br>Nothing else.</h2>
+      <h2>Blanktick checks this phone.<br>Nothing else.</h2>
       <p>It works entirely offline. There is no account, no upload, and no server — because the app has no permission to reach the internet at all.</p>
       <div class="promise">
         <div><span class="tick">✓</span><span>Your passwords are checked against a list built into the app. Nothing is sent, not even a hash.</span></div>
@@ -612,7 +612,7 @@ const SCREENS = {
     <div class="section-head"><h3>Passed</h3><span class="count">29 of 29 checks</span></div>
     <div class="notice">
       Nothing needs your attention. <strong>That is not the same as “you are safe”</strong> —
-      Mume checks 29 specific things about this device, listed below. It cannot see inside
+      Blanktick checks 29 specific things about this device, listed below. It cannot see inside
       the apps you use or the sites you visit.
     </div>
     <div class="notice" style="background:transparent;box-shadow:none;padding:0">
@@ -629,11 +629,11 @@ const SCREENS = {
     ${findingRow({ sev:'low', cost:4, title:'Screen lock is a four-digit PIN',
         detail:'Four digits is ten thousand combinations, and roughly a quarter of people pick one of the twenty most common.', action:'How to change' })}
     <div class="section-head" style="margin-top:var(--space-4)">
-      <h3>What Mume can’t see on iPhone</h3><span class="count">17 checks</span>
+      <h3>What Blanktick can’t see on iPhone</h3><span class="count">17 checks</span>
     </div>
     <div class="notice">
       <strong>iPhone stops any app from inspecting other apps.</strong> That is a good rule,
-      and Mume follows it. These seventeen checks run on Android, where the system allows them.
+      and Blanktick follows it. These seventeen checks run on Android, where the system allows them.
       They are listed here so you can tell the difference between “checked and fine” and
       “never looked”.
     </div>
@@ -655,10 +655,10 @@ const SCREENS = {
       <div class="signal"><span class="w">25</span><span>“.top” addresses are given away cheaply and are used disproportionately for scams.</span></div>
     </div>
     <div class="notice">
-      Mume checked this against lists built into the app and against the structure of the
+      Blanktick checked this against lists built into the app and against the structure of the
       address itself. <strong>It did not open the link or contact any server.</strong>
     </div>
-    <p class="footnote">For a shortened link (bit.ly and similar) Mume will say <em>unknown</em>, never <em>safe</em> — offline it cannot follow the redirect to see where it really goes.</p>`,
+    <p class="footnote">For a shortened link (bit.ly and similar) Blanktick will say <em>unknown</em>, never <em>safe</em> — offline it cannot follow the redirect to see where it really goes.</p>`,
 };
 
 /* ---- wiring ------------------------------------------------------- */

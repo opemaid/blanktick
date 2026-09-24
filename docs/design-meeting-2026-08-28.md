@@ -1,4 +1,4 @@
-# Mume — Design Panel
+# Blanktick — Design Panel
 **Date:** 2026-08-28 · **Chair:** Claude · **Inputs:** ADR-002 (offline-only), kickoff decisions D-01…D-11
 
 ## Attendees (skills convened)
@@ -26,7 +26,7 @@
 
 **Colour:** Every competitor looks like a hacker film. Dark navy, neon green terminal type, shield iconography. That aesthetic signals *"this is for people who already think about security"* — which is exactly not our user.
 
-### DD-01 (DECIDED) — Mume looks like a well-made consumer product, not a security console
+### DD-01 (DECIDED) — Blanktick looks like a well-made consumer product, not a security console
 Warm paper white, ink black, one calm accent. The **content** carries the urgency; the **chrome** stays level. A finding is serious because of what it says, not because the card is red.
 
 ### DD-02 (DECIDED) — No shields, no padlocks, no warning triangles as brand furniture
@@ -88,11 +88,11 @@ This is the hardest screen in the product. On iPhone, nine rules return `NotAppl
 | Grey them out in the main list | **Rejected.** Reads as broken or as an upsell. |
 | A separate, plainly-worded section | **Accepted.** |
 
-### DD-08 (DECIDED) — A section titled "What Mume can't see on iPhone"
+### DD-08 (DECIDED) — A section titled "What Blanktick can't see on iPhone"
 Placed *below* the passed checks, written as a statement of fact about the platform, not an apology or a jab at Apple. Each row names the check and one clause explaining why iOS forbids it. On Android the equivalent section exists and is usually empty; when empty it is not rendered.
 
 **Words:** Draft copy, agreed —
-> *"iPhone stops any app from inspecting other apps. That's a good rule, and Mume follows it. These nine checks run on Android, where the system allows them."*
+> *"iPhone stops any app from inspecting other apps. That's a good rule, and Blanktick follows it. These nine checks run on Android, where the system allows them."*
 
 ---
 
@@ -105,7 +105,7 @@ Native faces, shared scale. SF Pro on iOS, Roboto Flex on Android — using the 
 Single spring, `cubic-bezier(0.32, 0.72, 0, 1)`, 240 ms for state changes and 700 ms for the score arc. Everything respects Reduce Motion / `prefers-reduced-motion` by dropping to a cross-fade. No looping animation anywhere in the app — a scanning app that animates forever implies it is always working, which would be a lie about a scan that takes 800 ms.
 
 ### DD-11 (DECIDED) — One token file, three consumers
-`design/tokens.json` is the source. It generates `tokens.css` (web), a Swift `Tokens.swift`, and a Kotlin `MumeTheme.kt`. Nobody hand-writes a hex value in a view.
+`design/tokens.json` is the source. It generates `tokens.css` (web), a Swift `Tokens.swift`, and a Kotlin `BlanktickTheme.kt`. Nobody hand-writes a hex value in a view.
 
 ---
 
@@ -114,10 +114,10 @@ Single spring, `cubic-bezier(0.32, 0.72, 0, 1)`, 240 ms for state changes and 70
 **Web:** Different rules apply. The app is calm because it is used under mild stress; the site has to *earn attention* in three seconds and then be believed.
 
 ### DD-12 (DECIDED) — The site's headline claim is the permission list
-Not "military-grade". Not "AI-powered". The single strongest thing Mume can say is verifiable by anyone with a terminal:
+Not "military-grade". Not "AI-powered". The single strongest thing Blanktick can say is verifiable by anyone with a terminal:
 
 ```
-$ aapt dump permissions mume.apk | grep INTERNET
+$ aapt dump permissions blanktick.apk | grep INTERNET
 $
 ```
 

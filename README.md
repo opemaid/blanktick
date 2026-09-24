@@ -1,4 +1,4 @@
-# Mume
+# Blanktick
 
 A security checkup for your phone and your computer that runs entirely on the
 device it is checking.
@@ -9,7 +9,7 @@ That is verifiable in ten seconds against any build:
 
 ```
 $ aapt dump permissions app-debug.apk
-package: com.mume.app.debug
+package: com.blanktick.app.debug
 uses-permission: name='android.permission.READ_MEDIA_IMAGES'
 uses-permission: name='android.permission.READ_EXTERNAL_STORAGE' maxSdkVersion='32'
 uses-permission: name='android.permission.PACKAGE_USAGE_STATS'
@@ -30,9 +30,9 @@ the desktop build makes a narrower claim and enforces it differently:
 
 ```
 $ gradlew :desktop:check
-  Mume: no Mume class references a networking API.
-  Mume: scanned 43 runtime jars, 0 contain networking code.
-  Mume: dependency network surface unchanged (0 jars).
+  Blanktick: no Blanktick class references a networking API.
+  Blanktick: scanned 43 runtime jars, 0 contain networking code.
+  Blanktick: dependency network surface unchanged (0 jars).
 ```
 
 - **`assertNoNetworkBytecode`** scans the compiled classes of `:core` and
@@ -56,9 +56,9 @@ The scanner is positive-controlled, because a broken scanner and a clean
 codebase produce identical output:
 
 ```
-$ gradlew :desktop:assertNoNetworkBytecode -PmumeNetworkGateSelfTest
+$ gradlew :desktop:assertNoNetworkBytecode -PblanktickNetworkGateSelfTest
 > Task :desktop:assertNoNetworkBytecode FAILED
-      com/mume/desktop/NoNetwork$BlockedSocketImpl.class -> java/net/Socket, java/net/InetAddress
+      com/blanktick/desktop/NoNetwork$BlockedSocketImpl.class -> java/net/Socket, java/net/InetAddress
 ```
 
 If that *passes*, the gate is dead and its silence means nothing.
@@ -71,14 +71,14 @@ If that *passes*, the gate is dead and its silence means nothing.
 |---|---|
 | `core/` — scoring engine, rules, filters, URL analysis, EXIF | **Builds. 265 tests, 0 failures.** |
 | `app/` — Android, Compose | **Builds. 26.6 MB APK produced. 30 tests, 0 failures.** |
-| `desktop/` — Compose Multiplatform | **Builds and runs. `Mume.exe` produced. 46 tests, 0 failures.** |
+| `desktop/` — Compose Multiplatform | **Builds and runs. `Blanktick.exe` produced. 46 tests, 0 failures.** |
 | Windows collector | **Runs on real hardware.** 38 of 68 checks answered on the dev machine; 30 reported as not checkable. |
 | macOS collector | **Written, never executed.** No Mac available. |
 | Linux collector | **Written, exercised only under WSL.** Not a real desktop session. |
 | Intel bundle pipeline (Python → Kotlin ×2) | **Working. Cross-language parity proven.** |
 | `web/` — marketing site + live link checker | **Working. 30/30 logic parity tests.** |
 | `design/` — tokens, interactive prototype | **Working.** |
-| `ios/MumeCore/` — Swift mirror | **Written, not compiled.** No Swift toolchain on Windows. |
+| `ios/BlanktickCore/` — Swift mirror | **Written, not compiled.** No Swift toolchain on Windows. |
 
 **341 tests across the three JVM modules, 0 failures.** `gradlew check` is green, including both network gates and Android lint.
 
@@ -162,7 +162,7 @@ The asymmetry is real and every app says so on screen — listing what it could
   and the finding says "starts automatically", never "this is everything that
   does".
 - **Removable media.** Two things about a USB stick are answerable offline and
-  Mume checks exactly those: whether the AutoRun policy has been *explicitly
+  Blanktick checks exactly those: whether the AutoRun policy has been *explicitly
   weakened* from the Windows default (absent means hardened — Microsoft turned
   autorun off for removable drives in 2011, so a rule that warned about plain
   AutoPlay would fire on every machine alive), and whether a drive that is
@@ -172,15 +172,15 @@ The asymmetry is real and every app says so on screen — listing what it could
 - **Programs pretending to be Windows.** A real `svchost.exe` lives in the
   system folder. Anything else with that name, running out of your personal
   folders, is not a borderline case — there is no innocent reason to do it.
-  Mume checks the programs running right now against a per-binary table of where
+  Blanktick checks the programs running right now against a per-binary table of where
   each one actually belongs. That table has to be per binary: a single "must be
   in System32" rule reports `explorer.exe` on every Windows machine alive,
   because Explorer genuinely lives in `C:\Windows`.
 
-  This is the one part of Mume that looks for malware, and it is worth being
+  This is the one part of Blanktick that looks for malware, and it is worth being
   precise about what it means. It does not scan your disk, hash your files or
   carry signatures — that is the antivirus you already have, and it needs a
-  server Mume does not talk to. What it detects is a *technique*, which is a
+  server Blanktick does not talk to. What it detects is a *technique*, which is a
   property of your machine rather than a fact someone else has to tell you
   about a file. A dormant installer sitting in a downloads folder will not be
   found here, and nothing in this section should be read as "your computer is
@@ -192,7 +192,7 @@ The asymmetry is real and every app says so on screen — listing what it could
 - **Which services are actually reachable — asked of the firewall, not guessed.**
   "25 things are listening on every interface" is true on a stock Windows machine
   and tells you almost nothing, because Windows blocks inbound by default. The
-  firewall knows which programs it lets through, so Mume asks it: on the
+  firewall knows which programs it lets through, so Blanktick asks it: on the
   development machine, 2 of 25 — and both were the developer's own web servers.
   The old check called that "17 services reachable from the whole network".
   Sockets whose owning program cannot be identified are counted and reported as
@@ -210,7 +210,7 @@ The asymmetry is real and every app says so on screen — listing what it could
   catalogue of what it already knows applies to this machine, and it can be
   searched offline. A test asserts the offline flag can never be dropped.
 - **The verdict of the antivirus you already have.** Windows ships a scanner
-  whose signatures are hours old, and it is already installed. Mume asks it
+  whose signatures are hours old, and it is already installed. Blanktick asks it
   about the sixty-odd files it has identified as worth asking about — the
   programs that start themselves and the ones running from personal folders —
   and reports what it says.
@@ -218,22 +218,22 @@ The asymmetry is real and every app says so on screen — listing what it could
   This is the useful division of labour. Real-time protection checks files as
   they are written and opened; a file that arrived before its signature existed
   can sit on disk unflagged until something touches it, and the full scan that
-  would find it is the one nobody runs. Mume contributes the *shortlist*, not
+  would find it is the one nobody runs. Blanktick contributes the *shortlist*, not
   the verdict. Measured at 33 milliseconds a file.
 
   The scan is requested **with remediation disabled**, so nothing is quarantined
-  or moved: without that flag the scanner deletes what it finds, and Mume would
+  or moved: without that flag the scanner deletes what it finds, and Blanktick would
   become a program that silently changes your computer as a side effect of
   asking a question. A test asserts the flag can never be dropped.
 
-  One honest caveat, because it touches the central claim: **Mume still makes no
+  One honest caveat, because it touches the central claim: **Blanktick still makes no
   network connection.** It asks a component that is already running and already
   scanning these files. That component then behaves as it always does, which —
   depending on your own cloud-protection setting — may include contacting
   Microsoft. "We never touch the network" and "we never cause anything to touch
   the network" are different claims, and only the first is true.
 - **A bundled list of known-malicious files.** The closest thing here to
-  conventional antivirus, and worth being exact about. Mume ships a table of
+  conventional antivirus, and worth being exact about. Blanktick ships a table of
   SHA-256 hashes and compares it against the programs that start themselves and
   the ones running from your personal folders — about sixty files, not your
   whole disk.
@@ -263,7 +263,7 @@ The asymmetry is real and every app says so on screen — listing what it could
   A **local model server** is an HTTP API with no authentication, because it is
   meant to be reachable only from the machine it runs on. Bound to every
   interface instead — on office, hotel or café Wi-Fi — anyone who scans the
-  subnet can use your hardware and read whatever the models are handling. Mume
+  subnet can use your hardware and read whatever the models are handling. Blanktick
   matches on the *program* rather than the port, because people move these to
   other ports and a port list would flag whatever else was on 8080.
 
@@ -271,7 +271,7 @@ The asymmetry is real and every app says so on screen — listing what it could
   is allowed to run. That is the more interesting one: an entry in it executes
   commands, and it appears in no Run key, no scheduled task and no service — so
   every autorun checker ever written looks straight past it, including the
-  twelve-source sweep above. Mume does not judge whether the tools are
+  twelve-source sweep above. Blanktick does not judge whether the tools are
   appropriate; you chose them. It reports what was granted, because hardly
   anyone has reread that file since the day they pasted something into it.
 
@@ -281,11 +281,11 @@ The asymmetry is real and every app says so on screen — listing what it could
   hardware that does not have it, which is most machines, rather than passing.
 - **Machine hardening**: User Account Control, whether sign-in credentials are
   left readable in memory, SMBv1, LLMNR, remote-administration services, and
-  whether an auto-logon password is sitting in the registry in cleartext. Mume
+  whether an auto-logon password is sitting in the registry in cleartext. Blanktick
   never reads that password — only whether one exists. An app that copied a
   stored credential into its own report would have made the problem worse in
   the course of describing it.
-- **An audit of the antivirus you already have.** Mume is not an antivirus and
+- **An audit of the antivirus you already have.** Blanktick is not an antivirus and
   cannot become one: no network means no reputation lookup, and it has no file
   scanner. What it can do is check whether the scanner already installed has
   been quietly switched off in part — a disabled behaviour monitor, tamper
@@ -294,7 +294,7 @@ The asymmetry is real and every app says so on screen — listing what it could
   going dark gets noticed, and from the outside a partly-disabled antivirus
   looks exactly like a working one.
 - **Installed software**, read from the OS's own uninstall registry. Two things
-  are checkable offline and Mume checks exactly those: software **past its
+  are checkable offline and Blanktick checks exactly those: software **past its
   vendor's security support** (matched against a catalogue of products whose EOL
   has already happened and is final, so the list can go stale by becoming
   incomplete but never by becoming wrong), and software installed **somewhere it
@@ -323,7 +323,7 @@ app/                 Android · Compose · collectors only
 desktop/             Compose Multiplatform · Windows/macOS/Linux collectors
   collect/           Shell, WindowsProbe (one readable script), 3 collectors
   NoNetwork.kt       Runtime socket + URL blocks, with their gaps documented
-ios/MumeCore/        Swift mirror — same rule IDs, same vectors
+ios/BlanktickCore/        Swift mirror — same rule IDs, same vectors
 design/              tokens.json (source of truth) + interactive prototype
 web/                 Marketing site with a live, offline link checker
 tools/               Python, build-time only — bundle builder, token codegen
@@ -425,7 +425,7 @@ python tools/extract_signer.py --from-device com.whatsapp com.android.chrome
 With no entries, `APP-CLONE-001` reports *not checkable* — the correct behaviour
 for a check we have no data to run.
 
-### The one file Mume writes
+### The files Blanktick writes
 
 The desktop build wrote **nothing** to disk until Settings existed — no config,
 no cache, no history. Settings spends part of that deliberately, and is bounded
@@ -434,6 +434,14 @@ results, no scores, no findings, no machine identifiers. The Settings screen
 prints the file's full path and its entire contents, because *"nothing leaves
 this computer"* was never the same claim as *"nothing is written"* and the
 difference should be visible rather than argued.
+
+The one exception is **scan history** (`history.jsonl`, beside `settings.conf`),
+which exists so an MCP client can ask about past scans. It is **off by default**,
+has its own switch and a Delete button on the Settings screen, and stores rule
+outcomes only — never finding details, evidence or paths. The Settings screen
+previously said "the only file Blanktick writes … no history" while a history
+switch existed in the file below it; it now states both files and whether
+history is on.
 
 It also carries the **Reduce motion** switch, which exists because Compose
 Desktop exposes no API for the OS preference — verified against the toolkit and
@@ -448,14 +456,14 @@ all.
 The desktop build ships two modes whose only purpose is to let you check it:
 
 ```bash
-Mume --script    # prints the exact PowerShell it runs on your machine
-Mume --probe     # prints every field it read, including the nulls
+Blanktick --script    # prints the exact PowerShell it runs on your machine
+Blanktick --probe     # prints every field it read, including the nulls
 ```
 
 `--script` output is one readable block you can paste into a terminal and
 compare against what the app displayed. `WindowsProbeTest` asserts that the
 script contains no mutating cmdlet, no network cmdlet, and no cmdlet needing
-elevation — **Mume reports, you decide and act.** It never changes a setting.
+elevation — **Blanktick reports, you decide and act.** It never changes a setting.
 
 `--probe` is how a "not checkable" is diagnosed: a field printed as `null` is
 either an honest platform limit or a collector bug, and this is how the two are
@@ -529,7 +537,7 @@ node web/verify.mjs      # 30 tests: the site's checker matches UrlAnalyzer.kt
 
 ---
 
-## What Mume deliberately cannot do
+## What Blanktick deliberately cannot do
 
 Stated here because the app says the same thing on screen:
 
@@ -542,7 +550,7 @@ Stated here because the app says the same thing on screen:
   this build. Deferred to a separate, separately-installable module.
 - **Any product analytics.** We do not know how many people use which feature,
   and cannot find out.
-- **Scan the contents of a USB stick.** Mume never opens files on a drive,
+- **Scan the contents of a USB stick.** Blanktick never opens files on a drive,
   hashes them, or checks them against anything. That is an antivirus and it
   needs a server.
 - **Tell you whether a program is malware.** The desktop lists what is installed
@@ -562,7 +570,7 @@ Stated here because the app says the same thing on screen:
   and `NET-DNS-001` report *not checkable* on the phone. The desktop build does
   run them. This is a real cost of the permission policy and is written down in
   `AndroidCollector.kt` rather than left to be rediscovered.
-- **Change anything.** Mume tells you what to fix and lets you fix it. A security
+- **Change anything.** Blanktick tells you what to fix and lets you fix it. A security
   tool that silently reconfigures a machine is one nobody can audit.
 
 Passing every check does not mean you are safe. It means these particular
@@ -582,12 +590,12 @@ problems are not present. The app says that too.
 
 ## Connecting a language model
 
-Mume speaks [MCP](https://modelcontextprotocol.io) over stdio, so any model with
+Blanktick speaks [MCP](https://modelcontextprotocol.io) over stdio, so any model with
 an MCP client can ask about this computer and get real answers rather than
-guesses: `Mume.exe --mcp`. Four tools, all read-only — a scan, the raw facts
+guesses: `Blanktick.exe --mcp`. Four tools, all read-only — a scan, the raw facts
 including the nulls, the exact script it runs, and its coverage on this platform.
 
-Stdio, not HTTP: your client launches Mume and talks to it over standard input
+Stdio, not HTTP: your client launches Blanktick and talks to it over standard input
 and output. No socket is opened and the bytecode gate that forbids networking
 code still passes. And **every tool is a question** — nothing there fixes,
 removes, disables or quarantines anything, which is the same promise the app has
@@ -595,4 +603,4 @@ made since its first commit and is enforced by a test.
 
 Setup and the reasoning: [`docs/mcp.md`](docs/mcp.md).
 
-## What Mume will not do
+## What Blanktick will not do

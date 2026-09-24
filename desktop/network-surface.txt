@@ -17,7 +17,7 @@
 # flag is a measurement, not an omission.
 #
 # The scanner is positive-controlled: run
-#   gradlew :desktop:assertNoNetworkBytecode -PmumeNetworkGateSelfTest
+#   gradlew :desktop:assertNoNetworkBytecode -PblanktickNetworkGateSelfTest
 # and it must FAIL by finding NoNetwork.kt. If that passes, this file is noise.
 animation-core-desktop
 animation-desktop

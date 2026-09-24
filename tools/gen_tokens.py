@@ -6,9 +6,9 @@ Generates the three consumers of design/tokens.json (design decision DD-11).
 
 Outputs:
     design/tokens.css                      web + prototype + marketing site
-    app/src/main/java/.../ui/MumeTokens.kt Android Compose
-    desktop/src/main/kotlin/.../ui/MumeTokens.kt Compose Multiplatform (desktop)
-    ios/MumeCore/Sources/MumeTokens.swift  SwiftUI
+    app/src/main/java/.../ui/BlanktickTokens.kt Android Compose
+    desktop/src/main/kotlin/.../ui/BlanktickTokens.kt Compose Multiplatform (desktop)
+    ios/BlanktickCore/Sources/BlanktickTokens.swift  SwiftUI
 
 Build-time only. Nothing here ships in the app, and the app never reads JSON at
 runtime -- the values are compiled in.
@@ -173,7 +173,7 @@ def emit_css(tokens: dict) -> str:
 
 # ------------------------------------------------------------------------ Kotlin
 
-def emit_kotlin(tokens: dict, package: str = "com.mume.app.ui") -> str:
+def emit_kotlin(tokens: dict, package: str = "com.blanktick.app.ui") -> str:
     """Compose token object.
 
     The same source serves the Android app and the desktop app: Compose
@@ -199,7 +199,7 @@ def emit_kotlin(tokens: dict, package: str = "com.mume.app.ui") -> str:
         " * Compose views must reference these rather than literal colours or sizes;",
         " * `tools/check_tokens.py` fails the build if this file drifts from source.",
         " */",
-        "object MumeTokens {",
+        "object BlanktickTokens {",
         "",
         "    object Light {",
     ]
@@ -336,7 +336,7 @@ def emit_swift(tokens: dict) -> str:
         "///",
         "/// SwiftUI views must reference these rather than literal colours or sizes;",
         "/// `tools/check_tokens.py` fails the build if this file drifts from source.",
-        "public enum MumeTokens {",
+        "public enum BlanktickTokens {",
         "",
         "    public enum Light {",
     ]
@@ -407,11 +407,11 @@ def main() -> int:
     tokens = load()
     print(f"Reading {TOKENS.relative_to(ROOT)} (v{tokens['$version']})")
     write(ROOT / "design" / "tokens.css", emit_css(tokens))
-    write(ROOT / "app" / "src" / "main" / "java" / "com" / "mume" / "app" / "ui" / "MumeTokens.kt",
+    write(ROOT / "app" / "src" / "main" / "java" / "com" / "blanktick" / "app" / "ui" / "BlanktickTokens.kt",
           emit_kotlin(tokens))
-    write(ROOT / "desktop" / "src" / "main" / "kotlin" / "com" / "mume" / "desktop" / "ui" / "MumeTokens.kt",
-          emit_kotlin(tokens, package="com.mume.desktop.ui"))
-    write(ROOT / "ios" / "MumeCore" / "Sources" / "MumeCore" / "MumeTokens.swift", emit_swift(tokens))
+    write(ROOT / "desktop" / "src" / "main" / "kotlin" / "com" / "blanktick" / "desktop" / "ui" / "BlanktickTokens.kt",
+          emit_kotlin(tokens, package="com.blanktick.desktop.ui"))
+    write(ROOT / "ios" / "BlanktickCore" / "Sources" / "BlanktickCore" / "BlanktickTokens.swift", emit_swift(tokens))
     print("Done.")
     return 0
 

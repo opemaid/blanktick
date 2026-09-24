@@ -14,7 +14,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "mume"
+rootProject.name = "blanktick"
 
 include(":core")
 include(":app")

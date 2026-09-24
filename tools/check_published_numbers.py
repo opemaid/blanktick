@@ -52,9 +52,9 @@ DOCUMENTS = [
     ROOT / "RELEASE-CHECKLIST.md",
 ]
 
-COVERAGE_TEST = ROOT / "core" / "src" / "test" / "kotlin" / "com" / "mume" / "core" / "PlatformCoverageTest.kt"
-PROBE = ROOT / "desktop" / "src" / "main" / "kotlin" / "com" / "mume" / "desktop" / "collect" / "WindowsProbe.kt"
-RULES_DIR = ROOT / "core" / "src" / "main" / "kotlin" / "com" / "mume" / "core" / "rules"
+COVERAGE_TEST = ROOT / "core" / "src" / "test" / "kotlin" / "com" / "blanktick" / "core" / "PlatformCoverageTest.kt"
+PROBE = ROOT / "desktop" / "src" / "main" / "kotlin" / "com" / "blanktick" / "desktop" / "collect" / "WindowsProbe.kt"
+RULES_DIR = ROOT / "core" / "src" / "main" / "kotlin" / "com" / "blanktick" / "core" / "rules"
 PIN_FILE = ROOT / "desktop" / "network-surface.txt"
 
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Mume's local store is excluded from every backup and transfer channel.
+    Blanktick's local store is excluded from every backup and transfer channel.
 
     Scan findings describe exactly what is weak about a device. Letting that
     ride out in a cloud backup would undo decision D-05 ("findings never leave

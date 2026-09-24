@@ -111,7 +111,7 @@ def pull_from_device(packages: list[str], out) -> int:
         return 2
 
     failures = 0
-    tmp = pathlib.Path("./.mume-apk-tmp")
+    tmp = pathlib.Path("./.blanktick-apk-tmp")
     tmp.mkdir(exist_ok=True)
     try:
         for pkg in packages:

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Mume — Android manifest.
+    Blanktick — Android manifest.
 
     ================================================================
     THE MOST IMPORTANT THING IN THIS FILE IS WHAT IS NOT IN IT.
@@ -14,7 +14,7 @@
     library, no dependency and no future mistake of ours can send data
     off this device. Anyone can check with:
 
-        aapt dump permissions mume.apk | grep INTERNET
+        aapt dump permissions blanktick.apk | grep INTERNET
 
     `NoInternetPermissionTest` in the unit test suite parses the merged
     manifest and fails the build if this ever changes, so the guarantee
@@ -69,14 +69,14 @@
     </queries>
 
     <application
-        android:name=".MumeApplication"
+        android:name=".BlanktickApplication"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Mume"
+        android:theme="@style/Theme.Blanktick"
         android:usesCleartextTraffic="false"
         android:hasFragileUserData="false"
         android:localeConfig="@xml/locales_config">
@@ -86,7 +86,7 @@
             android:exported="true"
             android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
-            android:theme="@style/Theme.Mume">
+            android:theme="@style/Theme.Blanktick">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

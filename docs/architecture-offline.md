@@ -1,4 +1,4 @@
-# MUME — Offline-Only Architecture (ADR-002)
+# BLANKTICK — Offline-Only Architecture (ADR-002)
 
 **Status:** Accepted, 2026-08-28 · **Supersedes:** D-07, D-09 from the kickoff panel
 **Constraint from owner:** *"build everything locally, it must run on the app, no api calls"*
@@ -7,7 +7,7 @@
 
 ## 1. The rule
 
-> **The Mume app makes zero outbound requests to any server — ours or anyone else's — for the entire duration of a scan.**
+> **The Blanktick app makes zero outbound requests to any server — ours or anyone else's — for the entire duration of a scan.**
 
 Enforced structurally, not by discipline:
 
@@ -134,7 +134,7 @@ Verdicts are **SAFE / SUSPICIOUS / DANGEROUS / UNKNOWN**. `UNKNOWN` is a first-c
 ## 6. Module layout
 
 ```
-mume/
+blanktick/
 ├── core/                    Pure Kotlin/JVM · no I/O · no Android · no network
 │   ├── model/               DeviceSnapshot, Finding, Severity, Category
 │   ├── scoring/             ScoringEngine + ScoringPolicy  (the normative one)
@@ -143,8 +143,8 @@ mume/
 │   ├── intel/               IntelBundle readers + staleness
 │   └── analysis/            UrlAnalyzer, PermissionClusterAnalyzer, ExifAnalyzer
 ├── app/                     Android · Compose · collectors only
-├── ios/MumeCore/          Swift mirror of core/ — same rule IDs, same fixtures
-├── ios/Mume/              SwiftUI · collectors only
+├── ios/BlanktickCore/          Swift mirror of core/ — same rule IDs, same fixtures
+├── ios/Blanktick/              SwiftUI · collectors only
 ├── shared/fixtures/         Golden JSON — both platforms must produce identical scores
 └── tools/                   Python · BUILD TIME ONLY · generates the intel bundle
 ```

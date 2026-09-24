@@ -1,5 +1,5 @@
-# MUME — Product Kickoff Panel
-**Date:** 2026-08-28 · **Chair:** Claude · **Codename:** MUME (not cleared, see D-12)
+# BLANKTICK — Product Kickoff Panel
+**Date:** 2026-08-28 · **Chair:** Claude · **Codename:** MUME (not cleared, see D-12 — superseded by Blanktick on 2026-09-07)
 
 ## Brief
 Consumer device-security app. Native Swift + Kotlin. Full feature set. **Free** — no paywall, no ads.
@@ -95,7 +95,7 @@ Proposed home screen:
 
 ```
 +----------------------------------+
-|  Mume                      (o) |
+|  Blanktick                      (o) |
 |                                  |
 |         .-----------.            |
 |         |    72     |  Fair      |
@@ -144,6 +144,7 @@ Signals in → findings out. Zero I/O, zero platform types. Written twice (Swift
 ### D-03 (DECIDED) — Zero third-party SDKs in the client. None.
 ### D-04 (DECIDED) — No accounts, no user IDs, no server-side profile in v1
 ### D-05 (DECIDED) — Findings never leave the device
+> **Revised 2026-09-23 by [ADR-004](architecture-history.md).** The letter of D-05 stands — findings still never leave the device. The stricter reading it later grew ("persist no scan history at all") is consciously relaxed on desktop by an off-by-default, summary-only, local scan store an MCP client can search. The phone app is unchanged.
 ### D-06 (DECIDED) — Crash handling: on-device log, user-initiated share only, with a rendered preview of the exact bytes before sending
 ### D-07 (DECIDED) — Breach check uses k-anonymity only (SHA-1 5-char prefix); the email/password never transits
 ### D-08 (DECIDED) — Local store: SQLCipher / Keystore-Keychain-wrapped key, `.completeFileProtection`, no cloud backup, scrubbed on background
@@ -229,7 +230,7 @@ Android surfaces the signal, then we port whatever iOS permits. Prevents designi
 
 | # | Item | Owner | Blocking? |
 |---|---|---|---|
-| D-12 | Name clearance — "Mume" is a working codename only | Naming | Yes, before store listing |
+| D-12 | Name clearance — "Mume" is a working codename only | Naming | **RESOLVED 2026-09-07: renamed to Blanktick, see ADR-004** |
 | O-01 | Verify HIBP email API pricing/terms → email monitoring in or out | Backend | Phase 4 |
 | O-02 | Confirm whether VPN-capable apps still require an org account on Apple | Apple release | Yes, week 1 |
 | O-03 | Re-verify all cited store policy text against live docs | Apple + Play | Yes, week 1 |
