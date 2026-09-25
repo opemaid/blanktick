@@ -246,8 +246,9 @@ object BaselineRules {
                             detail = "Windows is set to connect to file shares as an anonymous " +
                                 "guest. Anyone on the same network can set up such a share, and " +
                                 "because nothing is signed, they can also sit in the middle of a " +
-                                "connection and swap the files you open. Newer Windows versions " +
-                                "turn this off.",
+                                "connection and swap the files you open. Windows 11 Pro and " +
+                                "Enterprise turn this off by default; Home still ships with it on, " +
+                                "so on Home this is not a sign anything was changed.",
                             remediation = "Unless an old NAS or media box needs it, turn it off: in " +
                                 "an administrator PowerShell, Set-SmbClientConfiguration " +
                                 "-EnableInsecureGuestLogons \$false. If a device stops working, " +

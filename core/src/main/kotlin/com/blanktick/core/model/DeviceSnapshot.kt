@@ -672,8 +672,9 @@ data class HardeningFacts(
     val smbServerRequiresSigning: Boolean? = null,
     /**
      * SMB client will connect to shares with no authentication at all.
-     * MEASURED ON: the development machine (Home 26200), so a stock-looking
-     * value is not proof of safety.
+     * Stock on Windows 11 HOME: on (no registry value written; measured on
+     * Home 26200). Pro/Enterprise ship it off. The one baseline rule that fires
+     * on a stock machine — kept LOW for the same reason LLMNR is.
      */
     val smbInsecureGuestLogons: Boolean? = null,
     /** Print Spooler service running. Stock: yes, and harmless on its own. */
