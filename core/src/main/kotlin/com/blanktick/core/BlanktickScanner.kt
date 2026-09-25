@@ -8,6 +8,7 @@ import com.blanktick.core.model.ScanResult
 import com.blanktick.core.rules.AccountSecurityRules
 import com.blanktick.core.rules.AiSecurityRules
 import com.blanktick.core.rules.AppHygieneRules
+import com.blanktick.core.rules.BaselineRules
 import com.blanktick.core.rules.DataExposureRules
 import com.blanktick.core.rules.HardeningRules
 import com.blanktick.core.rules.MalwareRules
@@ -171,6 +172,7 @@ object DefaultRules {
             AccountSecurityRules.ALL +
             DesktopRules.ALL +
             HardeningRules.ALL +
+            BaselineRules.ALL +
             MalwareRules.ALL +
             AiSecurityRules.ALL
 

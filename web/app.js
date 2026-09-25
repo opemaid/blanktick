@@ -350,6 +350,32 @@ function analyze(input) {
     }
   }
 
+  // Combosquatting — mirrors URL-COMBOSQUAT in UrlAnalyzer.kt. A brand as one
+  // hyphenated word, exact (55) or digit-swapped (70). Digit folding lives here
+  // only, and no edit distance: "apples-and-pears" must not read as Apple.
+  if (!isIp(host) && !BRANDS.has(reg) && !signals.some(s => s.id === 'TYPO' || s.id === 'HOMOGLYPH')) {
+    const words = skeleton(reg.split('.')[0]).split('-');
+    if (words.length >= 2) {
+      const byName = new Map([...BRANDS].map(b => [b.split('.')[0], b]));
+      const fold = w => w.replace(/[0134571]/g, c => ({ 0: 'o', 1: 'l', 3: 'e', 4: 'a', 5: 's', 7: 't' })[c]);
+      let hit = null;
+      for (const w of words) {
+        if (w.length < 4) continue;
+        if (byName.has(w)) { hit = [byName.get(w), w, true]; break; }
+        const f = fold(w);
+        if (f !== w && byName.has(f)) { hit = [byName.get(f), w, false]; break; }
+      }
+      if (hit) {
+        const [brand, word, exact] = hit;
+        const bn = brand.split('.')[0];
+        impersonated ??= brand;
+        signals.push(exact
+          ? { w: 55, id: 'COMBO', t: `"${reg}" is not ${brand} — it is "${bn}" with other words attached. Scam sites are very often built this way, because the brand name is what people check for.` }
+          : { w: 70, id: 'COMBO', t: `"${word}" in "${reg}" is a misspelling of "${bn}", with other words attached. A brand name spelled almost right is made to be skimmed past, and has no innocent reason to exist.` });
+      }
+    }
+  }
+
   const depth = subLabels(host).length;
   if (depth >= 4) signals.push({ w: 30, id: 'DEEP',
     t: `This address has ${depth} levels of subdomain, which is a common way to push the real destination out of sight on a phone screen.` });

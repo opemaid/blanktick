@@ -619,7 +619,84 @@ data class HardeningFacts(
     /** Windows Remote Management, listening for remote command execution. */
     val remoteManagementRunning: Boolean? = null,
     /** Remote Registry service, which exposes the registry over the network. */
-    val remoteRegistryRunning: Boolean? = null
+    val remoteRegistryRunning: Boolean? = null,
+
+    // ---- added 2026-09-25 to close the gap with open-source auditors ------
+    // Each was measured non-elevated on Windows 11 Home 26200 before a rule
+    // was written against it; the stock reading is noted per field.
+
+    /**
+     * NetBIOS name service on at least one IP-enabled adapter (option 0 "from
+     * DHCP" or 1 "on"). LLMNR's older twin: the same broadcast-and-trust-the-
+     * first-answer lookup, so switching LLMNR off alone left the exposure open.
+     * Stock: on.
+     */
+    val netbiosEnabled: Boolean? = null,
+    /** UAC prompts shown on the secure desktop. Stock: yes. */
+    val uacSecureDesktop: Boolean? = null,
+    /**
+     * Memory integrity (HVCI) actually running — `Win32_DeviceGuard`
+     * SecurityServicesRunning contains 2. Stock on new Windows 11 installs: on.
+     */
+    val memoryIntegrityRunning: Boolean? = null,
+    /** Whether the hardware can run memory integrity at all (AvailableSecurityProperties has 2). */
+    val memoryIntegrityAvailable: Boolean? = null,
+    /** Credential Guard running (SecurityServicesRunning contains 1). */
+    val credentialGuardRunning: Boolean? = null,
+    /**
+     * Credential Guard exists only on Pro, Enterprise and Education. Home
+     * (`EditionID` Core*) cannot turn it on, so a finding there is unactionable.
+     */
+    val credentialGuardSupportedEdition: Boolean? = null,
+    /**
+     * A TPM was found and reports working. Read from the device list, not
+     * `Get-Tpm`, which returns nothing without elevation. `false` means none
+     * was found or it reports an error.
+     */
+    val tpmWorking: Boolean? = null,
+    /**
+     * Smart App Control: 0 off, 1 on, 2 evaluation. Stock on upgraded
+     * machines: off — and it can only be turned on again by reinstalling, which
+     * is why the rule for it is informational.
+     */
+    val smartAppControlState: Int? = null,
+    /**
+     * System-wide exploit mitigations explicitly set to OFF (DEP, ASLR, CFG,
+     * SEHOP ...). Stock is NOTSET — the OS default, which is on — so only an
+     * explicit OFF is a finding. Empty list = none switched off.
+     */
+    val exploitMitigationsOff: List<String>? = null,
+    /** SMB client requires signing. Stock on 24H2+: yes. */
+    val smbClientRequiresSigning: Boolean? = null,
+    /** SMB server requires signing. Stock on 24H2+: yes. */
+    val smbServerRequiresSigning: Boolean? = null,
+    /**
+     * SMB client will connect to shares with no authentication at all.
+     * MEASURED ON: the development machine (Home 26200), so a stock-looking
+     * value is not proof of safety.
+     */
+    val smbInsecureGuestLogons: Boolean? = null,
+    /** Print Spooler service running. Stock: yes, and harmless on its own. */
+    val printSpoolerRunning: Boolean? = null,
+    /** Printers shared to the network — what makes a running spooler reachable. */
+    val sharedPrinterCount: Int? = null,
+    /**
+     * Wrong-password attempts before an account locks; 0 = never locks. From
+     * `net accounts`, whose labels are localised, so non-English Windows reads
+     * `null` (not checkable) rather than a guess. Stock since 22H2: 10.
+     */
+    val lockoutThreshold: Int? = null,
+    /** The built-in Administrator account (RID 500) is enabled. Stock: disabled. */
+    val builtinAdministratorEnabled: Boolean? = null,
+    /** PowerShell script-block logging policy on. Stock: off. */
+    val powerShellScriptBlockLogging: Boolean? = null,
+    /**
+     * Services whose program path contains a space and is not quoted, outside
+     * the Windows folder. Windows tries each space-truncated prefix in turn, so
+     * "C:\Program Files\A B\svc.exe" runs "C:\Program.exe" if one exists.
+     * Names only. Stock: none.
+     */
+    val unquotedServicePaths: List<String>? = null
 )
 
 /**
@@ -648,7 +725,11 @@ data class AntivirusPosture(
      * status says the action failed, so a check built on it could never fire.
      */
     val activeThreatNames: List<String>? = null,
-    val exclusionPaths: List<String>? = null
+    val exclusionPaths: List<String>? = null,
+    /** Blocking of potentially unwanted apps (adware, bundleware). Stock on Windows 11: on. */
+    val unwantedAppBlocking: Boolean? = null,
+    /** Controlled folder access (ransomware protection). Stock: off. */
+    val controlledFolderAccess: Boolean? = null
 )
 
 /**

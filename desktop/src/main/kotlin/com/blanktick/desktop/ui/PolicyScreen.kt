@@ -163,7 +163,11 @@ private fun matches(rule: RuleReport, view: PolicyFilter.View): Boolean = when (
 @Composable
 private fun RuleEntry(rule: RuleReport, findings: List<ScoredFinding>, highlighted: Boolean) {
     val c = LocalBlanktickColors.current
+    val hasInfo = findings.any { !it.finding.severity.isActionable }
     val (label, tone) = when {
+        // A rule whose only findings are informational passed and cost nothing,
+        // but has something worth knowing — say both.
+        rule.outcome == RuleReport.Outcome.PASSED && hasInfo -> "PASSED · WORTH KNOWING" to c.pass
         rule.outcome == RuleReport.Outcome.PASSED -> "PASSED" to c.pass
         rule.outcome == RuleReport.Outcome.FAILED -> "NEEDS ATTENTION" to c.high
         rule.skippedAsWrongPlatform -> "NOT APPLICABLE · written for a phone" to c.inkFaint
@@ -188,9 +192,11 @@ private fun RuleEntry(rule: RuleReport, findings: List<ScoredFinding>, highlight
                 Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = tone)
             }
             Text(rule.ruleId, style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, color = c.inkFaint)
-            // Only actionable findings: an informational note on a passed rule is
-            // not something to fix, and showing it here would read as one.
-            findings.filter { it.finding.severity.isActionable }.forEach { FindingCard(it) }
+            // Informational findings are shown too — this page is the only place
+            // they appear. They cost no points (the card shows no deduction) and
+            // the label above says the rule passed, so they read as context,
+            // not as something to fix.
+            findings.forEach { FindingCard(it) }
         }
     }
 }

@@ -550,9 +550,39 @@ internal class WindowsCollector : PlatformCollector {
             autoLogonEnabled = one("hard.autoAdminLogon")?.let { it == "1" } ?: false,
             autoLogonPasswordStored = Shell.parseBoolean(one("hard.autoLogonPasswordStored")),
             remoteManagementRunning = one("hard.winrmStatus")?.equals("Running", true),
-            remoteRegistryRunning = one("hard.remoteRegistry")?.equals("Running", true)
+            remoteRegistryRunning = one("hard.remoteRegistry")?.equals("Running", true),
+
+            // ---- baseline (BaselineRules). Absence semantics per field. ----
+            netbiosEnabled = int("hard.netbiosAdapters")?.let { it > 0 },
+            // Absent = the default, which is the secure desktop.
+            uacSecureDesktop = one("hard.secureDesktop")?.let { it != "0" } ?: true,
+            memoryIntegrityRunning = vbs("hard.vbsRunning")?.contains("2"),
+            memoryIntegrityAvailable = vbs("hard.vbsAvailable")?.contains("2"),
+            credentialGuardRunning = vbs("hard.vbsRunning")?.contains("1"),
+            // Home editions are EditionID Core*; only they lack Credential Guard.
+            credentialGuardSupportedEdition = one("hard.edition")?.let { !it.startsWith("Core", true) },
+            tpmWorking = one("hard.tpmStatus")?.equals("OK", true),
+            smartAppControlState = int("hard.sac"),
+            exploitMitigationsOff = if (one("hard.mitigationRead") == null) null
+            else all("hard.mitigationOff").orEmpty(),
+            smbClientRequiresSigning = bool("hard.smbClientSign"),
+            smbServerRequiresSigning = bool("hard.smbServerSign"),
+            smbInsecureGuestLogons = bool("hard.smbInsecureGuest"),
+            printSpoolerRunning = one("hard.spooler")?.equals("Running", true),
+            sharedPrinterCount = int("hard.sharedPrinters"),
+            lockoutThreshold = int("acct.lockoutThreshold"),
+            builtinAdministratorEnabled = bool("acct.builtinAdminEnabled"),
+            // Absent = no policy = off. The inverse of the secure-desktop case.
+            powerShellScriptBlockLogging = one("hard.scriptBlockLogging")?.let { it == "1" } ?: false,
+            // Service names are installer-chosen text headed for the screen.
+            unquotedServicePaths = if (one("svc.unquotedRead") == null) null
+            else all("svc.unquoted").orEmpty().map { DisplaySafe.label(it) }.distinct()
         )
     }
+
+    /** Device Guard lists are only answers when the class was readable at all. */
+    private fun vbs(key: String): List<String>? =
+        if (one("hard.vbsRead") == null) null else one(key)?.split(',')?.map { it.trim() }.orEmpty()
 
     /**
      * What the antivirus is doing, which is a different question from what is
@@ -578,6 +608,9 @@ internal class WindowsCollector : PlatformCollector {
             // list from a failed query would read as "nothing active".
             activeThreatNames = if (one("av.threatsRead") == null) null
             else all("av.threatActive").orEmpty(),
+            // 2 = audit mode, which logs but blocks nothing: not "on".
+            unwantedAppBlocking = int("av.pua")?.let { it == 1 },
+            controlledFolderAccess = int("av.cfa")?.let { it == 1 || it == 3 },
             // Almost always null on Windows: the exclusion list needs
             // administrator rights, and Blanktick does not ask for them. Reported as
             // a blind spot rather than as "no exclusions are configured".

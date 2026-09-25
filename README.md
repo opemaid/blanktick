@@ -69,10 +69,10 @@ If that *passes*, the gate is dead and its silence means nothing.
 
 | Component | State |
 |---|---|
-| `core/` — scoring engine, rules, filters, URL analysis, EXIF | **Builds. 265 tests, 0 failures.** |
+| `core/` — scoring engine, rules, filters, URL analysis, EXIF | **Builds. 305 tests, 0 failures.** |
 | `app/` — Android, Compose | **Builds. 26.6 MB APK produced. 30 tests, 0 failures.** |
-| `desktop/` — Compose Multiplatform | **Builds and runs. `Blanktick.exe` produced. 46 tests, 0 failures.** |
-| Windows collector | **Runs on real hardware.** 38 of 68 checks answered on the dev machine; 30 reported as not checkable. |
+| `desktop/` — Compose Multiplatform | **Builds and runs. `Blanktick.exe` produced. 52 tests, 0 failures.** |
+| Windows collector | **Runs on real hardware.** 50 of 81 checks answered on the dev machine (2026-09-25); 31 reported as not checkable. |
 | macOS collector | **Written, never executed.** No Mac available. |
 | Linux collector | **Written, exercised only under WSL.** Not a real desktop session. |
 | Intel bundle pipeline (Python → Kotlin ×2) | **Working. Cross-language parity proven.** |
@@ -80,7 +80,7 @@ If that *passes*, the gate is dead and its silence means nothing.
 | `design/` — tokens, interactive prototype | **Working.** |
 | `ios/BlanktickCore/` — Swift mirror | **Written, not compiled.** No Swift toolchain on Windows. |
 
-**341 tests across the three JVM modules, 0 failures.** `gradlew check` is green, including both network gates and Android lint.
+**387 tests across the three JVM modules, 0 failures** (all re-run with `gradlew check` on 2026-09-25). `gradlew check` is green, including both network gates and Android lint.
 
 **Honest caveats.** The Swift sources mirror the Kotlin line for line and pin the
 identical hash vectors, but have never been through a compiler — a reviewed
@@ -98,19 +98,20 @@ rather than presenting meaningless password and link verdicts as findings.
 
 ## What it checks
 
-**68 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
+**81 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
 rather than estimated:
 
 | Platform | Eligible | Run on an *idealised* device | Not checkable |
 |---|---|---|---|
-| Android | 29 | 29 | 39 (the desktop-only rules) |
-| iPhone | 15 | 12 | 56 |
-| Desktop | 50 | 49 | 19 |
+| Android | 29 | 29 | 52 (the desktop-only rules) |
+| iPhone | 15 | 12 | 69 |
+| Desktop | 63 | 62 | 19 |
 
 Those are fixture numbers — a device that answers every question it can. **A real
 machine answers fewer.** On the development laptop (Windows 11, standard user, no
-elevation) the desktop build runs **17 of 45** and reports **28 as not
-checkable**: 18 written for a phone, 10 that this computer declined to answer.
+elevation) the desktop build runs **50 of 81** and reports **31 as not
+checkable**: 18 written for a phone, 13 that this computer declined to answer
+(measured 2026-09-25).
 The dashboard states both numbers and separates the two causes, because
 "permanent" and "might change next scan" are not the same fact.
 
@@ -316,7 +317,7 @@ offline phishing-link checker.
 core/                Pure Kotlin/JVM · no I/O · no Android · no network
   model/             DeviceSnapshot, DesktopFacts, Finding, Severity, Category
   scoring/           ScoringEngine + ScoringPolicy  (the normative one)
-  rules/             68 rules, stable IDs, platform-gated
+  rules/             81 rules, stable IDs, platform-gated
   filters/           BloomFilter, SortedHashSet64, Hashing
   analysis/          UrlAnalyzer, Punycode, Confusables, PublicSuffix, ExifGps
 app/                 Android · Compose · collectors only
@@ -532,7 +533,7 @@ python -m http.server 8910
   deep-linkable: `?screen=ios`, `?screen=ledger`, `?theme=dark`.
 
 ```bash
-node web/verify.mjs      # 30 tests: the site's checker matches UrlAnalyzer.kt
+node web/verify.mjs      # 33 tests: the site's checker matches UrlAnalyzer.kt
 ```
 
 ---

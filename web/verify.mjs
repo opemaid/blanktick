@@ -116,6 +116,23 @@ check('verdict: typosquat is caught', () => {
   ok(r.signals.some(s => s.id === 'TYPO'), `signals were ${r.signals.map(s => s.id)}`);
 });
 
+/* ---- combosquatting: mirrors the four URL-COMBOSQUAT tests in AnalysisTest.kt ---- */
+
+check('combosquat: digit-swapped brand with words attached is dangerous', () => {
+  const r = analyze('http://paypa1-secure-login.xyz/verify');
+  ok(r.signals.some(s => s.id === 'COMBO'), `signals were ${r.signals.map(s => s.id)}`);
+  eq(r.impersonated, 'paypal.com'); eq(r.verdict, 'DANGEROUS');
+});
+check('combosquat: exact brand word is weighted 55', () => {
+  const r = analyze('https://paypal-secure-login.com/');
+  eq(r.signals.find(s => s.id === 'COMBO')?.w, 55); eq(r.impersonated, 'paypal.com');
+});
+check('combosquat: ordinary hyphenated names are left alone', () => {
+  for (const u of ['https://apples-and-pears.com/', 'https://my-garden-blog.com/',
+                   'https://secure-login-help.com/', 'https://top-10-recipes.com/'])
+    ok(!analyze(u).signals.some(s => s.id === 'COMBO'), u);
+});
+
 check('verdict: the real brand is never flagged', () => {
   const r = analyze('https://www.paypal.com/signin');
   ok(!r.signals.some(s => s.id === 'TYPO'));

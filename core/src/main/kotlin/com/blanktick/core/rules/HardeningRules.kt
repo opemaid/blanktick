@@ -54,7 +54,28 @@ object HardeningRules {
             val enabled = h.uacEnabled ?: return@facts RuleOutcome.NotApplicable
             val prompts = h.uacPromptsForElevation
 
-            if (enabled && prompts != false) return@facts RuleOutcome.Pass
+            if (enabled && prompts != false) {
+                // The prompt exists but is drawn on the ordinary desktop, where
+                // other programs running as you can see it and click it.
+                if (h.uacSecureDesktop != false) return@facts RuleOutcome.Pass
+                return@facts RuleOutcome.Fail(
+                    Finding(
+                        ruleId = id,
+                        category = category,
+                        severity = Severity.LOW,
+                        title = "The administrator prompt can be clicked by other programs",
+                        detail = "Windows normally dims the screen when it asks for administrator " +
+                            "permission, so that only you can answer. That dimmed, protected " +
+                            "screen has been switched off here, which lets a program already " +
+                            "running as you press \"Yes\" for you.",
+                        remediation = "Search for \"Change User Account Control settings\" and move " +
+                            "the slider to the default position (\"Notify me only when apps try " +
+                            "to make changes\" — the one that dims the desktop).",
+                        subjectId = "secureDesktop",
+                        evidence = mapOf("promptOnSecureDesktop" to "0")
+                    )
+                )
+            }
 
             val silent = enabled && prompts == false
             RuleOutcome.Fail(
@@ -195,7 +216,7 @@ object HardeningRules {
     ) {
         override fun check(s: DeviceSnapshot) = facts(s) { d ->
             val h = d.hardening ?: return@facts RuleOutcome.NotApplicable
-            if (h.smb1Enabled == null && h.llmnrEnabled == null) {
+            if (h.smb1Enabled == null && h.llmnrEnabled == null && h.netbiosEnabled == null) {
                 return@facts RuleOutcome.NotApplicable
             }
 
@@ -219,7 +240,17 @@ object HardeningRules {
                         )
                     )
                 }
-                if (h.llmnrEnabled == true) {
+                // NetBIOS name service is LLMNR's older twin — the same
+                // broadcast-and-trust-the-first-answer lookup, used by the same
+                // capture tools. One finding, not two: it is one exposure with
+                // one fix-list, and a second stock-firing LOW would double the
+                // noise. Before NetBIOS was read, switching LLMNR off made this
+                // finding disappear while the exposure stayed open.
+                val broadcasters = listOfNotNull(
+                    "LLMNR".takeIf { h.llmnrEnabled == true },
+                    "NetBIOS".takeIf { h.netbiosEnabled == true }
+                )
+                if (broadcasters.isNotEmpty()) {
                     add(
                         Finding(
                             ruleId = id,
@@ -243,10 +274,18 @@ object HardeningRules {
                                 "anyone can answer and collect the sign-in attempt that follows. " +
                                 "It is on by default, so this is not a sign anyone changed " +
                                 "anything.",
-                            remediation = "Worth turning off if you use public or shared networks. " +
-                                "It is the Multicast Name Resolution policy, and turning it off " +
-                                "rarely breaks anything on a home network.",
-                            subjectId = "llmnr"
+                            remediation = "Worth turning off if you use public or shared networks " +
+                                "(on here: ${broadcasters.joinToString(" and ")}). " +
+                                (if (h.llmnrEnabled == true) "LLMNR is the Multicast Name " +
+                                    "Resolution policy. " else "") +
+                                (if (h.netbiosEnabled == true) "NetBIOS is in each network " +
+                                    "adapter's IPv4 → Advanced → WINS settings: choose \"Disable " +
+                                    "NetBIOS over TCP/IP\". " else "") +
+                                "Turning them off rarely breaks anything on a home network.",
+                            // Kept as "llmnr" whenever LLMNR is on, so history
+                            // written before NetBIOS was read still matches.
+                            subjectId = if (h.llmnrEnabled == true) "llmnr" else "netbios",
+                            evidence = mapOf("broadcasting" to broadcasters.joinToString(","))
                         )
                     )
                 }

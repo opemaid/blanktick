@@ -242,7 +242,27 @@ object Snapshots {
                 autoLogonEnabled = false,
                 autoLogonPasswordStored = false,
                 remoteManagementRunning = false,
-                remoteRegistryRunning = false
+                remoteRegistryRunning = false,
+                // Like LLMNR above: NetBIOS ships on, set off so the fixture
+                // scores 100. Its stock behaviour is tested in BaselineRulesTest.
+                netbiosEnabled = false,
+                uacSecureDesktop = true,
+                memoryIntegrityRunning = true,
+                memoryIntegrityAvailable = true,
+                credentialGuardRunning = true,
+                credentialGuardSupportedEdition = true,
+                tpmWorking = true,
+                smartAppControlState = 1,
+                exploitMitigationsOff = emptyList(),
+                smbClientRequiresSigning = true,
+                smbServerRequiresSigning = true,
+                smbInsecureGuestLogons = false,
+                printSpoolerRunning = true,
+                sharedPrinterCount = 0,
+                lockoutThreshold = 10,
+                builtinAdministratorEnabled = false,
+                powerShellScriptBlockLogging = true,
+                unquotedServicePaths = emptyList()
             ),
             antivirusPosture = AntivirusPosture(
                 tamperProtectionEnabled = true,
@@ -255,7 +275,9 @@ object Snapshots {
                 // Null even on a healthy machine: reading Defender's exclusion
                 // list needs administrator rights Blanktick does not ask for, so this
                 // is a permanent blind spot rather than an empty list.
-                exclusionPaths = null
+                exclusionPaths = null,
+                unwantedAppBlocking = true,
+                controlledFolderAccess = true
             )
         ),
         intelBundleDate = "2026-08-20",

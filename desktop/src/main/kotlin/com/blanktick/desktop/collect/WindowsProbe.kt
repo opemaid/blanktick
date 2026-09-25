@@ -1135,6 +1135,83 @@ internal object WindowsProbe {
         Emit 'hard.psV2Present' (Test-Path 'HKLM:\SOFTWARE\Microsoft\PowerShell\1\PowerShellEngine')
         Emit 'hard.winrmStatus'        (Get-Service -Name WinRM).Status
         Emit 'hard.remoteRegistry'     (Get-Service -Name RemoteRegistry).Status
+
+        # ---- the Windows baseline other auditors check (BaselineRules.kt) ----
+        # Added 2026-09-25 after a setting-by-setting comparison with apotrope,
+        # HardeningKitty and Harden-Windows-Security. Every query below was run
+        # NON-ELEVATED on Windows 11 Home 26200 first; Get-Tpm was rejected for
+        # exactly that reason (it returns nothing without admin). Where "none"
+        # is a real answer, a *.read sentinel separates it from "could not ask".
+        Emit 'hard.secureDesktop'      (Reg 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' 'PromptOnSecureDesktop')
+        Emit 'hard.edition'            (Reg 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' 'EditionID')
+        Emit 'hard.sac'                (Reg 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy' 'VerifiedAndReputablePolicyState')
+        Emit 'hard.scriptBlockLogging' (Reg 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging' 'EnableScriptBlockLogging')
+        try {
+          ${'$'}dg = Get-CimInstance -Namespace root\Microsoft\Windows\DeviceGuard -ClassName Win32_DeviceGuard -ErrorAction Stop
+          Emit 'hard.vbsRunning'   (@(${'$'}dg.SecurityServicesRunning) -join ',')
+          Emit 'hard.vbsAvailable' (@(${'$'}dg.AvailableSecurityProperties) -join ',')
+          Emit 'hard.vbsRead' 'True'
+        } catch { }
+        try {
+          ${'$'}tpm = @(Get-PnpDevice -Class SecurityDevices -ErrorAction Stop | Where-Object { ${'$'}_.FriendlyName -match 'Trusted Platform Module' })
+          Emit 'hard.tpmStatus' ${'$'}(if (${'$'}tpm.Count -eq 0) { 'None' } else { "${'$'}(${'$'}tpm[0].Status)" })
+        } catch { }
+        # Only an explicit OFF counts: NOTSET is the OS default, which is ON for
+        # every mitigation listed. Mandatory ASLR is left out because its OS
+        # default is off, so reading it would accuse every stock machine.
+        try {
+          ${'$'}sm = Get-ProcessMitigation -System -ErrorAction Stop
+          ${'$'}pairs = @(
+            @('DEP', ${'$'}sm.DEP.Enable), @('Bottom-up ASLR', ${'$'}sm.ASLR.BottomUp),
+            @('High-entropy ASLR', ${'$'}sm.ASLR.HighEntropy), @('Control Flow Guard', ${'$'}sm.CFG.Enable),
+            @('SEHOP', ${'$'}sm.SEHOP.Enable), @('Heap integrity', ${'$'}sm.Heap.TerminateOnError))
+          foreach (${'$'}p in ${'$'}pairs) { if ("${'$'}(${'$'}p[1])" -eq 'OFF') { Emit 'hard.mitigationOff' ${'$'}p[0] } }
+          Emit 'hard.mitigationRead' 'True'
+        } catch { }
+        try {
+          ${'$'}sc = Get-SmbClientConfiguration -ErrorAction Stop
+          Emit 'hard.smbClientSign'    ${'$'}sc.RequireSecuritySignature
+          Emit 'hard.smbInsecureGuest' ${'$'}sc.EnableInsecureGuestLogons
+        } catch { }
+        try { Emit 'hard.smbServerSign' (Get-SmbServerConfiguration -ErrorAction Stop).RequireSecuritySignature } catch { }
+        # 0 = "from DHCP" (which means on, on a home router) and 1 = on.
+        try {
+          ${'$'}nb = @(Get-CimInstance Win32_NetworkAdapterConfiguration -Filter 'IPEnabled=True' -ErrorAction Stop |
+            Where-Object { ${'$'}_.TcpipNetbiosOptions -eq 0 -or ${'$'}_.TcpipNetbiosOptions -eq 1 })
+          Emit 'hard.netbiosAdapters' ${'$'}nb.Count
+        } catch { }
+        Emit 'hard.spooler' (Get-Service -Name Spooler -ErrorAction SilentlyContinue).Status
+        try { Emit 'hard.sharedPrinters' @(Get-CimInstance Win32_Printer -ErrorAction Stop | Where-Object { ${'$'}_.Shared }).Count } catch { }
+        # net accounts is the only non-elevated reader of the lockout policy, and
+        # its labels are localised. English is matched exactly; anything else
+        # emits nothing and the rule reports "not checkable", never a guess.
+        foreach (${'$'}l in @(net accounts 2>${'$'}null)) {
+          if (${'$'}l -match '^Lockout threshold:\s*(\S+)') {
+            ${'$'}v = ${'$'}Matches[1]
+            if (${'$'}v -eq 'Never') { Emit 'acct.lockoutThreshold' '0' }
+            elseif (${'$'}v -match '^\d+${'$'}') { Emit 'acct.lockoutThreshold' ${'$'}v }
+          }
+        }
+        try {
+          ${'$'}ba = Get-LocalUser -ErrorAction Stop | Where-Object { ${'$'}_.SID.Value -like '*-500' }
+          if (${'$'}ba) { Emit 'acct.builtinAdminEnabled' ${'$'}ba.Enabled }
+        } catch { }
+        # A service path with a space, not in quotes, is tried one truncated
+        # prefix at a time. Paths under the Windows folder are skipped: an
+        # ordinary user cannot write there, so no prefix of them is plantable.
+        try {
+          foreach (${'$'}svc in Get-CimInstance Win32_Service -ErrorAction Stop) {
+            ${'$'}p = "${'$'}(${'$'}svc.PathName)".Trim()
+            if (-not ${'$'}p -or ${'$'}p.StartsWith('"')) { continue }
+            ${'$'}i = ${'$'}p.ToLower().IndexOf('.exe')
+            if (${'$'}i -lt 0) { continue }
+            ${'$'}exe = ${'$'}p.Substring(0, ${'$'}i + 4)
+            if (${'$'}exe -notmatch ' ') { continue }
+            if (${'$'}exe.StartsWith(${'$'}env:windir, [StringComparison]::OrdinalIgnoreCase)) { continue }
+            Emit 'svc.unquoted' (San ${'$'}svc.Name)
+          }
+          Emit 'svc.unquotedRead' 'True'
+        } catch { }
         Emit 'hard.settingsRead' 'True'
 
         # ---- what the antivirus itself is doing -------------------------------
@@ -1151,6 +1228,13 @@ internal object WindowsProbe {
           Emit 'av.ioavProtection'   ${'$'}mp.IoavProtectionEnabled
           Emit 'av.networkInspection' ${'$'}mp.NISEnabled
           Emit 'av.antispyware'      ${'$'}mp.AntispywareEnabled
+          # PUAProtection: 1 = block (2 = audit only, which blocks nothing).
+          # EnableControlledFolderAccess: 1 = on, 3 = block disk writes only.
+          ${'$'}mpp = Get-MpPreference
+          if (${'$'}mpp) {
+            Emit 'av.pua' ${'$'}mpp.PUAProtection
+            Emit 'av.cfa' ${'$'}mpp.EnableControlledFolderAccess
+          }
         }
         # IsActive is the signal, and it had to be measured to find that out.
         # ActionSuccess reads True even for detections whose status says the
