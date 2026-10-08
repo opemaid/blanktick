@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Blanktick app icon">
+  <title>Blanktick app icon</title>
+  <!-- Brutalist: full-bleed near-black square, no radius, no shadow.
+       The accent broken tick is the only saturated thing, so it means something.
+       Tick sits inside a 44px safe margin, so it survives platform masking. -->
+  <rect width="256" height="256" fill="#0A0A0A"/>
+  <g fill="none" stroke="#D6FF3F" stroke-width="30" stroke-linecap="butt" stroke-linejoin="miter">
+    <path d="M44 136 L104 192 L150 148"/>
+    <path d="M172 126 L224 74"/>
+  </g>
+</svg>

@@ -11,6 +11,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import androidx.compose.ui.window.WindowPosition
+import androidx.compose.ui.res.painterResource
 import com.blanktick.desktop.collect.DesktopCollector
 import com.blanktick.desktop.collect.DesktopIntel
 import com.blanktick.desktop.history.ScanHistory
@@ -68,8 +69,15 @@ private fun ui() = application {
     val state = remember { AppState(scope) }
 
     Window(
-        onCloseRequest = ::exitApplication,
+        // Stop the live sensor before exit so its child PowerShell taps do not
+        // outlive the window.
+        onCloseRequest = { state.live.stop(); exitApplication() },
         title = "Blanktick",
+        // The designed mark (dark square + severed accent tick) as the window
+        // and taskbar icon. Loaded from a bundled resource, which the offline
+        // guarantee is unaffected by: resources are not code and the network
+        // gate scans only compiled classes.
+        icon = painterResource("blanktick-icon-512.png"),
         state = rememberWindowState(
             size = defaultWindowSize(),
             position = WindowPosition(Alignment.Center)
@@ -308,8 +316,11 @@ private fun previewUi(args: Array<String>) = application {
         }
     }
     Window(
-        onCloseRequest = ::exitApplication,
+        // Stop the live sensor before exit, same as the real window, so the
+        // preview harness never orphans a child PowerShell tap.
+        onCloseRequest = { state.live.stop(); exitApplication() },
         title = "Blanktick — dashboard preview",
+        icon = painterResource("blanktick-icon-512.png"),
         // Clamp to the screen's work area, like the real app, so the title bar
         // (minimise/close) is never pushed off the top of the display.
         state = rememberWindowState(size = defaultWindowSize(), position = WindowPosition(Alignment.Center))

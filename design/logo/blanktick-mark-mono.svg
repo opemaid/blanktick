@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Blanktick">
+  <title>Blanktick mark (monochrome, inherits currentColor)</title>
+  <!-- Single colour via currentColor: set `color` in CSS to recolour anywhere. -->
+  <g fill="none" stroke="currentColor" stroke-width="30" stroke-linecap="butt" stroke-linejoin="miter">
+    <path d="M44 136 L104 192 L150 148"/>
+    <path d="M172 126 L224 74"/>
+  </g>
+</svg>

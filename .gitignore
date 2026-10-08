@@ -54,3 +54,8 @@ design/_*.png
 
 # Scratch output from compiling tools/LinuxResolveCheck.java for a POSIX run.
 tools/rc/
+
+# local agent state
+.claude/
+# footage-derived ad outputs (external reference clip; keep source only)
+ad/blanktick-hack/*.mp4

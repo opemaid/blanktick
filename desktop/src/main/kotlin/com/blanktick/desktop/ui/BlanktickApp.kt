@@ -38,7 +38,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -93,6 +95,7 @@ fun BlanktickApp(state: AppState) {
                     Screen.SOFTWARE -> SoftwareScreen(state)
                     Screen.USB -> UsbScreen(state)
                     Screen.ASSISTANT -> AssistantScreen(state)
+                    Screen.LIVE -> LiveProtectionScreen(state)
                     Screen.SETTINGS -> SettingsScreen(state)
                     Screen.ABOUT -> AboutScreen(state)
                 }
@@ -118,7 +121,13 @@ private fun NavRail(current: Screen, onSelect: (Screen) -> Unit) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text("Blanktick", style = MaterialTheme.typography.titleLarge, color = c.ink)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            BrandMark(Modifier.size(32.dp))
+            Text("Blanktick", style = MaterialTheme.typography.titleLarge, color = c.ink)
+        }
         Text(
             "Offline. Nothing leaves this computer.",
             style = MaterialTheme.typography.labelSmall,
@@ -164,6 +173,42 @@ private fun NavRail(current: Screen, onSelect: (Screen) -> Unit) {
                 }
             }
         }
+    }
+}
+
+/**
+ * The Blanktick mark, drawn rather than loaded.
+ *
+ * A checkmark that passes the check with its long arm deliberately severed —
+ * the gap is the air gap, the one promise (no network) drawn into the logo.
+ * Authored as exact vector geometry (`design/logo/blanktick-icon.svg`), so it
+ * is reproduced here as the same coordinates on a 256-unit grid rather than as
+ * a rasterised asset: sharp at any size and any DPI, and no image to decode.
+ *
+ * The accent (`#D6FF3F`) sits on a near-black square in both themes, honouring
+ * the brand rule that the acid accent appears only on the verified mark and
+ * never loses contrast against the surface behind it. Brutalist: butt caps,
+ * mitre joins, no radius, no shadow.
+ */
+@Composable
+private fun BrandMark(modifier: Modifier = Modifier) {
+    val accent = Color(0xFFD6FF3F)
+    val square = Color(0xFF0A0A0A)
+    Canvas(modifier.clearAndSetSemantics { }) {
+        val s = size.minDimension / 256f
+        drawRect(color = square, size = size)
+        val stroke = Stroke(width = 30f * s, cap = StrokeCap.Butt, join = StrokeJoin.Miter)
+        val tick = Path().apply {
+            moveTo(44f * s, 136f * s)
+            lineTo(104f * s, 192f * s)
+            lineTo(150f * s, 148f * s)
+        }
+        val severed = Path().apply {
+            moveTo(172f * s, 126f * s)
+            lineTo(224f * s, 74f * s)
+        }
+        drawPath(tick, accent, style = stroke)
+        drawPath(severed, accent, style = stroke)
     }
 }
 

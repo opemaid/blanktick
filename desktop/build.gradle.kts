@@ -25,6 +25,7 @@ kotlin {
  */
 dependencies {
     implementation(project(":core"))
+    implementation(project(":sensor"))
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)
 
@@ -47,6 +48,25 @@ compose.desktop {
             // two in sync would mean lying about maturity in one place or the
             // other; this way the app's own About screen stays truthful.
             macOS { packageVersion = "1.0.0" }
+
+            windows {
+                // The designed mark as the packaged app's icon: the installed
+                // Blanktick.exe, its Start-menu entry and taskbar button all
+                // carry the severed-tick logo rather than jpackage's default
+                // java diamond. Generated from design/logo/blanktick-icon-512.png.
+                iconFile.set(project.file("packaging/blanktick.ico"))
+
+                // Per-user install so the MSI runs without administrator rights
+                // or a UAC prompt — fitting for a tool that reads the machine and
+                // changes nothing on it. A Start-menu group, no desktop shortcut.
+                perUserInstall = true
+                menuGroup = "Blanktick"
+
+                // Required for MSI: the stable identity that lets a later version
+                // upgrade this one in place instead of installing side by side.
+                // Generated once; it must never change for this product.
+                upgradeUuid = "5604BF94-DA67-434F-A5B8-2F7582994319"
+            }
         }
     }
 }
@@ -137,7 +157,10 @@ val assertNoNetworkBytecode = tasks.register("assertNoNetworkBytecode") {
     // Project, which is what keeps it usable under the configuration cache.
     val classDirs = files(
         layout.buildDirectory.dir("classes/kotlin/main"),
-        project(":core").layout.buildDirectory.dir("classes/kotlin/main")
+        project(":core").layout.buildDirectory.dir("classes/kotlin/main"),
+        // The Pro sensor is behind the same gate: it is all local ETW/AMSI/file
+        // reads and opens no socket, so its compiled classes must scan clean too.
+        project(":sensor").layout.buildDirectory.dir("classes/kotlin/main")
     )
     val signatures = networkApiSignatures
 
@@ -157,7 +180,11 @@ val assertNoNetworkBytecode = tasks.register("assertNoNetworkBytecode") {
     val selfTest = providers.gradleProperty("blanktickNetworkGateSelfTest").isPresent
     val exempt = if (selfTest) emptySet<String>() else networkExemptClasses
 
-    dependsOn(tasks.named("classes"), project(":core").tasks.named("classes"))
+    dependsOn(
+        tasks.named("classes"),
+        project(":core").tasks.named("classes"),
+        project(":sensor").tasks.named("classes")
+    )
     inputs.files(classDirs).withPropertyName("blanktickClasses")
     outputs.upToDateWhen { false }
 

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Blanktick">
+  <title>Blanktick mark</title>
+  <!-- A tick that passes the check, with the long arm deliberately severed:
+       the gap is the air gap. Accent used only on the verified mark. -->
+  <g fill="none" stroke="#D6FF3F" stroke-width="30" stroke-linecap="butt" stroke-linejoin="miter">
+    <path d="M44 136 L104 192 L150 148"/>
+    <path d="M172 126 L224 74"/>
+  </g>
+</svg>

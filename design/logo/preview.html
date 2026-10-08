@@ -1,0 +1,41 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>Blanktick logo — preview</title>
+<style>
+  body{margin:0;font:14px/1.5 Inter,system-ui,Arial,sans-serif}
+  section{padding:40px 48px}
+  .dark{background:#0A0A0A;color:#fff} .light{background:#fff;color:#0A0A0A}
+  h2{font-weight:700;letter-spacing:-.5px;margin:0 0 24px;font-size:13px;text-transform:uppercase;opacity:.6}
+  .row{display:flex;align-items:center;gap:40px;flex-wrap:wrap;margin-bottom:34px}
+  .cell{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .cap{font-size:11px;opacity:.55}
+  img{display:block}
+  .chip{background:#D6FF3F;color:#0A0A0A;padding:2px 8px;font-weight:700;font-size:11px;border-radius:0}
+</style></head><body>
+<section class="dark">
+  <h2>On dark · app icon at real sizes</h2>
+  <div class="row">
+    <div class="cell"><img src="blanktick-icon.svg" width="128" height="128"><span class="cap">128</span></div>
+    <div class="cell"><img src="blanktick-icon.svg" width="64" height="64"><span class="cap">64</span></div>
+    <div class="cell"><img src="blanktick-icon.svg" width="32" height="32"><span class="cap">32</span></div>
+    <div class="cell"><img src="blanktick-icon.svg" width="16" height="16"><span class="cap">16 (favicon)</span></div>
+  </div>
+  <h2>On dark · mark (accent) + lockup</h2>
+  <div class="row">
+    <div class="cell"><img src="blanktick-mark-accent.svg" width="96" height="96"><span class="cap">mark</span></div>
+    <div class="cell"><img src="blanktick-lockup-dark.svg" width="420"><span class="cap">lockup</span></div>
+  </div>
+</section>
+<section class="light">
+  <h2>On light · mark (ink) + lockup</h2>
+  <div class="row">
+    <div class="cell"><img src="blanktick-mark-ink.svg" width="96" height="96"><span class="cap">mark</span></div>
+    <div class="cell"><img src="blanktick-lockup-light.svg" width="420"><span class="cap">lockup</span></div>
+  </div>
+  <h2>Monochrome (currentColor) — one mark, any colour</h2>
+  <div class="row" style="color:#0A0A0A">
+    <div class="cell"><img src="blanktick-mark-mono.svg" width="72" height="72"><span class="cap">ink</span></div>
+    <div class="cell" style="color:#1f6feb"><img src="blanktick-mark-mono.svg" width="72" height="72"><span class="cap">any</span></div>
+    <span class="chip">accent #D6FF3F · bg #0A0A0A · the gap is the air gap</span>
+  </div>
+</section>
+</body></html>

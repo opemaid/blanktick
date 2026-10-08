@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 220" role="img" aria-label="Blanktick">
+  <title>Blanktick horizontal lockup (for light surfaces)</title>
+  <!-- On light, the mark goes ink (accent fails contrast on white as a thin
+       stroke). Wordmark: "blank" mid-grey, "tick" near-black. Outline for use. -->
+  <g transform="translate(16,20) scale(0.703)">
+    <g fill="none" stroke="#0A0A0A" stroke-width="30" stroke-linecap="butt" stroke-linejoin="miter">
+      <path d="M44 136 L104 192 L150 148"/>
+      <path d="M172 126 L224 74"/>
+    </g>
+  </g>
+  <text x="212" y="150" font-family="Inter, 'Helvetica Neue', Arial, sans-serif"
+        font-size="104" font-weight="700" letter-spacing="-3">
+    <tspan fill="#6A6A6A">blank</tspan><tspan fill="#0A0A0A">tick</tspan>
+  </text>
+</svg>

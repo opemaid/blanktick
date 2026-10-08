@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 220" role="img" aria-label="Blanktick">
+  <title>Blanktick horizontal lockup (for dark surfaces)</title>
+  <!-- Mark carries the only accent. Wordmark uses the grey ramp, never colour:
+       "blank" muted, "tick" full white — the compound name, no extra saturation.
+       Wordmark is live text; outline it (fonts to paths) for distribution. -->
+  <g transform="translate(16,20) scale(0.703)">
+    <g fill="none" stroke="#D6FF3F" stroke-width="30" stroke-linecap="butt" stroke-linejoin="miter">
+      <path d="M44 136 L104 192 L150 148"/>
+      <path d="M172 126 L224 74"/>
+    </g>
+  </g>
+  <text x="212" y="150" font-family="Inter, 'Helvetica Neue', Arial, sans-serif"
+        font-size="104" font-weight="700" letter-spacing="-3">
+    <tspan fill="#B4B4B4">blank</tspan><tspan fill="#FFFFFF">tick</tspan>
+  </text>
+</svg>
