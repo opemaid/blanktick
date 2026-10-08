@@ -4,6 +4,7 @@ import com.blanktick.core.analysis.DisplaySafe
 import com.blanktick.core.model.AiFacts
 import com.blanktick.core.model.AntivirusPosture
 import com.blanktick.core.model.AutoRunEntry
+import com.blanktick.core.model.BrowserExtension
 import com.blanktick.core.model.CaCertificate
 import com.blanktick.core.model.DesktopFacts
 import com.blanktick.core.model.DesktopOs
@@ -170,6 +171,11 @@ internal class WindowsCollector : PlatformCollector {
             autoRunKeysUnread = if (all("autorun.read").isNullOrEmpty()) null
             else all("autorun.denied").orEmpty().map { DisplaySafe.label(it) }.distinct(),
             installedPrograms = installedPrograms(),
+            browserExtensions = browserExtensions(),
+            // An empty list means every browser profile that exists was read;
+            // null means none were found. Mirrors the autorun coverage pattern.
+            browserExtensionsUnread = if (one("browser.ext.read") == null) null
+            else all("browser.ext.unread").orEmpty().map { DisplaySafe.label(it) }.distinct(),
 
             autoRunBlockedForRemovable = bool("usb.autorunBlocked"),
             removableDrives = removableDrives(),
@@ -674,6 +680,37 @@ internal class WindowsCollector : PlatformCollector {
                 publisher = f.getOrNull(2)?.trim()?.takeIf { it.isNotBlank() }?.let { DisplaySafe.label(it) },
                 installLocation = f.getOrNull(3)?.trim()?.takeIf { it.isNotBlank() },
                 userWritableLocation = f.getOrNull(4)?.trim().equals("True", ignoreCase = true)
+            )
+        }
+    }
+
+    /**
+     * Browser extensions, parsed from the probe's per-profile manifest sweep.
+     *
+     * `browser.ext.read` is the marker that at least one browser profile was
+     * located: without it the list is `null` (not-checkable), never an empty
+     * "no extensions found". Names arrive attacker-influenced and are run
+     * through [DisplaySafe] before they can reach a screen.
+     */
+    private fun browserExtensions(): List<BrowserExtension>? {
+        if (one("browser.ext.read") == null) return null
+        return all("browser.ext").orEmpty().mapNotNull { row ->
+            val f = row.split('	')
+            val browser = f.getOrNull(0)?.trim().orEmpty()
+            val id = f.getOrNull(1)?.trim().orEmpty()
+            if (browser.isEmpty() || id.isEmpty()) return@mapNotNull null
+            val rawName = f.getOrNull(2)?.trim().orEmpty()
+            BrowserExtension(
+                browser = browser,
+                id = id,
+                name = DisplaySafe.label(rawName.ifEmpty { id }),
+                version = f.getOrNull(3)?.trim()?.takeIf { it.isNotBlank() },
+                installSource = f.getOrNull(4)?.trim()?.takeIf { it.isNotBlank() }?.lowercase(),
+                enabled = f.getOrNull(5)?.trim()?.let { it.equals("True", ignoreCase = true) },
+                hostPermissions = f.getOrNull(6)?.trim().orEmpty()
+                    .split(' ').map { it.trim() }.filter { it.isNotEmpty() },
+                apiPermissions = f.getOrNull(7)?.trim().orEmpty()
+                    .split(' ').map { it.trim() }.filter { it.isNotEmpty() }
             )
         }
     }

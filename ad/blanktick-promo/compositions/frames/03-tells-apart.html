@@ -1,0 +1,210 @@
+<template>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <style>
+    /* No Segoe UI .woff2 ships with the project; resolve the frame.md family from the
+       render machine's installed copy (C:/Windows/Fonts segoeui*.ttf / seguisb.ttf). */
+    @font-face {
+      font-family: "Segoe UI";
+      src: local("Segoe UI"), local("SegoeUI");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Segoe UI";
+      src: local("Segoe UI Semibold"), local("SegoeUI-Semibold");
+      font-weight: 600;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Segoe UI";
+      src: local("Segoe UI Bold"), local("SegoeUI-Bold");
+      font-weight: 700;
+      font-style: normal;
+    }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    #tells-apart-ground {
+      position: absolute;
+      inset: 0;
+      background: #faf9f6;
+    }
+
+    #tells-apart-stage {
+      position: absolute;
+      inset: 0;
+      transform-origin: 960px 440px;
+    }
+
+    .tells-apart-col {
+      position: absolute;
+      top: 190px;
+      width: 440px;
+      height: 360px;
+      margin-left: -220px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #tells-apart-col-1 { left: 480px; }
+    #tells-apart-col-2 { left: 960px; }
+    #tells-apart-col-3 { left: 1440px; }
+
+    .tells-apart-mark {
+      width: 200px;
+      height: 200px;
+      overflow: visible;
+    }
+    .tells-apart-mark path,
+    .tells-apart-mark circle {
+      fill: none;
+      stroke-width: 16;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .tells-apart-tick { stroke: #0f4d3f; }
+    .tells-apart-grey { stroke: #666d6b; }
+
+    .tells-apart-label {
+      margin-top: 44px;
+      font-size: 30px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      color: #5a6260;
+    }
+    #tells-apart-label-1 { color: #0f4d3f; }
+
+    #tells-apart-wordmark {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 610px;
+      text-align: center;
+      font-size: 168px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: #0b0d0c;
+      white-space: nowrap;
+    }
+    .tells-apart-word {
+      display: inline-block;
+    }
+  </style>
+
+  <div id="root" data-composition-id="03-tells-apart" data-width="1920" data-height="1080" data-duration="3.6">
+    <div
+      id="tells-apart-ground"
+      class="clip"
+      data-start="0"
+      data-duration="3.6"
+      data-track-index="0"
+    ></div>
+
+    <div
+      id="tells-apart-stage"
+      class="clip"
+      data-start="0"
+      data-duration="3.6"
+      data-track-index="1"
+    >
+      <!-- Column 1: stays a kelp tick — PASSED -->
+      <div id="tells-apart-col-1" class="tells-apart-col">
+        <svg class="tells-apart-mark" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path id="tells-apart-tick-1" class="tells-apart-tick" d="M 40 104 L 82 146 L 162 58" />
+        </svg>
+        <div id="tells-apart-label-1" class="tells-apart-label">Passed</div>
+      </div>
+
+      <!-- Column 2: tick redraws into a grey dash — NOT CHECKED -->
+      <div id="tells-apart-col-2" class="tells-apart-col">
+        <svg class="tells-apart-mark" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path id="tells-apart-tick-2" class="tells-apart-tick" d="M 40 104 L 82 146 L 162 58" />
+          <path id="tells-apart-dash" class="tells-apart-grey" d="M 46 102 L 154 102" />
+        </svg>
+        <div id="tells-apart-label-2" class="tells-apart-label">Not checked</div>
+      </div>
+
+      <!-- Column 3: tick redraws into a grey ring — WOULDN'T ANSWER -->
+      <div id="tells-apart-col-3" class="tells-apart-col">
+        <svg class="tells-apart-mark" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <path id="tells-apart-tick-3" class="tells-apart-tick" d="M 40 104 L 82 146 L 162 58" />
+          <circle
+            id="tells-apart-ring"
+            class="tells-apart-grey"
+            cx="100"
+            cy="102"
+            r="58"
+            style="transform-origin: 100px 102px; transform: rotate(-90deg)"
+          />
+        </svg>
+        <div id="tells-apart-label-3" class="tells-apart-label">Wouldn&rsquo;t answer</div>
+      </div>
+
+      <!-- Lower-case wordmark -->
+      <div id="tells-apart-wordmark"><span id="tells-apart-word-1" class="tells-apart-word">blank</span><span id="tells-apart-word-2" class="tells-apart-word">tick</span></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      // svg-path-draw setup: measured lengths, never guessed.
+      function len(sel) {
+        var el = document.querySelector(sel);
+        var l = el.getTotalLength() * 1.02;
+        el.style.strokeDasharray = l + " " + l;
+        return l;
+      }
+      var tick2Len = len("#tells-apart-tick-2");
+      var tick3Len = len("#tells-apart-tick-3");
+      var dashLen = len("#tells-apart-dash");
+      var ringLen = len("#tells-apart-ring");
+
+      // Scene 1 (0.00–0.20): the F2 triptych — three identical kelp ticks, fully drawn
+      // (static; no tween needed — the marks are simply there at t=0).
+
+      // Scene 2 (0.20–0.88): "tells them apart" — the separation.
+      // Columns spread apart slightly.
+      tl.fromTo("#tells-apart-col-1", { x: 0 }, { x: -70, duration: 0.6, ease: "power2.inOut" }, 0.2);
+      tl.fromTo("#tells-apart-col-3", { x: 0 }, { x: 70, duration: 0.6, ease: "power2.inOut" }, 0.2);
+
+      // Tick 2 retracts, then a grey dash draws in its place.
+      tl.fromTo("#tells-apart-tick-2", { strokeDashoffset: 0 }, { strokeDashoffset: tick2Len, duration: 0.18, ease: "power2.in" }, 0.22);
+      tl.fromTo("#tells-apart-dash", { strokeDashoffset: dashLen }, { strokeDashoffset: 0, duration: 0.24, ease: "power2.out" }, 0.38);
+
+      // Tick 3 retracts (staggered ~70% behind tick 2), then a grey ring draws from 12 o'clock.
+      tl.fromTo("#tells-apart-tick-3", { strokeDashoffset: 0 }, { strokeDashoffset: tick3Len, duration: 0.18, ease: "power2.in" }, 0.34);
+      tl.fromTo("#tells-apart-ring", { strokeDashoffset: ringLen }, { strokeDashoffset: 0, duration: 0.32, ease: "power2.out" }, 0.5);
+
+      // Tracked uppercase labels land under each settled mark.
+      tl.fromTo("#tells-apart-label-1", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.26, ease: "power1.out" }, 0.3);
+      tl.fromTo("#tells-apart-label-2", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.26, ease: "power1.out" }, 0.5);
+      tl.fromTo("#tells-apart-label-3", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.26, ease: "power1.out" }, 0.64);
+
+      // Scene 3 (0.88–1.707): wordmark resolves beneath (per-part reveal), then holds.
+      tl.fromTo("#tells-apart-word-1", { opacity: 0, y: 46 }, { opacity: 1, y: 0, duration: 0.38, ease: "power3.out" }, 0.88);
+      tl.fromTo("#tells-apart-word-2", { opacity: 0, y: 46 }, { opacity: 1, y: 0, duration: 0.38, ease: "power3.out" }, 0.98);
+
+      // Hold: barely-perceptible slow push under the held card (no second phase).
+      tl.fromTo("#tells-apart-stage", { scale: 1 }, { scale: 1.015, duration: 0.827, ease: "none" }, 0.88);
+
+      // Pad the timeline to the exact frame duration.
+      tl.set({}, {}, 3.0);
+
+      window.__timelines["03-tells-apart"] = tl;
+    })();
+  </script>
+</template>

@@ -4,6 +4,7 @@ import com.blanktick.core.intel.AppCapability
 import com.blanktick.core.intel.ClusterRulePack
 import com.blanktick.core.intel.Perms
 import com.blanktick.core.model.AutoRunEntry
+import com.blanktick.core.model.BrowserExtension
 import com.blanktick.core.model.CaCertificate
 import com.blanktick.core.model.AiFacts
 import com.blanktick.core.model.AntivirusPosture
@@ -178,6 +179,28 @@ object Snapshots {
                 RemovableDrive("E:", "BACKUP", "exFAT", 64L * 1024 * 1024 * 1024, encrypted = true)
             ),
             rememberedUsbDevices = listOf("SanDisk Ultra"),
+            // A healthy machine's browser extensions: both from the store, so
+            // DSK-EXT-001 passes; neither pairs full-site access with a
+            // traffic/data API, so DSK-EXT-002 passes too. An empty list would
+            // make both report not-checkable and leave their pass path untested
+            // by the fixture whose whole job is to prove a healthy machine
+            // scores 100. The FAIL paths (unpacked, broad+sensitive) live in
+            // BrowserRulesTest.
+            browserExtensions = listOf(
+                BrowserExtension(
+                    browser = "Chrome", id = "cfhdojbkjhnklbpkdaibdccddilifddb",
+                    name = "AdBlock", version = "5.17.0", installSource = "store",
+                    enabled = true, hostPermissions = listOf("<all_urls>"),
+                    apiPermissions = listOf("storage", "contextMenus")
+                ),
+                BrowserExtension(
+                    browser = "Edge", id = "hokifickgkhplphjiodbggjmoafhignh",
+                    name = "Microsoft Editor", version = "1.0.0", installSource = "store",
+                    enabled = true, hostPermissions = emptyList(),
+                    apiPermissions = listOf("storage")
+                )
+            ),
+            browserExtensionsUnread = emptyList(),
             installedPrograms = listOf(
                 InstalledProgram("Google Chrome", "151.0.7922.175", "Google LLC", "C:/Program Files/Google/Chrome"),
                 InstalledProgram("Python 3.12.10", "3.12.10150.0", "Python Software Foundation"),

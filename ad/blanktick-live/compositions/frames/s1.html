@@ -1,0 +1,42 @@
+<template>
+  <div id="root" data-composition-id="s1" data-start="0" data-duration="5.5" data-width="1920" data-height="1080">
+    <style>
+      @font-face{font-family:"bt-ui";src:local("Segoe UI"),local("SegoeUI");font-weight:400}
+      @font-face{font-family:"bt-ui";src:local("Segoe UI Semibold"),local("SegoeUI-Semibold");font-weight:600}
+      @font-face{font-family:"bt-ui";src:local("Segoe UI Bold"),local("SegoeUI-Bold");font-weight:700}
+      #root{position:relative;width:1920px;height:1080px;overflow:hidden;background:#FAF9F6;container-type:size;font-family:"bt-ui","Segoe UI",sans-serif;color:#0B0D0C}
+      #s1-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 10cqw}
+      #s1-line{font-size:5.0cqw;font-weight:700;letter-spacing:-.025em;line-height:1.08}
+      #s1-line .k{color:#0F4D3F}
+      .s1w{display:inline-block;opacity:0}
+      #s1-beats{display:flex;gap:1.0cqw;margin-top:3.2cqw}
+      .beat{opacity:0;padding:.75cqw 1.6cqw;border-radius:100px;background:rgba(15,77,63,.05);border:1.5px solid rgba(15,77,63,.22);font-size:1.5cqw;font-weight:600;color:#0F4D3F;white-space:nowrap}
+    </style>
+    <div id="s1-wrap" class="clip" data-start="0" data-duration="5.5" data-track-index="0">
+      <div id="s1-line"><span class="s1w">People</span> <span class="s1w">are</span> <span class="s1w">using</span> <span class="s1w k">AI</span> <span class="s1w">to</span> <span class="s1w">hack.</span></div>
+      <div id="s1-beats">
+        <div class="beat" id="b1">writes the malware</div>
+        <div class="beat" id="b2">finds the way in</div>
+        <div class="beat" id="b3">moves faster</div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function(){
+        window.__timelines = window.__timelines || {};
+        var tl = gsap.timeline({ paused: true });
+        // headline punches in word by word — confident, quick
+        var words = ["#s1-line .s1w"];
+        gsap.utils.toArray("#s1-line .s1w").forEach(function(el,i){
+          tl.fromTo(el, { opacity: 0, y: 26, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "back.out(2)" }, 0.12 + i*0.12);
+        });
+        // three threat beats snap in
+        ["#b1","#b2","#b3"].forEach(function(id,i){
+          tl.fromTo(id, { opacity: 0, y: 16, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.32, ease: "back.out(2.2)" }, 1.9 + i*0.5);
+        });
+        tl.set({}, {}, 5.5);
+        window.__timelines["s1"] = tl;
+      })();
+    </script>
+  </div>
+</template>

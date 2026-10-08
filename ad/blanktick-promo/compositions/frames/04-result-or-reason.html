@@ -1,0 +1,244 @@
+<template>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      font-family: "Segoe UI", sans-serif;
+      color: #0b0d0c;
+    }
+    /* full-bleed cream ground + faint kelp vignette (clip layer, not #root) */
+    #r04-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 72% at 50% 45%, rgba(15, 77, 63, 0) 55%, rgba(15, 77, 63, 0.08) 100%),
+        #faf9f6;
+    }
+    /* virtual camera — gentle push under the whole shot */
+    #r04-world {
+      position: absolute;
+      inset: 0;
+      transform-origin: 960px 470px;
+    }
+    /* framed app window: 1344 wide (70%), cropped to 800 tall so it clears the 900px keep-out */
+    #r04-window {
+      position: absolute;
+      left: 288px;
+      top: 70px;
+      width: 1344px;
+      height: 800px;
+      border-radius: 14px;
+      border: 1.5px solid rgba(15, 77, 63, 0.2);
+      background: #0b0d0c;
+      overflow: hidden;
+    }
+    .r04-shot {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1344px;
+      height: auto;
+      display: block;
+    }
+    /* depth-of-field layers: every layer reads its own --dof */
+    .r04-layer {
+      --dof: 0px;
+      filter: blur(var(--dof));
+      will-change: filter;
+    }
+    #r04-base {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+    /* sharp row copies (same screenshot, cropped to the measured row rect) */
+    .r04-focus {
+      position: absolute;
+      left: 372px;
+      width: 918px;
+      overflow: hidden;
+      z-index: 2;
+    }
+    #r04-focus-pass {
+      top: 598px;
+      height: 114px;
+    }
+    #r04-focus-pass .r04-shot {
+      left: -372px;
+      top: -598px;
+    }
+    #r04-focus-nc {
+      top: 478px;
+      height: 110px;
+    }
+    #r04-focus-nc .r04-shot {
+      left: -372px;
+      top: -478px;
+    }
+    /* marker rings (SVG rounded-rect stroke draw, pathLength=1) */
+    .r04-ring {
+      position: absolute;
+      left: 362px;
+      width: 938px;
+      z-index: 3;
+      overflow: visible;
+    }
+    #r04-ring-pass {
+      top: 590px;
+      height: 130px;
+    }
+    #r04-ring-nc {
+      top: 471px;
+      height: 124px;
+    }
+    .r04-ring rect {
+      fill: none;
+      stroke-linecap: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    .r04-halo {
+      stroke: #faf9f6;
+      stroke-width: 10;
+    }
+    #r04-ring-pass .r04-stroke {
+      stroke: #0f4d3f;
+      stroke-width: 5;
+    }
+    #r04-ring-nc .r04-stroke {
+      stroke: #666d6b;
+      stroke-width: 5;
+    }
+    /* state pills, parked over the (defocused) sidebar left of each row */
+    .r04-pill {
+      position: absolute;
+      right: 996px;
+      height: 38px;
+      padding: 0 18px;
+      border-radius: 100px;
+      border: 2px solid #faf9f6;
+      display: flex;
+      align-items: center;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #faf9f6;
+      z-index: 4;
+      white-space: nowrap;
+    }
+    #r04-pill-pass {
+      top: 636px;
+      background: #0f4d3f;
+    }
+    #r04-pill-nc {
+      top: 514px;
+      background: #666d6b;
+    }
+    /* kelp-on-cream caption card, upper-right of the window */
+    #r04-card {
+      position: absolute;
+      right: 150px;
+      top: 36px;
+      padding: 26px 40px 30px;
+      border-radius: 14px;
+      border: 1.5px solid rgba(15, 77, 63, 0.2);
+      background: linear-gradient(rgba(15, 77, 63, 0.04), rgba(15, 77, 63, 0.04)), #faf9f6;
+    }
+    #r04-card-line {
+      width: 60px;
+      height: 4px;
+      border-radius: 2px;
+      background: #0f4d3f;
+      margin-bottom: 16px;
+      transform-origin: left center;
+    }
+    #r04-card-text {
+      font-size: 50px;
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: #0f4d3f;
+      white-space: nowrap;
+    }
+  </style>
+
+  <div id="root" data-composition-id="04-result-or-reason" data-width="1920" data-height="1080" data-start="0" data-duration="6.5">
+    <div id="r04-bg" class="clip" data-start="0" data-duration="6.5" data-track-index="0"></div>
+
+    <div id="r04-world" class="clip" data-start="0" data-duration="6.5" data-track-index="1">
+      <div id="r04-window">
+        <div id="r04-base" class="r04-layer">
+          <img class="r04-shot" src="assets/app-policy-accounts.png" alt="" />
+        </div>
+        <div id="r04-focus-nc" class="r04-focus r04-layer">
+          <img class="r04-shot" src="assets/app-policy-accounts.png" alt="" />
+        </div>
+        <div id="r04-focus-pass" class="r04-focus r04-layer">
+          <img class="r04-shot" src="assets/app-policy-accounts.png" alt="" />
+        </div>
+
+        <svg id="r04-ring-pass" class="r04-ring" viewBox="0 0 938 130">
+          <rect class="r04-halo" x="6" y="6" width="926" height="118" rx="16" pathLength="1" />
+          <rect class="r04-stroke" x="6" y="6" width="926" height="118" rx="16" pathLength="1" />
+        </svg>
+        <svg id="r04-ring-nc" class="r04-ring" viewBox="0 0 938 124">
+          <rect class="r04-halo" x="6" y="6" width="926" height="112" rx="16" pathLength="1" />
+          <rect class="r04-stroke" x="6" y="6" width="926" height="112" rx="16" pathLength="1" />
+        </svg>
+
+        <div id="r04-pill-pass" class="r04-pill">Result</div>
+        <div id="r04-pill-nc" class="r04-pill">Reason</div>
+      </div>
+    </div>
+
+    <div id="r04-card" class="clip" data-start="0" data-duration="6.5" data-track-index="2">
+      <div id="r04-card-line"></div>
+      <div id="r04-card-text">Never a quiet pass.</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const BLUR = "2.5px";
+      const DIM = 0.5;
+
+      // Initial states (seek-safe: set at t=0 of the timeline)
+      // Rings start hidden via CSS (stroke-dashoffset: 1); a tl.set at 0 does not render at t=0.
+      tl.set([".r04-layer"], { "--dof": "0px", opacity: 1 }, 0);
+
+      // Camera: slow, barely-there push across the whole shot
+      tl.fromTo("#r04-world", { scale: 1 }, { scale: 1.025, duration: 6.0, ease: "sine.inOut" }, 0);
+
+      // Scene 1 (0.00–0.90): window rises into place, long smooth tail
+      tl.fromTo("#r04-window", { y: 90, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: "expo.out" }, 0);
+
+      // Scene 2 (0.90–2.33): "a result" — kelp ring draws round PASSED row, rest defocuses
+      tl.to("#r04-ring-pass rect", { strokeDashoffset: 0, duration: 0.65, ease: "power2.inOut" }, 0.9);
+      tl.to(["#r04-base", "#r04-focus-nc"], { "--dof": BLUR, opacity: DIM, duration: 0.8, ease: "power2.inOut" }, 0.9);
+      tl.fromTo("#r04-pill-pass", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(1.7)" }, 1.35);
+
+      // Scene 3 (2.33–3.94): "the reason it couldn't run" — grey ring on NOT CHECKABLE row; rack focus to it
+      tl.to("#r04-ring-nc rect", { strokeDashoffset: 0, duration: 0.65, ease: "power2.inOut" }, 2.33);
+      tl.to("#r04-focus-nc", { "--dof": "0px", opacity: 1, duration: 0.8, ease: "power2.inOut" }, 2.33);
+      tl.to("#r04-focus-pass", { "--dof": BLUR, opacity: DIM, duration: 0.8, ease: "power2.inOut" }, 2.33);
+      tl.to(["#r04-ring-pass", "#r04-pill-pass"], { opacity: 0.45, duration: 0.8, ease: "power2.inOut" }, 2.33);
+      tl.fromTo("#r04-pill-nc", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(1.7)" }, 2.8);
+
+      // Scene 4 (3.94–5.38): "Never a quiet pass" — kelp-on-cream card upper-right; both states held sharp
+      tl.fromTo("#r04-card", { y: 28, opacity: 0, scale: 0.96 }, { y: 0, opacity: 1, scale: 1, duration: 0.6, ease: "power3.out" }, 3.94);
+      tl.fromTo("#r04-card-line", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.out" }, 4.1);
+      tl.to("#r04-focus-pass", { "--dof": "0px", opacity: 1, duration: 0.7, ease: "power2.inOut" }, 4.3);
+      tl.to(["#r04-ring-pass", "#r04-pill-pass"], { opacity: 1, duration: 0.7, ease: "power2.inOut" }, 4.3);
+
+      window.__timelines["04-result-or-reason"] = tl;
+    })();
+  </script>
+</template>

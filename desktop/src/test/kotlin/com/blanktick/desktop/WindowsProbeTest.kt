@@ -170,6 +170,7 @@ class WindowsProbeTest {
                 "av.signatureAgeDays", "av.tamperProtected", "av.threatActive",
                 "av.threatsKnown", "av.threatsRead",
                 "bitlocker.protection",
+                "browser.ext", "browser.ext.read", "browser.ext.unread",
                 "cert", "cert.storeRead",
                 "dns", "dns.enumerated",
                 "drive", "drive.enumerated",

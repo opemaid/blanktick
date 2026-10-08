@@ -1,0 +1,25 @@
+{
+  "lines": [
+    {
+      "id": "01",
+      "sfx": [
+        "click-soft"
+      ]
+    },
+    {
+      "id": "02",
+      "sfx": [
+        "click-soft"
+      ]
+    },
+    {
+      "id": "03",
+      "sfx": [
+        "chime"
+      ]
+    }
+  ],
+  "bgm": {
+    "mode": "none"
+  }
+}

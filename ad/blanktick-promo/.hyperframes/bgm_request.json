@@ -1,0 +1,4 @@
+{ "provider": "kokoro", "lines": [],
+  "bgm": { "mode": "generate",
+           "prompt": "calm minimal ambient underscore, soft felt piano and warm pads, slow 80 bpm, gentle and reassuring, no drums, no tension, no alarm, clean modern product film",
+           "blob": "Not every green tick means safe", "arc": "calm reveal" } }

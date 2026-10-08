@@ -9,6 +9,7 @@ import com.blanktick.core.rules.AccountSecurityRules
 import com.blanktick.core.rules.AiSecurityRules
 import com.blanktick.core.rules.AppHygieneRules
 import com.blanktick.core.rules.BaselineRules
+import com.blanktick.core.rules.BrowserRules
 import com.blanktick.core.rules.DataExposureRules
 import com.blanktick.core.rules.HardeningRules
 import com.blanktick.core.rules.MalwareRules
@@ -174,6 +175,7 @@ object DefaultRules {
             HardeningRules.ALL +
             BaselineRules.ALL +
             MalwareRules.ALL +
+            BrowserRules.ALL +
             AiSecurityRules.ALL
 
     val COUNT: Int get() = ALL.size

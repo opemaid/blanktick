@@ -431,6 +431,29 @@ data class DesktopFacts(
      */
     val antivirusPosture: AntivirusPosture? = null,
 
+    // ---- Browser extension surface -----------------------------------------
+    /**
+     * Extensions installed in the user's browsers (Chrome, Edge, Firefox and
+     * Chromium forks), read from each profile's local extension manifests.
+     *
+     * Reading a manifest off disk is a local file operation; nothing is
+     * fetched, and the desktop build has no code path that could. This closes
+     * the browser-extension / infostealer gap the coverage review flagged: a
+     * side-loaded or unpacked extension is the shape credential-stealing
+     * malware takes on an otherwise-clean machine, and it never appears in the
+     * places the rest of the product already looks.
+     *
+     * `null` when no supported browser profile could be read at all.
+     */
+    val browserExtensions: List<BrowserExtension>? = null,
+    /**
+     * Browser profiles or extension stores that were located but could not be
+     * read, named so a partial enumeration is stated rather than passed off as
+     * "no extensions found". Empty means every located profile was read; `null`
+     * means this platform reports no per-source coverage.
+     */
+    val browserExtensionsUnread: List<String>? = null,
+
     // ---- Integrity of the collection itself --------------------------------
     /**
      * Whether the collector ran all the way to the end.
@@ -860,6 +883,42 @@ data class AutoRunEntry(
  *   no innocent reason for a program called `svchost.exe` to run out of AppData,
  *   which is what makes this checkable at all without signatures.
  */
+/**
+ * One browser extension, as read from a local profile manifest.
+ *
+ * ## Why provenance is the load-bearing field
+ *
+ * A store-installed extension passed a review and updates through the store. An
+ * **unpacked** one was loaded from a folder in developer mode, and an
+ * **external / registry / policy** one was force-installed by writing a key
+ * outside the browser — both are exactly how adware and infostealers arrive,
+ * because neither route is vetted and neither shows up in the store's own list.
+ * The name and version are attacker-influenced text; [installSource] is the
+ * fact worth scoring on.
+ */
+data class BrowserExtension(
+    /** "Chrome", "Edge", "Firefox", "Brave", "Opera", "Vivaldi", ... */
+    val browser: String,
+    /** Extension id. Namespaced per browser; not comparable across browsers. */
+    val id: String,
+    /** Display name from the manifest. Attacker-influenced — sanitise before display. */
+    val name: String,
+    val version: String? = null,
+    /**
+     * How it got here, normalised by the collector so this model stays
+     * browser-agnostic: `store`, `unpacked`, `external`, `registry`, `policy`,
+     * `sideload`, `component`, or `unknown`. Only `store` and `component` (the
+     * browser's own built-ins) are treated as vetted.
+     */
+    val installSource: String? = null,
+    /** True when enabled/active, false when present but switched off, null if unknown. */
+    val enabled: Boolean? = null,
+    /** Host permissions requested (an all-URLs token or wildcard site patterns). */
+    val hostPermissions: List<String> = emptyList(),
+    /** API permissions requested, e.g. `webRequest`, `cookies`, `nativeMessaging`, `debugger`. */
+    val apiPermissions: List<String> = emptyList()
+)
+
 data class ProcessImage(
     val name: String,
     val path: String,

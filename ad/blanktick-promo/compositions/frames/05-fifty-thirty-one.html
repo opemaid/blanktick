@@ -1,0 +1,257 @@
+<template>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: "Segoe UI", sans-serif;
+      color: #0b0d0c;
+      container-type: size;
+    }
+    [id="05-fifty-thirty-one-bg"] {
+      position: absolute;
+      inset: 0;
+      background: #faf9f6;
+    }
+    /* ---- left 55%: framed real dashboard ---- */
+    [id="05-fifty-thirty-one-stage"] {
+      position: absolute;
+      left: 96px;
+      top: 150px;
+      width: 960px;
+      height: 702px;
+    }
+    [id="05-fifty-thirty-one-window"] {
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #0b0d0c;
+    }
+    [id="05-fifty-thirty-one-window"] img {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 960px;
+      height: 702px;
+      display: block;
+    }
+    [id="05-fifty-thirty-one-dim"] {
+      position: absolute;
+      inset: 0;
+      background: #0b0d0c;
+      opacity: 0;
+    }
+    [id="05-fifty-thirty-one-frameline"] {
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      border: 1.5px solid rgba(15, 77, 63, 0.2);
+    }
+    /* lifted tile copies, positioned over the real tiles (image px x 0.75412) */
+    .f0531-tile {
+      position: absolute;
+      top: 283.55px;
+      width: 159.12px;
+      height: 122.92px;
+      transform-origin: 50% 50%;
+      opacity: 0;
+    }
+    [id="05-fifty-thirty-one-tile-ran"] {
+      left: 432.11px;
+    }
+    [id="05-fifty-thirty-one-tile-not"] {
+      left: 594.25px;
+    }
+    .f0531-tile-clip {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      border-radius: 9px;
+    }
+    .f0531-tile-clip img {
+      position: absolute;
+      top: -283.55px;
+      width: 960px;
+      height: 702px;
+      display: block;
+    }
+    [id="05-fifty-thirty-one-tile-ran"] .f0531-tile-clip img {
+      left: -432.11px;
+    }
+    [id="05-fifty-thirty-one-tile-not"] .f0531-tile-clip img {
+      left: -594.25px;
+    }
+    .f0531-ring {
+      position: absolute;
+      left: -8px;
+      top: -8px;
+      width: 175.12px;
+      height: 138.92px;
+      overflow: visible;
+    }
+    /* ---- right 45%: the two counters, equal size ---- */
+    .f0531-row {
+      position: absolute;
+      left: 1140px;
+      width: 684px;
+      height: 312px;
+    }
+    [id="05-fifty-thirty-one-row-ran"] {
+      top: 169px;
+    }
+    [id="05-fifty-thirty-one-row-not"] {
+      top: 521px;
+    }
+    .f0531-rule {
+      position: absolute;
+      left: 6px;
+      top: 0;
+      width: 60px;
+      height: 4px;
+      border-radius: 2px;
+      transform-origin: 0 50%;
+    }
+    .f0531-num-wrap {
+      position: absolute;
+      left: 0;
+      top: 18px;
+      width: 420px;
+      height: 252px;
+    }
+    .f0531-num {
+      display: inline-block;
+      font-size: 280px;
+      line-height: 0.9;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      transform-origin: 0% 100%;
+      white-space: nowrap;
+    }
+    .f0531-label {
+      position: absolute;
+      left: 6px;
+      top: 276px;
+      font-size: 36px;
+      line-height: 1;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .f0531-kelp {
+      color: #0f4d3f;
+    }
+    .f0531-grey {
+      color: #666d6b;
+    }
+    .f0531-kelp-bg {
+      background: #0f4d3f;
+    }
+    .f0531-grey-bg {
+      background: #666d6b;
+    }
+  </style>
+
+  <div id="root" data-composition-id="05-fifty-thirty-one" data-width="1920" data-height="1080" data-duration="6.5">
+    <div id="05-fifty-thirty-one-bg" class="clip" data-start="0" data-duration="6.5" data-track-index="0"></div>
+
+    <div id="05-fifty-thirty-one-stage" class="clip" data-start="0" data-duration="6.5" data-track-index="1">
+      <div id="05-fifty-thirty-one-window">
+        <img src="assets/app-dashboard.png" alt="" />
+        <div id="05-fifty-thirty-one-dim"></div>
+      </div>
+      <div id="05-fifty-thirty-one-frameline"></div>
+
+      <div id="05-fifty-thirty-one-tile-ran" class="f0531-tile">
+        <div class="f0531-tile-clip"><img src="assets/app-dashboard.png" alt="" /></div>
+        <svg class="f0531-ring" viewBox="0 0 175.12 138.92">
+          <rect x="3" y="3" width="169.12" height="132.92" rx="14" fill="none" stroke="#faf9f6" stroke-width="10" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1" class="f0531-ring-under" />
+          <rect x="3" y="3" width="169.12" height="132.92" rx="14" fill="none" stroke="#0f4d3f" stroke-width="5" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1" class="f0531-ring-over" />
+        </svg>
+      </div>
+
+      <div id="05-fifty-thirty-one-tile-not" class="f0531-tile">
+        <div class="f0531-tile-clip"><img src="assets/app-dashboard.png" alt="" /></div>
+        <svg class="f0531-ring" viewBox="0 0 175.12 138.92">
+          <rect x="3" y="3" width="169.12" height="132.92" rx="14" fill="none" stroke="#faf9f6" stroke-width="10" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1" class="f0531-ring-under" />
+          <rect x="3" y="3" width="169.12" height="132.92" rx="14" fill="none" stroke="#666d6b" stroke-width="5" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1" class="f0531-ring-over" />
+        </svg>
+      </div>
+    </div>
+
+    <div id="05-fifty-thirty-one-row-ran" class="f0531-row clip" data-start="0" data-duration="6.5" data-track-index="2">
+      <div class="f0531-rule f0531-kelp-bg"></div>
+      <div class="f0531-num-wrap" data-layout-allow-overlap><span id="05-fifty-thirty-one-num-ran" class="f0531-num f0531-kelp">0</span></div>
+      <div class="f0531-label f0531-kelp">ran</div>
+    </div>
+
+    <div id="05-fifty-thirty-one-row-not" class="f0531-row clip" data-start="0" data-duration="6.5" data-track-index="3">
+      <div class="f0531-rule f0531-grey-bg"></div>
+      <div class="f0531-num-wrap" data-layout-allow-overlap><span id="05-fifty-thirty-one-num-not" class="f0531-num f0531-grey">0</span></div>
+      <div class="f0531-label f0531-grey">couldn't &mdash; each one named</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var FID = "05-fifty-thirty-one";
+      var $ = function (s) { return document.getElementById(FID + "-" + s); };
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      var stage = $("stage");
+      var dim = $("dim");
+      var tileRan = $("tile-ran");
+      var tileNot = $("tile-not");
+      var rowRan = $("row-ran");
+      var rowNot = $("row-not");
+      var numRan = $("num-ran");
+      var numNot = $("num-not");
+
+      var COUNT_DUR = 1.6;
+      var COUNT_EASE = "power3.out";
+      var START_SCALE = 0.5;
+
+      // Scene 1 (0.00-0.97): framed dashboard settles left
+      tl.fromTo(stage, { opacity: 0, x: -60, scale: 0.97 }, { opacity: 1, x: 0, scale: 1, duration: 0.85, ease: "power3.out" }, 0);
+
+      // helper: one counter beat (lift tile + ring draw + count-up + label)
+      function beat(at, tile, row, num, target, dx) {
+        var rings = tile.querySelectorAll("rect");
+        var rule = row.querySelector(".f0531-rule");
+        var label = row.querySelector(".f0531-label");
+
+        // tile lifts forward out of the real dashboard
+        tl.fromTo(tile, { opacity: 0, scale: 1, x: 0 }, { opacity: 1, scale: 1.06, x: dx, duration: 0.5, ease: "power3.out" }, at);
+        // ring marks the tile
+        tl.fromTo(rings, { attr: { "stroke-dashoffset": 1 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.7, ease: "power2.inOut" }, at + 0.05);
+
+        // counter: value + scale on the same position and ease (counting-dynamic-scale)
+        tl.fromTo(row, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, at + 0.08);
+        tl.fromTo(rule, { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.out" }, at + 0.08);
+        // seek-safe count: innerText tween (no onUpdate callback - the renderer seeks with events suppressed)
+        tl.fromTo(num, { innerText: 0 }, { innerText: target, snap: { innerText: 1 }, duration: COUNT_DUR, ease: COUNT_EASE }, at + 0.08);
+        tl.fromTo(num, { scale: START_SCALE }, { scale: 1, duration: COUNT_DUR, ease: COUNT_EASE }, at + 0.08);
+        // label arrives early, before the count peaks
+        tl.fromTo(label, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, at + 0.4);
+      }
+
+      // Scene 2 (0.97-2.71): "fifty checks ran"
+      tl.fromTo(dim, { opacity: 0 }, { opacity: 0.45, duration: 0.5, ease: "power2.out" }, 0.97);
+      beat(0.97, tileRan, rowRan, numRan, 50, -18);
+
+      // Scene 3 (2.71-4.46): "thirty-one couldn't" - same size, the gap is not hidden
+      beat(2.71, tileNot, rowNot, numNot, 31, 18);
+
+      // Scene 4 (4.46-5.33): hold still - pad the timeline to the full duration
+      tl.set({}, {}, 6.0);
+
+      window.__timelines["05-fifty-thirty-one"] = tl;
+    })();
+  </script>
+</template>

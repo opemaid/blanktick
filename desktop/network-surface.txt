@@ -51,6 +51,7 @@ runtime-desktop
 runtime-saveable-desktop
 savedstate-compose-desktop
 savedstate-desktop
+sensor.jar
 skiko-awt
 skiko-awt-runtime-windows-x64
 ui-backhandler-desktop

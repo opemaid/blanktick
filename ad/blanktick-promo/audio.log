@@ -1,0 +1,17 @@
+· tts: kokoro · voice am_michael · 6 line(s)
+· bgm: disabled
+✓ audio engine → C:\Users\tmant\Projects\blanktick\ad\blanktick-promo\audio_engine_meta.json
+  heygen: no  ·  ran: tts,bgm
+  voices: 0  ·  bgm: none  ·  sfx: 0
+  total voice duration: 0s
+
+anomalies (non-fatal):
+  - line 02: TTS failed — omitted (kokoro (npx hyperframes tts) exited with status 1)
+  - line 04: TTS failed — omitted (kokoro (npx hyperframes tts) exited with status 1)
+  - line 03: TTS failed — omitted (kokoro (npx hyperframes tts) exited with status 1)
+  - line 01: TTS failed — omitted (kokoro (npx hyperframes tts) exited with status 1)
+  - line 06: TTS failed — omitted (kokoro (npx hyperframes tts) exited with status 1)
+  - line 05: TTS failed — omitted (kokoro (npx hyperframes tts) exited with status 1)
+  - bgm: retrieve requires a HeyGen credential — skipped (no generate fallback for an explicit retrieve)
+✓ audio generate: 0 voice + no bgm → C:\Users\tmant\Projects\blanktick\ad\blanktick-promo\audio_meta.json
+exit=0

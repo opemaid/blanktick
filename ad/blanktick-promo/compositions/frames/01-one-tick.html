@@ -1,0 +1,198 @@
+<template>
+  <div
+    id="root"
+    data-composition-id="01-one-tick"
+    data-start="0"
+    data-duration="3.5"
+    data-width="1920"
+    data-height="1080"
+  >
+    <style>
+      /* Segoe UI is frame.md's declared family; no .woff2 ships with the project,
+         so this face resolves from the local system install only. */
+      @font-face {
+        font-family: "Segoe UI";
+        font-weight: 400 700;
+        src: local("Segoe UI"), local("SegoeUI");
+      }
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        container-type: size;
+        font-family: "Segoe UI", sans-serif;
+      }
+      [id="01-one-tick-ground"] {
+        position: absolute;
+        inset: 0;
+        background: #faf9f6;
+      }
+      [id="01-one-tick-stage"] {
+        position: absolute;
+        inset: 0;
+      }
+      /* Tick: ~35% of frame height, centred, upper third (centre y ~ 360px) */
+      [id="01-one-tick-tickwrap"] {
+        position: absolute;
+        left: 770px;
+        top: 170px;
+        width: 380px;
+        height: 380px;
+      }
+      [id="01-one-tick-tick"] {
+        display: block;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+      [id="01-one-tick-tick"] path {
+        fill: none;
+        stroke: #0f4d3f;
+        stroke-width: 18;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      /* Line: display h2 role, centred beneath the tick, well above the 900px keep-out */
+      [id="01-one-tick-line"] {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 640px;
+        text-align: center;
+        font-size: 4.4cqw;
+        font-weight: 600;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        color: #0b0d0c;
+        white-space: nowrap;
+      }
+      [class~="01-one-tick-word"] {
+        display: inline-block;
+        margin: 0 0.12em;
+      }
+      [class~="01-one-tick-word--kelp"] {
+        color: #0f4d3f;
+      }
+    </style>
+
+    <div
+      id="01-one-tick-ground"
+      class="clip"
+      data-start="0"
+      data-duration="3.5"
+      data-track-index="0"
+    ></div>
+
+    <div
+      id="01-one-tick-stage"
+      class="clip"
+      data-start="0"
+      data-duration="3.5"
+      data-track-index="1"
+    >
+      <div id="01-one-tick-tickwrap">
+        <svg
+          id="01-one-tick-tick"
+          viewBox="0 0 200 200"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path id="01-one-tick-tickpath" d="M 38 104 L 84 150 L 164 58" />
+        </svg>
+      </div>
+      <div id="01-one-tick-line">
+        <span class="01-one-tick-word">Not</span><span class="01-one-tick-word">every</span><span class="01-one-tick-word">green</span><span class="01-one-tick-word">tick</span><span class="01-one-tick-word">means</span><span class="01-one-tick-word 01-one-tick-word--kelp">safe.</span>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function () {
+        const FRAME_ID = "01-one-tick";
+        const DURATION = 3.0;
+        window.__timelines = window.__timelines || {};
+        const tl = gsap.timeline({ paused: true });
+
+        const wrap = document.getElementById("01-one-tick-tickwrap");
+        const svg = document.getElementById("01-one-tick-tick");
+        const path = document.getElementById("01-one-tick-tickpath");
+        const words = Array.prototype.slice.call(
+          document.getElementById("01-one-tick-line").querySelectorAll('[class~="01-one-tick-word"]')
+        );
+
+        // ---- Scene 1 (0.00-0.79s): tick self-draws (svg-path-draw) ----
+        // Measured length, slightly overestimated so the round cap never clips.
+        let len = 260;
+        try {
+          len = path.getTotalLength() * 1.05;
+        } catch (e) {}
+        path.style.strokeDasharray = String(len);
+        path.style.strokeDashoffset = String(len);
+
+        const DRAW_START = 0.08;
+        const DRAW_DUR = 0.62;
+        tl.fromTo(
+          path,
+          { strokeDashoffset: len },
+          { strokeDashoffset: 0, duration: DRAW_DUR, ease: "power2.out" },
+          DRAW_START
+        );
+        // Long-tail settle on the wrapper (separate element from the jitter target).
+        tl.fromTo(
+          wrap,
+          { scale: 0.93, opacity: 1 },
+          { scale: 1, duration: 1.2, ease: "expo.out" },
+          0
+        );
+
+        // ---- Scene 2 (0.79-1.47s): word-by-word line (dynamic-content-sequencing) ----
+        // Pre-compute each word's window ONCE from its length; normalise to the VO window.
+        const SEQ_START = 0.79;
+        const SEQ_END = 1.4;
+        const BASE_DURATION = 0.6;
+        const SEC_PER_CHAR = 0.04;
+        let cumulative = 0;
+        const RAW = words.map(function (el) {
+          const dur = BASE_DURATION + el.textContent.length * SEC_PER_CHAR;
+          const start = cumulative;
+          cumulative += dur;
+          return { el: el, start: start, end: cumulative };
+        });
+        const k = (SEQ_END - SEQ_START) / cumulative;
+        const TIMELINE = RAW.map(function (e) {
+          return { el: e.el, start: SEQ_START + e.start * k, end: SEQ_START + e.end * k };
+        });
+
+        TIMELINE.forEach(function (entry) {
+          tl.fromTo(
+            entry.el,
+            { opacity: 0, y: 22, filter: "blur(6px)" },
+            { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.22, ease: "power3.out" },
+            entry.start
+          );
+        });
+
+        // ---- Scene 3 (1.47-1.98s): hold; subtle deterministic jitter on the tick only ----
+        const JITTER = [
+          { x: 2.5, rotation: 0.9 },
+          { x: -2, rotation: -0.7 },
+          { x: 1.5, rotation: 0.5 },
+          { x: -1, rotation: -0.35 },
+          { x: 0.5, rotation: 0.15 },
+          { x: 0, rotation: 0 },
+        ];
+        tl.set(svg, { x: 0, rotation: 0, transformOrigin: "50% 50%" }, 0);
+        let jt = 1.5;
+        JITTER.forEach(function (s) {
+          tl.to(svg, { x: s.x, rotation: s.rotation, duration: 0.065, ease: "none" }, jt);
+          jt += 0.065;
+        });
+
+        // Pad the timeline to the full fixed duration (no exit — root transition owns it).
+        tl.set({}, {}, DURATION);
+
+        window.__timelines[FRAME_ID] = tl;
+      })();
+    </script>
+  </div>
+</template>

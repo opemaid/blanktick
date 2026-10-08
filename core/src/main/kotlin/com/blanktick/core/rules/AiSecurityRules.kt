@@ -4,6 +4,7 @@ import com.blanktick.core.model.Category
 import com.blanktick.core.model.DesktopFacts
 import com.blanktick.core.model.DeviceSnapshot
 import com.blanktick.core.model.Finding
+import com.blanktick.core.model.McpServer
 import com.blanktick.core.model.Severity
 
 /**
@@ -56,6 +57,56 @@ object AiSecurityRules {
         "cmd", "cmd.exe", "powershell", "powershell.exe", "pwsh", "pwsh.exe",
         "bash", "sh", "zsh", "wsl", "wsl.exe"
     )
+
+    /**
+     * Package runners that fetch a tool's code from a public registry and run it,
+     * usually at whatever the latest version is, each time the tool starts.
+     *
+     * Named rather than pattern-matched: these are the launchers that mean "the
+     * code is downloaded, not a pinned local program." `pnpm dlx` / `yarn dlx`
+     * are not here because the launcher is `pnpm` / `yarn` and the runner lives
+     * in an argument this snapshot does not yet carry — captured as a known gap
+     * in the dynamic-tier design rather than guessed at.
+     */
+    private val PACKAGE_RUNNERS = setOf(
+        "npx", "npx.cmd", "npx.exe",
+        "uvx", "uvx.exe",
+        "bunx", "bunx.exe",
+        "pipx", "pipx.exe"
+    )
+
+    /**
+     * Tools that pull in content from outside the machine — the web, mailboxes,
+     * chat, documents — i.e. text an attacker could author. Matched as substrings
+     * of the tool's configured name, because that is what the snapshot carries.
+     *
+     * Heuristic by nature and deliberately conservative: the rule that uses this
+     * only speaks up when an intake tool sits *alongside* an action tool, so a
+     * mislabel on its own is silent.
+     */
+    private val CONTENT_INTAKE = setOf(
+        "fetch", "http", "web", "browser", "puppeteer", "playwright", "crawl",
+        "scrape", "search", "brave", "gmail", "mail", "email", "slack",
+        "discord", "rss", "url", "news", "reddit", "notion", "confluence"
+    )
+
+    /**
+     * Tools that can act on the machine with the user's access — write files,
+     * run commands, reach a database. Combined at the call site with the
+     * general-purpose shells above, which are the strongest form of this.
+     */
+    private val ACTION_CAPABLE = setOf(
+        "filesystem", "file", "shell", "exec", "command", "terminal",
+        "desktop-commander", "git", "docker", "ssh", "database", "sqlite",
+        "postgres", "mysql", "kubernetes"
+    )
+
+    private fun McpServer.nameMatches(markers: Set<String>): Boolean =
+        name.lowercase().let { n -> markers.any { n.contains(it) } }
+
+    private fun McpServer.isShellLauncher(): Boolean =
+        launcher?.lowercase()?.substringAfterLast('\\')?.substringAfterLast('/')
+            ?.let { it in GENERAL_PURPOSE } == true
 
     /**
      * A model server listening on every network interface.
@@ -242,10 +293,137 @@ object AiSecurityRules {
         }
     }
 
+    /**
+     * A tool the model can invoke is started through a package runner, so its
+     * code is downloaded from a public registry and run as you each time.
+     *
+     * This is the quiet way a rogue tool gets in. A config entry like
+     * `npx some-mcp-server` does not name a program on the machine — it fetches
+     * one, usually at whatever the latest published version happens to be, and
+     * runs it with the user's full access. A typo-squatted or later-compromised
+     * package would run the same way, and none of the thirteen startup locations
+     * this app checks would show it. Reported at MEDIUM, and framed as "here is
+     * what this grants" rather than "this is wrong": it is normal in developer
+     * setups, and the point is that the fetch-and-run is invisible everywhere
+     * else, and the code can change between runs without the user touching
+     * anything.
+     */
+    val ModelToolFetchesCodeToRun = object : BaseRule(
+        id = "DSK-AI-005",
+        category = Category.APP_HYGIENE,
+        description = "You know which AI tools download and run code from the internet",
+        platforms = Platforms.DESKTOP_ONLY
+    ) {
+        override fun check(s: DeviceSnapshot) = facts(s) { d ->
+            val ai = d.ai ?: return@facts RuleOutcome.NotApplicable
+            val servers = ai.mcpServers ?: return@facts RuleOutcome.NotApplicable
+            val fetched = servers.filter { sv ->
+                sv.launcher?.lowercase()?.substringAfterLast('\\')?.substringAfterLast('/')
+                    ?.let { it in PACKAGE_RUNNERS } == true
+            }
+            if (fetched.isEmpty()) return@facts RuleOutcome.Pass
+
+            RuleOutcome.Fail(
+                Finding(
+                    ruleId = id,
+                    category = category,
+                    severity = Severity.MEDIUM,
+                    title = if (fetched.size == 1)
+                        "\"" + fetched.first().name + "\" starts an AI tool by downloading code from the internet"
+                    else fetched.size.toString() + " AI tools start by downloading code from the internet",
+                    detail = "These tools launch through a package runner (" +
+                        fetched.mapNotNull { it.launcher }.map { it.substringAfterLast('\\').substringAfterLast('/') }
+                            .distinct().joinToString(", ") + "), which fetches their code from a public " +
+                        "registry and runs it as you — usually at the latest version, refreshed each time " +
+                        "they start: " + fetched.joinToString(", ") { it.name } + ". That is convenient and " +
+                        "common in developer setups. It is worth knowing because the code can change between " +
+                        "runs without you doing anything, and a compromised or look-alike package would run " +
+                        "with your full access. This is one of the main ways a malicious AI tool reaches a " +
+                        "machine, and it appears in none of the startup locations this app otherwise checks.",
+                    remediation = "If you rely on these, pin each to a specific version, or install the tool " +
+                        "once to a fixed local path and point the config at that instead of a runner. If you " +
+                        "do not recognise one, its configuration file is listed below and the entry can be removed.",
+                    subjectId = "mcp-remote-fetch",
+                    evidence = mapOf(
+                        "tools" to fetched.joinToString("; ") { it.name },
+                        "runners" to fetched.mapNotNull { it.launcher }.distinct().joinToString("; "),
+                        "configuredIn" to fetched.map { it.configFile }.distinct().joinToString("; ")
+                    )
+                )
+            )
+        }
+    }
+
+    /**
+     * The prompt-injection condition: one assistant can both read outside
+     * content and act on the machine.
+     *
+     * Prompt injection is the AI-native attack. It works when a model reads text
+     * an attacker controls — a web page, an email, a document — and that text
+     * contains instructions the model then carries out. A single tool cannot do
+     * much harm. The danger is the *combination*: a tool that pulls in outside
+     * content sitting next to a tool that can write files or run commands as
+     * you. Then a booby-trapped page the assistant reads can tell it to act, and
+     * it has the means.
+     *
+     * Reported at MEDIUM, and framed as "here is the combination" rather than
+     * "you are compromised": it is common on developer machines and is often
+     * intended. It is worth surfacing because it is the specific pairing
+     * attackers target, and nothing else on the machine points it out. Detection
+     * only — stopping a live injection is the resident sensor's job, not a
+     * snapshot's.
+     */
+    val PromptInjectionReach = object : BaseRule(
+        id = "DSK-AI-006",
+        category = Category.APP_HYGIENE,
+        description = "No AI assistant here can be steered by outside content into acting as you",
+        platforms = Platforms.DESKTOP_ONLY
+    ) {
+        override fun check(s: DeviceSnapshot) = facts(s) { d ->
+            val ai = d.ai ?: return@facts RuleOutcome.NotApplicable
+            val servers = ai.mcpServers ?: return@facts RuleOutcome.NotApplicable
+
+            val intake = servers.filter { it.nameMatches(CONTENT_INTAKE) }
+            val action = servers.filter { it.nameMatches(ACTION_CAPABLE) || it.isShellLauncher() }
+            if (intake.isEmpty() || action.isEmpty()) return@facts RuleOutcome.Pass
+
+            RuleOutcome.Fail(
+                Finding(
+                    ruleId = id,
+                    category = category,
+                    severity = Severity.MEDIUM,
+                    title = "An AI assistant here can both read outside content and act on this computer",
+                    detail = "One tool pulls in content from outside sources (" +
+                        intake.joinToString(", ") { it.name } + ") and another can act on this " +
+                        "machine with your access (" + action.joinToString(", ") { it.name } + "). " +
+                        "On their own each is fine. Together they are the condition that makes prompt " +
+                        "injection actionable: a web page, email or document the assistant reads can " +
+                        "carry hidden instructions, and the assistant has a tool that can carry them " +
+                        "out — write files, run commands — as you. This is common on developer " +
+                        "machines and may be exactly what you set up. It is worth knowing because it " +
+                        "is the specific combination an attacker aims for, and nothing else here " +
+                        "points it out.",
+                    remediation = "If you do not need them together, keep the content-reading tools " +
+                        "in a separate assistant profile from the ones that can act, or remove " +
+                        "whichever you do not use. If you keep both, treat everything the assistant " +
+                        "reads as untrusted input to the tools it can run.",
+                    subjectId = "mcp-injection-reach",
+                    evidence = mapOf(
+                        "intake" to intake.joinToString("; ") { it.name },
+                        "action" to action.joinToString("; ") { it.name },
+                        "configuredIn" to (intake + action).map { it.configFile }.distinct().joinToString("; ")
+                    )
+                )
+            )
+        }
+    }
+
     val ALL: List<Rule> = listOf(
         ExposedModelServer,
         ModelHasShellAccess,
         CredentialsInAiConfig,
-        RecallStoringSnapshots
+        RecallStoringSnapshots,
+        ModelToolFetchesCodeToRun,
+        PromptInjectionReach
     )
 }

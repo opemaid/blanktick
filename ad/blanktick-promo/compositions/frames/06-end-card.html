@@ -1,0 +1,208 @@
+<template>
+  <div
+    id="root"
+    data-composition-id="06-end-card"
+    data-start="0"
+    data-duration="6"
+    data-width="1920"
+    data-height="1080"
+  >
+    <style>
+      @font-face {
+        font-family: "blanktick-06-ui";
+        src: local("Segoe UI"), local("SegoeUI");
+        font-weight: 400;
+      }
+      @font-face {
+        font-family: "blanktick-06-ui";
+        src: local("Segoe UI Semibold"), local("SegoeUI-Semibold");
+        font-weight: 600;
+      }
+      @font-face {
+        font-family: "blanktick-06-ui";
+        src: local("Segoe UI Bold"), local("SegoeUI-Bold");
+        font-weight: 700;
+      }
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        container-type: size;
+        font-family: "blanktick-06-ui", sans-serif;
+      }
+      #end-card-06-ground {
+        position: absolute;
+        inset: 0;
+        background: #faf9f6;
+      }
+      #end-card-06-stage {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 900px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding-top: 20px;
+      }
+      #end-card-06-tick {
+        width: 6.5cqw;
+        height: 6.5cqw;
+        display: block;
+        margin-bottom: 1.6cqw;
+      }
+      #end-card-06-tick path {
+        fill: none;
+        stroke: #0f4d3f;
+        stroke-width: 11;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 1;
+        stroke-dashoffset: 1;
+      }
+      #end-card-06-wordmark {
+        font-weight: 700;
+        font-size: 7cqw;
+        line-height: 1;
+        letter-spacing: -0.03em;
+        color: #0b0d0c;
+      }
+      #end-card-06-line {
+        margin-top: 1.9cqw;
+        font-weight: 400;
+        font-size: 1.6cqw;
+        line-height: 1.4;
+        color: #5a6260;
+        max-width: 78cqw;
+        text-align: center;
+      }
+      #end-card-06-chips {
+        margin-top: 3.4cqw;
+        display: flex;
+        gap: 1.4cqw;
+        align-items: center;
+      }
+      .end-card-06-chip {
+        display: flex;
+        align-items: center;
+        gap: 0.7cqw;
+        padding: 0.8cqw 1.7cqw;
+        border-radius: 100px;
+        background: rgba(15, 77, 63, 0.04);
+        border: 1.5px solid rgba(15, 77, 63, 0.35);
+        color: #0f4d3f;
+        font-weight: 600;
+        font-size: 1.4cqw;
+        line-height: 1.2;
+        white-space: nowrap;
+      }
+      .end-card-06-chip-dot {
+        width: 0.55cqw;
+        height: 0.55cqw;
+        border-radius: 50%;
+        background: #0f4d3f;
+        flex: none;
+      }
+    </style>
+
+    <div
+      id="end-card-06-ground"
+      class="clip"
+      data-start="0"
+      data-duration="6"
+      data-track-index="0"
+    ></div>
+
+    <div
+      id="end-card-06-stage"
+      class="clip"
+      data-start="0"
+      data-duration="6"
+      data-track-index="1"
+    >
+      <svg id="end-card-06-tick" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <path id="end-card-06-tick-path" pathLength="1" d="M 22.8 62.4 L 50.4 90 L 98.4 34.8" />
+      </svg>
+      <div id="end-card-06-wordmark">blanktick</div>
+      <div id="end-card-06-line">A security scanner that tells you what it could not check.</div>
+      <div id="end-card-06-chips">
+        <div class="end-card-06-chip" id="end-card-06-chip-1">
+          <span class="end-card-06-chip-dot"></span>Offline
+        </div>
+        <div class="end-card-06-chip" id="end-card-06-chip-2">
+          <span class="end-card-06-chip-dot"></span>Nothing leaves your computer
+        </div>
+        <div class="end-card-06-chip" id="end-card-06-chip-3">
+          <span class="end-card-06-chip-dot"></span>Free and open source
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function () {
+        window.__timelines = window.__timelines || {};
+        var tl = gsap.timeline({ paused: true });
+
+        // Scene 1 (0.00–0.48s): kelp tick self-draws, small, upper third.
+        tl.fromTo(
+          "#end-card-06-tick-path",
+          { strokeDashoffset: 1 },
+          { strokeDashoffset: 0, duration: 0.46, ease: "power2.out" },
+          0.02
+        );
+        tl.fromTo(
+          "#end-card-06-tick",
+          { scale: 0.9 },
+          { scale: 1, duration: 0.6, ease: "power3.out" },
+          0.02
+        );
+
+        // Scene 2 (0.48–1.94s): wordmark resolves (the one restrained move), then the line.
+        tl.fromTo(
+          "#end-card-06-wordmark",
+          { opacity: 0, scale: 0.95, filter: "blur(8px)" },
+          { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.75, ease: "power3.out" },
+          0.42
+        );
+        tl.fromTo(
+          "#end-card-06-line",
+          { opacity: 0, y: 18 },
+          { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" },
+          1.2
+        );
+
+        // Scene 3 (1.94–4.36s): three chips reveal on each spoken phrase.
+        var chipTimes = [2.0, 2.75, 3.6];
+        ["#end-card-06-chip-1", "#end-card-06-chip-2", "#end-card-06-chip-3"].forEach(function (sel, i) {
+          tl.fromTo(
+            sel,
+            { opacity: 0, y: 16, scale: 0.96 },
+            { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out" },
+            chipTimes[i]
+          );
+        });
+
+        // Hold: barely-perceptible slow scale-up across the held card (micro-drift).
+        tl.fromTo(
+          "#end-card-06-stage",
+          { scale: 1 },
+          { scale: 1.015, duration: 5.0, ease: "none" },
+          0.5
+        );
+
+        // Scene 4 (4.36–6.0s): held end card; final frame — gentle fade to cream in last 0.4s.
+        tl.to(
+          "#end-card-06-stage",
+          { opacity: 0, duration: 0.4, ease: "power1.inOut" },
+          5.6
+        );
+
+        window.__timelines["06-end-card"] = tl;
+      })();
+    </script>
+  </div>
+</template>

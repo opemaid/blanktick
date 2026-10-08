@@ -1,0 +1,66 @@
+<template>
+  <div id="root" data-composition-id="s3" data-start="0" data-duration="7.6" data-width="1920" data-height="1080">
+    <style>
+      @font-face{font-family:"bt-ui";src:local("Segoe UI"),local("SegoeUI");font-weight:400}
+      @font-face{font-family:"bt-ui";src:local("Segoe UI Semibold"),local("SegoeUI-Semibold");font-weight:600}
+      @font-face{font-family:"bt-ui";src:local("Segoe UI Bold"),local("SegoeUI-Bold");font-weight:700}
+      #root{position:relative;width:1920px;height:1080px;overflow:hidden;background:#FAF9F6;container-type:size;font-family:"bt-ui","Segoe UI",sans-serif;color:#0B0D0C}
+      #s3-wrap{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:4cqw 13cqw}
+      #s3-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.6cqw}
+      #s3-title{font-size:2.3cqw;font-weight:700;letter-spacing:-.02em;opacity:0}
+      #s3-title .k{color:#0F4D3F}
+      #s3-pips{display:flex;gap:.55cqw}
+      .pip{width:1.5cqw;height:1.5cqw}
+      .pip path{fill:none;stroke:#CBD2CF;stroke-width:16;stroke-linecap:round;stroke-linejoin:round}
+      .card{display:flex;align-items:center;gap:1.1cqw;background:rgba(15,77,63,.035);border:1.5px solid rgba(15,77,63,.16);border-radius:12px;padding:.85cqw 1.3cqw;margin-bottom:.62cqw;opacity:0}
+      .tickbadge{width:2.5cqw;height:2.5cqw;flex:none;position:relative;display:flex;align-items:center;justify-content:center}
+      .tickbadge .circ{position:absolute;inset:0;border-radius:50%;background:#0F4D3F}
+      .tickbadge svg{position:relative;width:1.5cqw;height:1.5cqw}
+      .tickbadge path{fill:none;stroke:#FAF9F6;stroke-width:14;stroke-linecap:round;stroke-linejoin:round}
+      .cardbody{display:flex;flex-direction:column;gap:.2cqw}
+      .rid{font-size:.85cqw;font-weight:600;letter-spacing:.04em;color:#666D6B}
+      .ctitle{font-size:1.4cqw;font-weight:600;color:#0B0D0C}
+      .sev{margin-left:auto;font-size:.95cqw;font-weight:700;white-space:nowrap}
+      .sev.crit{color:#B4451F}.sev.high{color:#A75C13}.sev.med{color:#7A6A2E}
+    </style>
+    <div id="s3-wrap" class="clip" data-start="0" data-duration="7.6" data-track-index="0">
+      <div id="s3-head">
+        <div id="s3-title">Six ways in. <span class="k">Caught</span> the moment they happen.</div>
+        <div id="s3-pips">
+          <svg class="pip" id="pip1" viewBox="0 0 120 120"><path d="M 26 62 L 52 90 L 96 34"/></svg>
+          <svg class="pip" id="pip2" viewBox="0 0 120 120"><path d="M 26 62 L 52 90 L 96 34"/></svg>
+          <svg class="pip" id="pip3" viewBox="0 0 120 120"><path d="M 26 62 L 52 90 L 96 34"/></svg>
+          <svg class="pip" id="pip4" viewBox="0 0 120 120"><path d="M 26 62 L 52 90 L 96 34"/></svg>
+          <svg class="pip" id="pip5" viewBox="0 0 120 120"><path d="M 26 62 L 52 90 L 96 34"/></svg>
+          <svg class="pip" id="pip6" viewBox="0 0 120 120"><path d="M 26 62 L 52 90 L 96 34"/></svg>
+        </div>
+      </div>
+      <div class="card" id="c1"><div class="tickbadge"><div class="circ"></div><svg viewBox="0 0 120 120"><path d="M 26 62 L 52 90 L 96 34"/></svg></div><div class="cardbody"><div class="rid">DYN-OFFICE-001</div><div class="ctitle">An Office document just launched “powershell.exe”</div></div><div class="sev high">High</div></div>
+      <div class="card" id="c2"><div class="tickbadge"><div class="circ"></div><svg viewBox="0 0 120 120"><path d="M 26 62 L 52 90 L 96 34"/></svg></div><div class="cardbody"><div class="rid">DYN-AI-001</div><div class="ctitle">An AI assistant just started “cmd.exe”</div></div><div class="sev high">High</div></div>
+      <div class="card" id="c3"><div class="tickbadge"><div class="circ"></div><svg viewBox="0 0 120 120"><path d="M 26 62 L 52 90 L 96 34"/></svg></div><div class="cardbody"><div class="rid">DYN-AI-003</div><div class="ctitle">An assistant acted right after reading outside content</div></div><div class="sev med">Medium</div></div>
+      <div class="card" id="c4"><div class="tickbadge"><div class="circ"></div><svg viewBox="0 0 120 120"><path d="M 26 62 L 52 90 L 96 34"/></svg></div><div class="cardbody"><div class="rid">DYN-CRED-001</div><div class="ctitle">A process opened the store that holds your passwords</div></div><div class="sev crit">Critical</div></div>
+      <div class="card" id="c5"><div class="tickbadge"><div class="circ"></div><svg viewBox="0 0 120 120"><path d="M 26 62 L 52 90 L 96 34"/></svg></div><div class="cardbody"><div class="rid">DYN-RANSOM-001</div><div class="ctitle">A process is rewriting many files at once</div></div><div class="sev crit">Critical</div></div>
+      <div class="card" id="c6"><div class="tickbadge"><div class="circ"></div><svg viewBox="0 0 120 120"><path d="M 26 62 L 52 90 L 96 34"/></svg></div><div class="cardbody"><div class="rid">DYN-C2-001</div><div class="ctitle">A process is beaconing to one host on a timer</div></div><div class="sev med">Medium</div></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function(){
+        window.__timelines = window.__timelines || {};
+        var tl = gsap.timeline({ paused: true });
+        tl.fromTo("#s3-title", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 0.0);
+        var cards = ["#c1","#c2","#c3","#c4","#c5","#c6"];
+        var pips  = ["#pip1","#pip2","#pip3","#pip4","#pip5","#pip6"];
+        var step = 0.85, t0 = 0.2;
+        cards.forEach(function(id,i){
+          var t = t0 + i*step;
+          tl.fromTo(id, { opacity: 0, x: 60, scale: 0.94 }, { opacity: 1, x: 0, scale: 1, duration: 0.32, ease: "back.out(2)" }, t);
+          tl.fromTo(id+" .tickbadge", { scale: 1.7, rotation: -10, transformOrigin: "50% 50%" }, { scale: 1, rotation: 0, duration: 0.28, ease: "back.out(2.6)" }, t+0.05);
+          tl.set(pips[i]+" path", { stroke: "#0F4D3F" }, t+0.08);
+          tl.fromTo(pips[i], { scale: 1.5, transformOrigin: "50% 50%" }, { scale: 1, duration: 0.26, ease: "back.out(3)" }, t+0.08);
+        });
+        tl.set({}, {}, 7.6);
+        window.__timelines["s3"] = tl;
+      })();
+    </script>
+  </div>
+</template>

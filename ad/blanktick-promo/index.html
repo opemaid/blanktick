@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" integrity="sha384-sG0Hv1tP1lZCk9KQmrIbY/XNwi+OY84GQqhMscbnsoBFqAz8KNCil1kvfL3Hbbk2" crossorigin="anonymous"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #000;
+      }
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #FAF9F6;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="30"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div
+        id="el-01-one-tick"
+        class="scene"
+        data-composition-id="01-one-tick"
+        data-composition-src="compositions/frames/01-one-tick.html"
+        data-start="0"
+        data-duration="3.5"
+        data-track-index="0"
+      ></div>
+      <audio
+        id="el-01-one-tick-voice"
+        src="assets/voice/01.wav"
+        data-start="0"
+        data-duration="3"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+
+      <div
+        id="el-02-three-meanings"
+        class="scene"
+        data-composition-id="02-three-meanings"
+        data-composition-src="compositions/frames/02-three-meanings.html"
+        data-start="3"
+        data-duration="6.4"
+        data-track-index="1"
+      ></div>
+      <audio
+        id="el-02-three-meanings-voice"
+        src="assets/voice/02.wav"
+        data-start="3"
+        data-duration="6"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+
+      <div
+        id="el-03-tells-apart"
+        class="scene"
+        data-composition-id="03-tells-apart"
+        data-composition-src="compositions/frames/03-tells-apart.html"
+        data-start="9"
+        data-duration="3.6"
+        data-track-index="0"
+      ></div>
+      <audio
+        id="el-03-tells-apart-voice"
+        src="assets/voice/03.wav"
+        data-start="9"
+        data-duration="3"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+
+      <div
+        id="el-04-result-or-reason"
+        class="scene"
+        data-composition-id="04-result-or-reason"
+        data-composition-src="compositions/frames/04-result-or-reason.html"
+        data-start="12"
+        data-duration="6.5"
+        data-track-index="1"
+      ></div>
+      <audio
+        id="el-04-result-or-reason-voice"
+        src="assets/voice/04.wav"
+        data-start="12"
+        data-duration="6"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+
+      <div
+        id="el-05-fifty-thirty-one"
+        class="scene"
+        data-composition-id="05-fifty-thirty-one"
+        data-composition-src="compositions/frames/05-fifty-thirty-one.html"
+        data-start="18"
+        data-duration="6.5"
+        data-track-index="0"
+      ></div>
+      <audio
+        id="el-05-fifty-thirty-one-voice"
+        src="assets/voice/05.wav"
+        data-start="18"
+        data-duration="6"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+
+      <div
+        id="el-06-end-card"
+        class="scene"
+        data-composition-id="06-end-card"
+        data-composition-src="compositions/frames/06-end-card.html"
+        data-start="24"
+        data-duration="6"
+        data-track-index="1"
+      ></div>
+      <audio
+        id="el-06-end-card-voice"
+        src="assets/voice/06.wav"
+        data-start="24"
+        data-duration="6"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
+
+      <!-- BGM -->
+      <audio
+        id="el-bgm"
+        src="assets/bgm/track.wav"
+        data-start="0"
+        data-duration="30"
+        data-track-index="11"
+        data-volume="0.12"
+      ></audio>
+
+      <!-- SFX -->
+      <audio
+        id="el-sfx-0"
+        src="assets/sfx/click-soft.mp3"
+        data-start="0"
+        data-duration="0.37"
+        data-track-index="20"
+        data-volume="0.35"
+      ></audio>
+      <audio
+        id="el-sfx-1"
+        src="assets/sfx/click-soft.mp3"
+        data-start="3"
+        data-duration="0.37"
+        data-track-index="21"
+        data-volume="0.35"
+      ></audio>
+      <audio
+        id="el-sfx-2"
+        src="assets/sfx/chime.mp3"
+        data-start="9"
+        data-duration="2.5"
+        data-track-index="22"
+        data-volume="0.35"
+      ></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+      // ── frame transitions (injected by transitions.mjs) ──
+      (function () { var tl = window.__timelines["main"];
+        tl.to("#el-01-one-tick", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 3);
+        tl.fromTo("#el-02-three-meanings", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 3);
+        tl.to("#el-02-three-meanings", { scale: 2.5, opacity: 0, filter: "blur(8px)", duration: 0.4, ease: "power3.in" }, 9);
+        tl.fromTo("#el-03-tells-apart", { scale: 0.5, opacity: 0, filter: "blur(8px)" }, { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, 9);
+        tl.to("#el-03-tells-apart", { filter: "blur(10px)", scale: 1.03, opacity: 0, duration: 0.6, ease: "power2.inOut" }, 12);
+        tl.fromTo("#el-04-result-or-reason", { filter: "blur(10px)", scale: 0.97, opacity: 0 }, { filter: "blur(0px)", scale: 1, opacity: 1, duration: 0.6, ease: "power2.inOut" }, 12);
+        tl.to("#el-04-result-or-reason", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 18);
+        tl.fromTo("#el-05-fifty-thirty-one", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 18);
+        tl.to("#el-05-fifty-thirty-one", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 24);
+        tl.fromTo("#el-06-end-card", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 24);
+        tl.to({}, { duration: 30 }, 0); // full-span anchor — main.duration() == composition total (Studio master duration)
+      })();
+    </script>
+  </body>
+</html>

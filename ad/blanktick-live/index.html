@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" integrity="sha384-sG0Hv1tP1lZCk9KQmrIbY/XNwi+OY84GQqhMscbnsoBFqAz8KNCil1kvfL3Hbbk2" crossorigin="anonymous"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+      #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #FAF9F6; }
+      .scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="33.7" data-width="1920" data-height="1080">
+
+      <div id="el-s1" class="scene" data-composition-id="s1" data-composition-src="compositions/frames/s1.html" data-start="0" data-duration="5.5" data-track-index="0"></div>
+      <div id="el-s2" class="scene" data-composition-id="s2" data-composition-src="compositions/frames/s2.html" data-start="5.5" data-duration="5.9" data-track-index="1"></div>
+      <div id="el-s3" class="scene" data-composition-id="s3" data-composition-src="compositions/frames/s3.html" data-start="11.4" data-duration="7.6" data-track-index="0"></div>
+      <div id="el-s4" class="scene" data-composition-id="s4" data-composition-src="compositions/frames/s4.html" data-start="19.0" data-duration="7.1" data-track-index="1"></div>
+      <div id="el-s5" class="scene" data-composition-id="s5" data-composition-src="compositions/frames/s5.html" data-start="26.1" data-duration="7.6" data-track-index="0"></div>
+
+      <audio id="el-v1" src="assets/voice/01.wav" data-start="0.2" data-duration="5.33" data-track-index="10" data-volume="1"></audio>
+      <audio id="el-v2" src="assets/voice/02.wav" data-start="5.7" data-duration="5.38" data-track-index="10" data-volume="1"></audio>
+      <audio id="el-v3" src="assets/voice/03.wav" data-start="11.6" data-duration="5.35" data-track-index="10" data-volume="1"></audio>
+      <audio id="el-v4" src="assets/voice/04.wav" data-start="19.2" data-duration="6.89" data-track-index="10" data-volume="1"></audio>
+      <audio id="el-v5" src="assets/voice/05.wav" data-start="26.3" data-duration="7.25" data-track-index="10" data-volume="1"></audio>
+
+      <audio id="el-bgm" src="assets/bgm/track.wav" data-start="0" data-duration="30" data-track-index="11" data-volume="0.09"></audio>
+
+      <audio id="el-sfx-hook" src="assets/sfx/click-soft.mp3" data-start="7.0" data-duration="0.37" data-track-index="20" data-volume="0.38"></audio>
+      <audio id="el-sfx-c1" src="assets/sfx/click-soft.mp3" data-start="11.6" data-duration="0.37" data-track-index="20" data-volume="0.33"></audio>
+      <audio id="el-sfx-c2" src="assets/sfx/click-soft.mp3" data-start="12.45" data-duration="0.37" data-track-index="21" data-volume="0.33"></audio>
+      <audio id="el-sfx-c3" src="assets/sfx/click-soft.mp3" data-start="13.3" data-duration="0.37" data-track-index="20" data-volume="0.33"></audio>
+      <audio id="el-sfx-c4" src="assets/sfx/click-soft.mp3" data-start="14.15" data-duration="0.37" data-track-index="21" data-volume="0.33"></audio>
+      <audio id="el-sfx-c5" src="assets/sfx/click-soft.mp3" data-start="15.0" data-duration="0.37" data-track-index="20" data-volume="0.33"></audio>
+      <audio id="el-sfx-c6" src="assets/sfx/click-soft.mp3" data-start="15.85" data-duration="0.37" data-track-index="21" data-volume="0.33"></audio>
+      <audio id="el-sfx-ai" src="assets/sfx/click-soft.mp3" data-start="21.3" data-duration="0.37" data-track-index="20" data-volume="0.36"></audio>
+      <audio id="el-sfx-end" src="assets/sfx/chime.mp3" data-start="26.2" data-duration="2.5" data-track-index="22" data-volume="0.3"></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+      window.__timelines["main"] = tl;
+
+      function cut(sel, start, dur) {
+        tl.fromTo(sel, { opacity: 0 }, { opacity: 1, duration: 0.22, ease: "power2.out" }, start);
+        tl.to(sel, { opacity: 0, duration: 0.28, ease: "power2.in" }, start + dur - 0.28);
+      }
+      cut("#el-s1", 0, 5.5);
+      cut("#el-s2", 5.5, 5.9);
+      cut("#el-s3", 11.4, 7.6);
+      cut("#el-s4", 19.0, 7.1);
+      cut("#el-s5", 26.1, 7.6);
+
+      tl.to({}, { duration: 33.7 }, 0);
+    </script>
+  </body>
+</html>

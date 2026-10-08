@@ -1,0 +1,50 @@
+<template>
+  <div id="root" data-composition-id="s5" data-start="0" data-duration="7.6" data-width="1920" data-height="1080">
+    <style>
+      @font-face{font-family:"bt-ui";src:local("Segoe UI"),local("SegoeUI");font-weight:400}
+      @font-face{font-family:"bt-ui";src:local("Segoe UI Semibold"),local("SegoeUI-Semibold");font-weight:600}
+      @font-face{font-family:"bt-ui";src:local("Segoe UI Bold"),local("SegoeUI-Bold");font-weight:700}
+      #root{position:relative;width:1920px;height:1080px;overflow:hidden;background:#FAF9F6;container-type:size;font-family:"bt-ui","Segoe UI",sans-serif;color:#0B0D0C}
+      #s5-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 10cqw}
+      #s5-kicker{font-size:2.0cqw;font-weight:700;color:#0F4D3F;letter-spacing:-.01em;margin-bottom:1.2cqw;opacity:0}
+      #s5-tick{width:4.6cqw;height:4.6cqw;margin-bottom:1.0cqw}
+      #s5-tick path{fill:none;stroke:#0F4D3F;stroke-width:11;stroke-linecap:round;stroke-linejoin:round}
+      #s5-wm{font-size:6.4cqw;font-weight:700;letter-spacing:-.03em;line-height:1;opacity:0}
+      #s5-msg{font-size:1.65cqw;line-height:1.5;color:#5A6260;margin-top:1.5cqw;max-width:66cqw;opacity:0}
+      .k{color:#0F4D3F}
+      #s5-chips{display:flex;gap:1.1cqw;margin-top:2.4cqw}
+      .chip{display:flex;align-items:center;gap:.6cqw;padding:.75cqw 1.5cqw;border-radius:100px;background:rgba(15,77,63,.04);border:1.5px solid rgba(15,77,63,.35);color:#0F4D3F;font-weight:600;font-size:1.25cqw;white-space:nowrap;opacity:0}
+      .dot{width:.5cqw;height:.5cqw;border-radius:50%;background:#0F4D3F}
+      #s5-soon{margin-top:1.6cqw;font-size:1.05cqw;color:#666D6B;letter-spacing:.04em;opacity:0}
+    </style>
+    <div id="s5-wrap" class="clip" data-start="0" data-duration="7.6" data-track-index="0">
+      <div id="s5-kicker">Protect yourself with</div>
+      <svg id="s5-tick" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><path id="s5-tickpath" pathLength="1" d="M 22.8 62.4 L 50.4 90 L 98.4 34.8" style="stroke-dasharray:1;stroke-dashoffset:1"/></svg>
+      <div id="s5-wm">blanktick</div>
+      <div id="s5-msg">Your antivirus watches for malware. Blanktick checks everything it ignores — <span class="k">even your AI tools</span>.</div>
+      <div id="s5-chips">
+        <div class="chip"><span class="dot"></span>Free &amp; open source</div>
+        <div class="chip"><span class="dot"></span>Offline · 85 checks</div>
+        <div class="chip"><span class="dot"></span>Live protection · Pro · preview</div>
+      </div>
+      <div id="s5-soon">Coming soon</div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function(){
+        window.__timelines = window.__timelines || {};
+        var tl = gsap.timeline({ paused: true });
+        tl.fromTo("#s5-kicker", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.42, ease: "back.out(1.8)" }, 0.1);
+        tl.fromTo("#s5-tickpath", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "power2.out" }, 0.45);
+        tl.fromTo("#s5-tick", { scale: 0.85, transformOrigin: "50% 50%" }, { scale: 1, duration: 0.5, ease: "back.out(2)" }, 0.45);
+        tl.fromTo("#s5-wm", { opacity: 0, scale: 0.95, filter: "blur(8px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.55, ease: "power3.out" }, 0.8);
+        tl.fromTo("#s5-msg", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 1.6);
+        tl.fromTo("#s5-chips .chip", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.26, ease: "back.out(1.8)" }, 2.4);
+        tl.fromTo("#s5-soon", { opacity: 0 }, { opacity: 0.9, duration: 0.5, ease: "power2.out" }, 3.5);
+        tl.fromTo("#s5-wrap", { scale: 1 }, { scale: 1.006, duration: 6.9, ease: "none" }, 0.6);
+        tl.set({}, {}, 7.6);
+        window.__timelines["s5"] = tl;
+      })();
+    </script>
+  </div>
+</template>

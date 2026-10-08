@@ -1,0 +1,79 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>Blanktick ad — agents vs Blanktick</title>
+<style>
+  :root{--bg:#0A0A0A;--ink:#FFFFFF;--muted:#B4B4B4;--faint:#8A8A8A;--accent:#D6FF3F;--rule:#242424}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:#111}
+  .ad{width:1080px;height:1350px;background:var(--bg);color:var(--ink);
+      font-family:Inter,'Helvetica Neue',Arial,sans-serif;
+      position:relative;display:flex;flex-direction:column;padding:88px 84px;overflow:hidden}
+  /* faint grid of "agent" ticks as a threat texture */
+  .field{position:absolute;inset:0;opacity:.05;pointer-events:none}
+  .lockup{display:flex;align-items:center;gap:20px;z-index:2}
+  .lockup svg{width:66px;height:66px}
+  .word{font-weight:700;font-size:40px;letter-spacing:-1.5px}
+  .word .b{color:var(--muted)} .word .t{color:var(--ink)}
+  .kicker{z-index:2;margin-top:92px;font-size:22px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);font-weight:700}
+  h1{z-index:2;margin-top:26px;font-size:104px;line-height:.98;letter-spacing:-3px;font-weight:700;max-width:16ch}
+  h1 .cut{color:var(--faint)}
+  .sub{z-index:2;margin-top:40px;font-size:34px;line-height:1.35;color:var(--muted);max-width:24ch}
+  .sub b{color:var(--ink);font-weight:700}
+  .spacer{flex:1}
+  .promises{z-index:2;display:flex;flex-direction:column;gap:14px;margin-bottom:44px}
+  .promise{display:flex;align-items:center;gap:16px;font-size:26px;color:var(--ink)}
+  .promise .mk{width:30px;height:30px;flex:none}
+  .cta{z-index:2;display:flex;align-items:center;gap:26px}
+  .btn{background:var(--accent);color:#0A0A0A;font-weight:700;font-size:34px;padding:22px 40px;letter-spacing:-.5px}
+  .foot{font-size:20px;color:var(--faint);max-width:22ch;line-height:1.4}
+  .hair{height:1px;background:var(--rule);margin:0 0 40px;z-index:2}
+</style></head>
+<body>
+<div class="ad" id="ad">
+
+  <!-- threat texture: a field of connected ticks (the hackers) -->
+  <svg class="field" viewBox="0 0 1080 1350" preserveAspectRatio="xMidYMid slice">
+    <g fill="none" stroke="#FFFFFF" stroke-width="10">
+      <!-- rows of ordinary (connected) ticks = the agent army -->
+      <g id="r">
+        <path d="M20 60 L50 90 L110 30"/>
+      </g>
+      <use href="#r" x="150"/><use href="#r" x="300"/><use href="#r" x="450"/>
+      <use href="#r" x="600"/><use href="#r" x="750"/><use href="#r" x="900"/>
+      <g transform="translate(0,160)"><use href="#r"/><use href="#r" x="150"/><use href="#r" x="300"/><use href="#r" x="450"/><use href="#r" x="600"/><use href="#r" x="750"/><use href="#r" x="900"/></g>
+      <g transform="translate(0,320)"><use href="#r"/><use href="#r" x="150"/><use href="#r" x="300"/><use href="#r" x="450"/><use href="#r" x="600"/><use href="#r" x="750"/><use href="#r" x="900"/></g>
+      <g transform="translate(0,480)"><use href="#r"/><use href="#r" x="150"/><use href="#r" x="300"/><use href="#r" x="450"/><use href="#r" x="600"/><use href="#r" x="750"/><use href="#r" x="900"/></g>
+      <g transform="translate(0,640)"><use href="#r"/><use href="#r" x="150"/><use href="#r" x="300"/><use href="#r" x="450"/><use href="#r" x="600"/><use href="#r" x="750"/><use href="#r" x="900"/></g>
+      <g transform="translate(0,800)"><use href="#r"/><use href="#r" x="150"/><use href="#r" x="300"/><use href="#r" x="450"/><use href="#r" x="600"/><use href="#r" x="750"/><use href="#r" x="900"/></g>
+      <g transform="translate(0,960)"><use href="#r"/><use href="#r" x="150"/><use href="#r" x="300"/><use href="#r" x="450"/><use href="#r" x="600"/><use href="#r" x="750"/><use href="#r" x="900"/></g>
+      <g transform="translate(0,1120)"><use href="#r"/><use href="#r" x="150"/><use href="#r" x="300"/><use href="#r" x="450"/><use href="#r" x="600"/><use href="#r" x="750"/><use href="#r" x="900"/></g>
+      <g transform="translate(0,1280)"><use href="#r"/><use href="#r" x="150"/><use href="#r" x="300"/><use href="#r" x="450"/><use href="#r" x="600"/><use href="#r" x="750"/><use href="#r" x="900"/></g>
+    </g>
+  </svg>
+
+  <div class="lockup">
+    <svg viewBox="0 0 256 256"><rect width="256" height="256" fill="#0A0A0A"/>
+      <g fill="none" stroke="#D6FF3F" stroke-width="30" stroke-linecap="butt" stroke-linejoin="miter">
+        <path d="M44 136 L104 192 L150 148"/><path d="M172 126 L224 74"/></g></svg>
+    <span class="word"><span class="b">blank</span><span class="t">tick</span></span>
+  </div>
+
+  <div class="kicker">The machines are learning to break in</div>
+  <h1>They're training AI agents to <span class="cut">hack you.</span></h1>
+  <div class="sub">Blanktick is the security check that <b>can't be turned against you.</b> No network. Nothing to phone home. It shows you exactly where you're exposed.</div>
+
+  <div class="spacer"></div>
+
+  <div class="promises">
+    <div class="promise"><svg class="mk" viewBox="0 0 256 256"><g fill="none" stroke="#D6FF3F" stroke-width="34" stroke-linecap="butt" stroke-linejoin="miter"><path d="M44 136 L104 192 L150 148"/><path d="M172 126 L224 74"/></g></svg> No internet permission — verifiable in 10 seconds</div>
+    <div class="promise"><svg class="mk" viewBox="0 0 256 256"><g fill="none" stroke="#D6FF3F" stroke-width="34" stroke-linecap="butt" stroke-linejoin="miter"><path d="M44 136 L104 192 L150 148"/><path d="M172 126 L224 74"/></g></svg> Runs on your device. Your data never leaves it</div>
+    <div class="promise"><svg class="mk" viewBox="0 0 256 256"><g fill="none" stroke="#D6FF3F" stroke-width="34" stroke-linecap="butt" stroke-linejoin="miter"><path d="M44 136 L104 192 L150 148"/><path d="M172 126 L224 74"/></g></svg> It reports. You decide</div>
+  </div>
+
+  <div class="hair"></div>
+  <div class="cta">
+    <span class="btn">Download &amp; run the check</span>
+    <span class="foot">Free. Offline. The gap in the tick is the air gap.</span>
+  </div>
+
+</div>
+</body></html>

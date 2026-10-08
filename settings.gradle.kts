@@ -19,3 +19,4 @@ rootProject.name = "blanktick"
 include(":core")
 include(":app")
 include(":desktop")
+include(":sensor")

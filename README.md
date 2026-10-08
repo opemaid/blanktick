@@ -98,20 +98,21 @@ rather than presenting meaningless password and link verdicts as findings.
 
 ## What it checks
 
-**81 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
+**85 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
 rather than estimated:
 
 | Platform | Eligible | Run on an *idealised* device | Not checkable |
 |---|---|---|---|
-| Android | 29 | 29 | 52 (the desktop-only rules) |
-| iPhone | 15 | 12 | 69 |
-| Desktop | 63 | 62 | 19 |
+| Android | 29 | 29 | 56 (rules with no Android equivalent) |
+| iPhone | 15 | 12 | 73 |
+| Desktop | 67 | 66 | 19 |
 
 Those are fixture numbers — a device that answers every question it can. **A real
 machine answers fewer.** On the development laptop (Windows 11, standard user, no
 elevation) the desktop build runs **50 of 81** and reports **31 as not
 checkable**: 18 written for a phone, 13 that this computer declined to answer
-(measured 2026-09-25).
+(measured 2026-09-25, before the two browser-extension checks were added on
+2026-09-27; a re-measure that includes them is pending).
 The dashboard states both numbers and separates the two causes, because
 "permanent" and "might change next scan" are not the same fact.
 

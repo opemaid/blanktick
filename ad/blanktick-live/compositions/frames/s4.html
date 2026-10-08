@@ -1,0 +1,45 @@
+<template>
+  <div id="root" data-composition-id="s4" data-start="0" data-duration="7.1" data-width="1920" data-height="1080">
+    <style>
+      @font-face{font-family:"bt-ui";src:local("Segoe UI"),local("SegoeUI");font-weight:400}
+      @font-face{font-family:"bt-ui";src:local("Segoe UI Semibold"),local("SegoeUI-Semibold");font-weight:600}
+      @font-face{font-family:"bt-ui";src:local("Segoe UI Bold"),local("SegoeUI-Bold");font-weight:700}
+      #root{position:relative;width:1920px;height:1080px;overflow:hidden;background:#FAF9F6;container-type:size;font-family:"bt-ui","Segoe UI",sans-serif;color:#0B0D0C}
+      #s4-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 10cqw;gap:1.4cqw}
+      #s4-l1{font-size:3.4cqw;font-weight:700;letter-spacing:-.02em}
+      #s4-l1 .em{color:#666D6B}
+      #s4-l2{font-size:3.4cqw;font-weight:700;letter-spacing:-.02em;display:flex;align-items:center;gap:1.0cqw;opacity:0}
+      #s4-l2 .k{color:#0F4D3F}
+      #s4-badge{width:3.2cqw;height:3.2cqw;position:relative;display:flex;align-items:center;justify-content:center;opacity:0}
+      #s4-badge .circ{position:absolute;inset:0;border-radius:50%;background:#0F4D3F}
+      #s4-badge svg{position:relative;width:1.9cqw;height:1.9cqw}
+      #s4-badge path{fill:none;stroke:#FAF9F6;stroke-width:14;stroke-linecap:round;stroke-linejoin:round}
+      #s4-pills{display:flex;gap:1.2cqw;margin-top:1.8cqw}
+      .s4pill{opacity:0;display:flex;flex-direction:column;align-items:flex-start;gap:.25cqw;padding:1.1cqw 1.7cqw;border-radius:14px;background:rgba(15,77,63,.035);border:1.5px solid rgba(15,77,63,.2);text-align:left}
+      .s4pill .pt{font-size:1.45cqw;font-weight:700;color:#0F4D3F}
+      .s4pill .ps{font-size:1.0cqw;color:#666D6B}
+    </style>
+    <div id="s4-wrap" class="clip" data-start="0" data-duration="7.1" data-track-index="0">
+      <div id="s4-l1">Your AI tools can be hacked <span class="em">too</span>.</div>
+      <div id="s4-l2"><span><span class="k">Now</span>, something is watching them.</span><span id="s4-badge"><span class="circ"></span><svg viewBox="0 0 120 120"><path d="M 26 62 L 52 90 L 96 34"/></svg></span></div>
+      <div id="s4-pills">
+        <div class="s4pill" id="p1"><div class="pt">Opens no network</div><div class="ps">The build fails if networking is ever added.</div></div>
+        <div class="s4pill" id="p2"><div class="pt">Can stop the process</div><div class="ps">With your say-so. Off by default — your choice.</div></div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function(){
+        window.__timelines = window.__timelines || {};
+        var tl = gsap.timeline({ paused: true });
+        tl.fromTo("#s4-l1", { opacity: 0, y: 20, filter: "blur(6px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: "power3.out" }, 0.15);
+        tl.fromTo("#s4-l2", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.45, ease: "back.out(1.6)" }, 1.6);
+        tl.fromTo("#s4-badge", { opacity: 0, scale: 1.8, rotation: -12, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, rotation: 0, duration: 0.32, ease: "back.out(2.6)" }, 2.3);
+        tl.fromTo("#p1", { opacity: 0, y: 18, scale: 0.95 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.8)" }, 3.3);
+        tl.fromTo("#p2", { opacity: 0, y: 18, scale: 0.95 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.8)" }, 3.75);
+        tl.set({}, {}, 7.1);
+        window.__timelines["s4"] = tl;
+      })();
+    </script>
+  </div>
+</template>

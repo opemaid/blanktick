@@ -1,0 +1,214 @@
+<template>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: "Segoe UI", sans-serif;
+      color: #0B0D0C;
+    }
+    .\30 2-three-meanings-ground {
+      position: absolute;
+      inset: 0;
+      background: #FAF9F6;
+    }
+    .\30 2-three-meanings-stage {
+      position: absolute;
+      inset: 0;
+      transform-origin: 960px 420px;
+    }
+    .\30 2-three-meanings-tick {
+      position: absolute;
+      top: 540px;
+      left: 960px;
+      width: 260px;
+      height: 260px;
+      will-change: transform, opacity;
+    }
+    .\30 2-three-meanings-tick svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+    .\30 2-three-meanings-cap {
+      position: absolute;
+      top: 520px;
+      width: 540px;
+      text-align: center;
+      font-size: 62px;
+      font-weight: 600;
+      line-height: 1.12;
+      letter-spacing: -0.02em;
+      color: #0B0D0C;
+    }
+    .\30 2-three-meanings-word {
+      white-space: nowrap;
+    }
+    .\30 2-three-meanings-ch {
+      visibility: hidden;
+    }
+    .\30 2-three-meanings-caret {
+      position: relative;
+    }
+    .\30 2-three-meanings-caret::after {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: 0.08em;
+      width: 5px;
+      height: 1em;
+      border-radius: 2px;
+      background: #0F4D3F;
+    }
+  </style>
+
+  <div id="root" data-composition-id="02-three-meanings" data-width="1920" data-height="1080" data-duration="6.4">
+    <div class="clip 02-three-meanings-ground" data-start="0" data-duration="6.4" data-track-index="0"></div>
+
+    <div id="02-three-meanings-stage" class="clip 02-three-meanings-stage" data-start="0" data-duration="6.4" data-track-index="1">
+      <div id="02-three-meanings-tick-1" class="02-three-meanings-tick" data-target-x="-640" data-target-y="-210">
+        <svg viewBox="0 0 100 100"><path d="M19 52 L42 75 L82 29" fill="none" stroke="#0F4D3F" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div id="02-three-meanings-tick-2" class="02-three-meanings-tick" data-target-x="0" data-target-y="-210">
+        <svg viewBox="0 0 100 100"><path d="M19 52 L42 75 L82 29" fill="none" stroke="#0F4D3F" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div id="02-three-meanings-tick-3" class="02-three-meanings-tick" data-target-x="640" data-target-y="-210">
+        <svg viewBox="0 0 100 100"><path d="M19 52 L42 75 L82 29" fill="none" stroke="#0F4D3F" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+
+      <div id="02-three-meanings-cap-1" class="02-three-meanings-cap" style="left: 50px"></div>
+      <div id="02-three-meanings-cap-2" class="02-three-meanings-cap" style="left: 690px"></div>
+      <div id="02-three-meanings-cap-3" class="02-three-meanings-cap" style="left: 1330px"></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var ID = "02-three-meanings";
+      var TOTAL = 6.0;
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- Scene 1 (0.00-0.74s): center-outward-expansion into a triptych ----
+      // Tick 1 inherits Frame 1's dead-centre, ~35%-of-height tick, then slides to column 1;
+      // copies 2 and 3 burst out of the same centre to columns 2 and 3.
+      var EXPAND_DUR = 0.7;
+      var EXPAND_EASE = "power3.out";
+      var STAGGER = 0.05;
+      [1, 2, 3].forEach(function (n, i) {
+        var el = document.getElementById(ID + "-tick-" + n);
+        var tx = Number(el.dataset.targetX);
+        var ty = Number(el.dataset.targetY);
+        var from = n === 1
+          ? { xPercent: -50, yPercent: -50, x: 0, y: 0, scale: 1.45, opacity: 1 }
+          : { xPercent: -50, yPercent: -50, x: 0, y: 0, scale: 0.6, opacity: 0 };
+        tl.fromTo(el, from, {
+          xPercent: -50, yPercent: -50, x: tx, y: ty, scale: 1, opacity: 1,
+          duration: EXPAND_DUR, ease: EXPAND_EASE
+        }, i === 0 ? 0 : 0.02 + i * STAGGER);
+      });
+
+      // ---- Scenes 2-4: captions type on under each tick (discrete-text-sequence, per-char states) ----
+      var CAPTIONS = [
+        { text: "we checked", start: 0.80, budget: 0.62 },
+        { text: "we never looked", start: 2.08, budget: 0.90 },
+        { text: "your computer wouldn’t answer", start: 3.56, budget: 1.18 }
+      ];
+      var HOLD_AT = 4.99; // Scene 5: hold - caret retires, nothing moves
+
+      var caps = CAPTIONS.map(function (c, idx) {
+        var box = document.getElementById(ID + "-cap-" + (idx + 1));
+        var chars = [];
+        var times = [];
+        var t = c.start;
+        var words = c.text.split(" ");
+        words.forEach(function (w, wi) {
+          var wordEl = document.createElement("span");
+          wordEl.className = ID + "-word";
+          for (var k = 0; k < w.length; k++) {
+            var ch = document.createElement("span");
+            ch.className = ID + "-ch";
+            ch.textContent = w[k];
+            wordEl.appendChild(ch);
+            chars.push(ch);
+            times.push(t);
+            // deterministic human rhythm: keystrokes 0.045-0.075s apart
+            t += 0.045 + ((k * 7 + wi * 3 + idx) % 4) * 0.01;
+          }
+          box.appendChild(wordEl);
+          if (wi < words.length - 1) {
+            var sp = document.createElement("span");
+            sp.className = ID + "-ch";
+            sp.textContent = " ";
+            box.appendChild(sp);
+            chars.push(sp);
+            times.push(t);
+            t += 0.11; // small pause at word breaks
+          }
+        });
+        // fit the keystroke rhythm inside this caption's VO window (proportions kept)
+        var raw = t - c.start;
+        var k2 = c.budget / raw;
+        for (var q = 0; q < times.length; q++) {
+          times[q] = c.start + (times[q] - c.start) * k2;
+        }
+        t = c.start + c.budget;
+        // caret slot j sits after j typed chars (zero-width word joiner = no break opportunity)
+        var carets = [];
+        for (var j = 0; j <= chars.length; j++) {
+          var cr = document.createElement("span");
+          cr.className = ID + "-caret";
+          cr.textContent = "⁠";
+          cr.style.opacity = "0";
+          if (j < chars.length) {
+            chars[j].parentNode.insertBefore(cr, chars[j]);
+          } else {
+            chars[j - 1].parentNode.appendChild(cr);
+          }
+          carets.push(cr);
+        }
+        return { chars: chars, times: times, carets: carets, start: c.start, end: t };
+      });
+
+      // Discrete, seek-safe states: every char / caret flip is its own zero-duration set on the timeline.
+      caps.forEach(function (c, idx) {
+        var nextStart = idx < caps.length - 1 ? caps[idx + 1].start : HOLD_AT;
+        var N = c.chars.length;
+        for (var j = 0; j < N; j++) {
+          tl.set(c.chars[j], { visibility: "visible" }, c.times[j]);
+        }
+        // solid caret while typing: slot j is lit from the (j)th keystroke until the next
+        for (var s = 0; s < N; s++) {
+          var on = s === 0 ? c.start - 0.12 : c.times[s - 1];
+          tl.set(c.carets[s], { opacity: 1 }, on);
+          tl.set(c.carets[s], { opacity: 0 }, c.times[s]);
+        }
+        // idle: final slot blinks (0.3s on / 0.3s off) until the next caption takes over
+        var last = c.carets[N];
+        var tt = c.times[N - 1];
+        var lit = true;
+        while (tt < nextStart - 0.001) {
+          tl.set(last, { opacity: lit ? 1 : 0 }, tt);
+          tt += 0.3;
+          lit = !lit;
+        }
+        tl.set(last, { opacity: 0 }, nextStart);
+      });
+
+      // pin the timeline length to the frame duration (hold runs to the end)
+      tl.set({}, {}, TOTAL);
+
+      // ---- Camera modifier: a barely-there push under the typing beats, landing still for the hold ----
+      tl.fromTo(document.getElementById(ID + "-stage"),
+        { scale: 1 },
+        { scale: 1.02, duration: HOLD_AT - 0.74, ease: "sine.inOut" },
+        0.74);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines[ID] = tl;
+    })();
+  </script>
+</template>

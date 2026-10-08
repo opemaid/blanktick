@@ -147,6 +147,122 @@ class AiSecurityRulesTest {
         assertTrue(outcome is RuleOutcome.Pass)
     }
 
+    // ---------------------------------------------------- tool fetched to run
+
+    @Test
+    fun `a tool started through a package runner is reported at medium severity`() {
+        val outcome = AiSecurityRules.ModelToolFetchesCodeToRun.evaluate(
+            withAi(
+                healthyAi.copy(
+                    mcpServers = listOf(
+                        McpServer("weather", "npx", "~/.claude.json"),
+                        McpServer("skill-bus", "node", "~/.claude.json"),
+                        McpServer("docs", "uvx", "~/.claude.json")
+                    )
+                )
+            )
+        )
+        val findings = (outcome as RuleOutcome.Fail).findings
+        assertEquals(1, findings.size, "one card listing them, not one per tool")
+        assertEquals(
+            Severity.MEDIUM, findings.single().severity,
+            "code fetched and run as you, refreshed silently — worth knowing, still their choice"
+        )
+        assertTrue("weather" in findings.single().title || "2 AI tools" in findings.single().title)
+    }
+
+    /**
+     * A runner buried in a full path with a Windows extension must still be
+     * seen — the config often stores `C:\...\npx.cmd`, not a bare `npx`.
+     */
+    @Test
+    fun `a package runner is detected through a full path and a cmd extension`() {
+        val outcome = AiSecurityRules.ModelToolFetchesCodeToRun.evaluate(
+            withAi(
+                healthyAi.copy(
+                    mcpServers = listOf(
+                        McpServer("weather", "C:\\Program Files\\nodejs\\npx.cmd", "~/.claude.json")
+                    )
+                )
+            )
+        )
+        assertTrue(outcome is RuleOutcome.Fail)
+    }
+
+    /**
+     * A tool pointed at a pinned local program is not a fetch. `node`/`python`
+     * running a specific script — what most MCP servers are — must not fire, or
+     * the rule becomes noise for everyone who has ever configured one.
+     */
+    @Test
+    fun `a pinned local tool is not a fetch finding`() {
+        val outcome = AiSecurityRules.ModelToolFetchesCodeToRun.evaluate(
+            withAi(
+                healthyAi.copy(
+                    mcpServers = listOf(
+                        McpServer("skill-bus", "node", "~/.claude.json"),
+                        McpServer("mql5-rag", "python", "~/.claude.json")
+                    )
+                )
+            )
+        )
+        assertTrue(outcome is RuleOutcome.Pass)
+    }
+
+    // -------------------------------------------------- prompt-injection reach
+
+    @Test
+    fun `an assistant that both reads outside content and can act is flagged`() {
+        val outcome = AiSecurityRules.PromptInjectionReach.evaluate(
+            withAi(
+                healthyAi.copy(
+                    mcpServers = listOf(
+                        McpServer("fetch", "node", "~/.claude.json"),
+                        McpServer("filesystem", "node", "~/.claude.json")
+                    )
+                )
+            )
+        )
+        val findings = (outcome as RuleOutcome.Fail).findings
+        assertEquals(1, findings.size, "one card describing the combination")
+        assertEquals(Severity.MEDIUM, findings.single().severity)
+    }
+
+    @Test
+    fun `a content-reading tool with nothing that can act is not a finding`() {
+        val outcome = AiSecurityRules.PromptInjectionReach.evaluate(
+            withAi(healthyAi.copy(mcpServers = listOf(McpServer("web-search", "node", "~/.claude.json"))))
+        )
+        assertTrue(outcome is RuleOutcome.Pass)
+    }
+
+    @Test
+    fun `a tool that can act with nothing reading outside content is not a finding`() {
+        val outcome = AiSecurityRules.PromptInjectionReach.evaluate(
+            withAi(healthyAi.copy(mcpServers = listOf(McpServer("filesystem", "node", "~/.claude.json"))))
+        )
+        assertTrue(outcome is RuleOutcome.Pass)
+    }
+
+    /**
+     * A tool launched through a shell counts as "can act" for this pairing —
+     * a shell grant is the strongest form of it.
+     */
+    @Test
+    fun `a shell-launched tool is the action half of the pairing`() {
+        val outcome = AiSecurityRules.PromptInjectionReach.evaluate(
+            withAi(
+                healthyAi.copy(
+                    mcpServers = listOf(
+                        McpServer("browser", "node", "~/.claude.json"),
+                        McpServer("helper", "powershell", "~/.claude.json")
+                    )
+                )
+            )
+        )
+        assertTrue(outcome is RuleOutcome.Fail)
+    }
+
     // ------------------------------------------------------------ credentials
 
     /**

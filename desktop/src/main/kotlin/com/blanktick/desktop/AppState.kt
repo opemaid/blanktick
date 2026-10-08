@@ -33,6 +33,7 @@ enum class Screen(val title: String) {
     SOFTWARE("Installed software"),
     USB("USB & drives"),
     ASSISTANT("Connect an assistant"),
+    LIVE("Live protection"),
     SETTINGS("Settings"),
     ABOUT("About")
 }
@@ -136,6 +137,9 @@ class AppState(private val scope: CoroutineScope) {
 
     private val _screen = MutableStateFlow(Screen.SCAN)
     val screen: StateFlow<Screen> = _screen.asStateFlow()
+
+    /** The Pro live-protection sensor bridge. Idle until the user starts it. */
+    val live = LiveProtectionController()
 
     private val _scan = MutableStateFlow<ScanUiState>(ScanUiState.FirstRun)
     val scan: StateFlow<ScanUiState> = _scan.asStateFlow()

@@ -1344,6 +1344,127 @@ internal object WindowsProbe {
         # like a successful run of a smaller script. Without this line the app
         # would render a confident, mostly-green report built from however far
         # the probe happened to get.
+        # ---- Browser extensions ------------------------------------------
+        # Read from local profile manifests only -- no network, no store
+        # lookup. Provenance (DSK-EXT-001) is normalised to a small vocabulary;
+        # broad-reach permissions (DSK-EXT-002) are split host-vs-api. Every
+        # field is San()'d before the tab join, same as every other row here.
+        function BtSplitPerms(${'$'}perms) {
+          ${'$'}h=@(); ${'$'}a=@()
+          foreach (${'$'}p in ${'$'}perms) {
+            if (${'$'}null -eq ${'$'}p) { continue }
+            ${'$'}s = "${'$'}p"
+            if (${'$'}s -eq '<all_urls>' -or ${'$'}s -match '://' -or ${'$'}s -match '^\*') { ${'$'}h += ${'$'}s } else { ${'$'}a += ${'$'}s }
+          }
+          ,@(${'$'}h, ${'$'}a)
+        }
+        # Chrome stores the display name as a __MSG_key__ placeholder for
+        # localised extensions; resolve it from the extension's own _locales so
+        # the finding reads as a name and not as a token.
+        function BtChromeName(${'$'}profDir, ${'$'}id, ${'$'}man) {
+          ${'$'}n = "${'$'}(${'$'}man.name)"
+          if (${'$'}n -notlike '__MSG_*') { return ${'$'}n }
+          ${'$'}key = (${'$'}n -replace '^__MSG_','' -replace '__${'$'}','')
+          ${'$'}loc = "${'$'}(${'$'}man.default_locale)"; if (-not ${'$'}loc) { ${'$'}loc = 'en' }
+          ${'$'}extDir = Join-Path ${'$'}profDir ('Extensions\' + ${'$'}id)
+          ${'$'}verDir = Get-ChildItem -LiteralPath ${'$'}extDir -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
+          if (${'$'}verDir) {
+            ${'$'}msgPath = Join-Path ${'$'}verDir.FullName ('_locales\' + ${'$'}loc + '\messages.json')
+            if (-not (Test-Path -LiteralPath ${'$'}msgPath)) {
+              ${'$'}anyLoc = Get-ChildItem -LiteralPath (Join-Path ${'$'}verDir.FullName '_locales') -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
+              if (${'$'}anyLoc) { ${'$'}msgPath = Join-Path ${'$'}anyLoc.FullName 'messages.json' }
+            }
+            if (Test-Path -LiteralPath ${'$'}msgPath) {
+              ${'$'}msgs = Get-Content -LiteralPath ${'$'}msgPath -Raw -Encoding UTF8 -ErrorAction SilentlyContinue | ConvertFrom-Json
+              foreach (${'$'}prop in ${'$'}msgs.PSObject.Properties) {
+                if (${'$'}prop.Name -ieq ${'$'}key -and ${'$'}prop.Value.message) { return "${'$'}(${'$'}prop.Value.message)" }
+              }
+            }
+          }
+          return ${'$'}n
+        }
+        ${'$'}btChromiumLoc = @{ 1='store'; 2='external'; 3='registry'; 4='unpacked'; 6='external'; 7='policy'; 9='unpacked'; 10='policy' }
+        ${'$'}btBrowsers = @(
+          @{ Name='Chrome';  Root=(Join-Path ${'$'}env:LOCALAPPDATA 'Google\Chrome\User Data') }
+          @{ Name='Edge';    Root=(Join-Path ${'$'}env:LOCALAPPDATA 'Microsoft\Edge\User Data') }
+          @{ Name='Brave';   Root=(Join-Path ${'$'}env:LOCALAPPDATA 'BraveSoftware\Brave-Browser\User Data') }
+          @{ Name='Vivaldi'; Root=(Join-Path ${'$'}env:LOCALAPPDATA 'Vivaldi\User Data') }
+          @{ Name='Opera';   Root=(Join-Path ${'$'}env:APPDATA 'Opera Software\Opera Stable') }
+        )
+        foreach (${'$'}b in ${'$'}btBrowsers) {
+          if (-not (Test-Path -LiteralPath ${'$'}b.Root)) { continue }
+          Emit 'browser.ext.read' 'True'
+          ${'$'}profDirs = @()
+          if (${'$'}b.Name -eq 'Opera') { ${'$'}profDirs += ${'$'}b.Root }
+          else {
+            ${'$'}def = Join-Path ${'$'}b.Root 'Default'
+            if (Test-Path -LiteralPath ${'$'}def) { ${'$'}profDirs += ${'$'}def }
+            Get-ChildItem -LiteralPath ${'$'}b.Root -Directory -ErrorAction SilentlyContinue | Where-Object { ${'$'}_.Name -like 'Profile *' } | ForEach-Object { ${'$'}profDirs += ${'$'}_.FullName }
+          }
+          foreach (${'$'}profDir in ${'$'}profDirs) {
+            ${'$'}prefPath = Join-Path ${'$'}profDir 'Secure Preferences'
+            if (-not (Test-Path -LiteralPath ${'$'}prefPath)) { ${'$'}prefPath = Join-Path ${'$'}profDir 'Preferences' }
+            if (-not (Test-Path -LiteralPath ${'$'}prefPath)) { continue }
+            ${'$'}settings = ${'$'}null
+            try {
+              ${'$'}json = Get-Content -LiteralPath ${'$'}prefPath -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json
+              ${'$'}settings = ${'$'}json.extensions.settings
+            } catch { Emit 'browser.ext.unread' (San ("${'$'}(${'$'}b.Name):${'$'}(Split-Path ${'$'}profDir -Leaf)")); continue }
+            if (${'$'}null -eq ${'$'}settings) { continue }
+            foreach (${'$'}prop in ${'$'}settings.PSObject.Properties) {
+              ${'$'}id = ${'$'}prop.Name
+              ${'$'}ext = ${'$'}prop.Value
+              ${'$'}man = ${'$'}ext.manifest
+              if (${'$'}null -eq ${'$'}man) { continue }
+              if (${'$'}man.theme) { continue }
+              ${'$'}locNum = 0; try { ${'$'}locNum = [int]${'$'}ext.location } catch {}
+              if (${'$'}locNum -eq 5 -or ${'$'}locNum -eq 8) { continue }
+              ${'$'}source = ${'$'}btChromiumLoc[${'$'}locNum]; if (-not ${'$'}source) { ${'$'}source = 'unknown' }
+              if (${'$'}ext.from_webstore -eq ${'$'}true -and ${'$'}source -eq 'unknown') { ${'$'}source = 'store' }
+              ${'$'}dr = @(${'$'}ext.disable_reasons) | Where-Object { ${'$'}null -ne ${'$'}_ -and "${'$'}_" -ne '0' }
+              ${'$'}enabled = (${'$'}dr.Count -eq 0)
+              ${'$'}perms = @()
+              if (${'$'}man.permissions) { ${'$'}perms += ${'$'}man.permissions }
+              if (${'$'}man.optional_permissions) { ${'$'}perms += ${'$'}man.optional_permissions }
+              if (${'$'}man.host_permissions) { ${'$'}perms += ${'$'}man.host_permissions }
+              ${'$'}sp = BtSplitPerms ${'$'}perms
+              ${'$'}name = try { BtChromeName ${'$'}profDir ${'$'}id ${'$'}man } catch { "${'$'}(${'$'}man.name)" }
+              Emit 'browser.ext' ("{0}`t{1}`t{2}`t{3}`t{4}`t{5}`t{6}`t{7}" -f (San ${'$'}b.Name),(San ${'$'}id),(San ${'$'}name),(San "${'$'}(${'$'}man.version)"),${'$'}source,${'$'}enabled,(San (${'$'}sp[0] -join ' ')),(San (${'$'}sp[1] -join ' ')))
+            }
+          }
+        }
+        # Firefox keeps a single extensions.json per profile, a different shape.
+        ${'$'}ffRoot = Join-Path ${'$'}env:APPDATA 'Mozilla\Firefox\Profiles'
+        if (Test-Path -LiteralPath ${'$'}ffRoot) {
+          foreach (${'$'}fp in (Get-ChildItem -LiteralPath ${'$'}ffRoot -Directory -ErrorAction SilentlyContinue)) {
+            ${'$'}extJson = Join-Path ${'$'}fp.FullName 'extensions.json'
+            if (-not (Test-Path -LiteralPath ${'$'}extJson)) { continue }
+            Emit 'browser.ext.read' 'True'
+            try {
+              ${'$'}data = Get-Content -LiteralPath ${'$'}extJson -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json
+              foreach (${'$'}a in ${'$'}data.addons) {
+                if (${'$'}a.type -ne 'extension') { continue }
+                if (${'$'}a.location -eq 'app-builtin' -or ${'$'}a.location -eq 'app-system-defaults') { continue }
+                ${'$'}src = 'unknown'
+                switch -Wildcard ("${'$'}(${'$'}a.location)") {
+                  'app-profile'  { ${'$'}src = if (${'$'}a.foreignInstall -eq ${'$'}true) { 'sideload' } else { 'store' } }
+                  'winreg-app-*' { ${'$'}src = 'registry' }
+                  'app-system-*' { ${'$'}src = 'external' }
+                  default        { ${'$'}src = 'unknown' }
+                }
+                if (${'$'}null -ne ${'$'}a.signedState -and [int]${'$'}a.signedState -lt 2 -and ${'$'}src -eq 'store') { ${'$'}src = 'sideload' }
+                ${'$'}perms = @(); ${'$'}origins = @()
+                if (${'$'}a.userPermissions) {
+                  if (${'$'}a.userPermissions.permissions) { ${'$'}perms += ${'$'}a.userPermissions.permissions }
+                  if (${'$'}a.userPermissions.origins) { ${'$'}origins += ${'$'}a.userPermissions.origins }
+                }
+                ${'$'}enabled = (${'$'}a.active -eq ${'$'}true)
+                Emit 'browser.ext' ("{0}`t{1}`t{2}`t{3}`t{4}`t{5}`t{6}`t{7}" -f 'Firefox',(San "${'$'}(${'$'}a.id)"),(San "${'$'}(${'$'}a.defaultLocale.name)"),(San "${'$'}(${'$'}a.version)"),${'$'}src,${'$'}enabled,(San (${'$'}origins -join ' ')),(San (${'$'}perms -join ' ')))
+              }
+            } catch { Emit 'browser.ext.unread' (San ("Firefox:" + ${'$'}fp.Name)) }
+          }
+        }
+
         Emit 'probe.complete' 'True'
     """.trimIndent()
 }
