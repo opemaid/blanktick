@@ -95,8 +95,9 @@ class WindowsProcessProvider private constructor(
                 "if (Get-WinEvent -ListLog 'Microsoft-Windows-Sysmon/Operational' " +
                     "-ErrorAction SilentlyContinue) { 'yes' } else { 'no' }"
             ).redirectErrorStream(true).start()
-            val out = p.inputStream.bufferedReader().readText()
-            p.waitFor()
+            val out = p.inputStream.bufferedReader().use { it.readText() }
+            // Bounded: never let a hung child block sensor startup, which calls this synchronously.
+            if (!p.waitFor(5, java.util.concurrent.TimeUnit.SECONDS)) p.destroyForcibly()
             out.contains("yes")
         }.getOrDefault(false)
     }

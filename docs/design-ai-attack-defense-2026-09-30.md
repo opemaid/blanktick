@@ -164,7 +164,14 @@ driver), all inside the no-network gate:
 - `ContentIntakeProvider` → **DYN-AI-003**. A *labelled proxy*: outbound
   connections by known model-runner images. Misses claude/MCP helpers and
   in-process intake; real coverage still needs the MCP tool-call instrumentation
-  below. Honest in code and UI.
+  below. Honest in code and UI. **Live coverage is the process-launch half only**
+  (an agent-tagged parent launching a child): the file-write half needs a
+  per-process file attribution the FileSystemWatcher tap cannot give (its writes
+  carry pid = -1), so that half fires in tests/demo but not on live events until
+  a minifilter or Sysmon-FileCreate source exists. Correlation was also tightened
+  (2026-10-13 review): intake is matched to the acting agent's own pid, not to
+  "any agent," so one model-runner's egress cannot be mis-blamed for another
+  agent's action.
 
 Run elevated on the dev machine 2026-10-12 (Sysmon installed with an
 lsass-only ProcessAccess config; Gradle `--no-daemon` so the JVM actually

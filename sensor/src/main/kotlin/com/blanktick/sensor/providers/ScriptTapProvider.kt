@@ -39,16 +39,20 @@ abstract class ScriptTapProvider(
     final override fun start(sink: (SensorEvent) -> Unit) {
         if (process != null) return
 
-        val script = javaClass.getResourceAsStream(scriptResource)
-            ?.bufferedReader()?.readText()
-            ?: error("bundled tap $scriptResource is missing")
+        val script = (javaClass.getResourceAsStream(scriptResource)
+            ?: error("bundled tap $scriptResource is missing"))
+            .bufferedReader().use { it.readText() }
         val tmp = Files.createTempFile("blanktick-sensor-", ".ps1").toFile()
         tmp.writeText(script)
+        tmp.deleteOnExit()
         scriptFile = tmp
 
+        // Discard the child's stderr instead of leaving it unread: an unread,
+        // full stderr pipe would block the child on its next stderr write and
+        // silently stop the tap. We never parse stderr, so dropping it is safe.
         val p = ProcessBuilder(
             "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", tmp.absolutePath
-        ).redirectErrorStream(false).start()
+        ).redirectError(ProcessBuilder.Redirect.DISCARD).start()
         process = p
         startedAt = System.currentTimeMillis()
 
@@ -71,7 +75,12 @@ abstract class ScriptTapProvider(
     final override fun stop() {
         // Forcible: a polling PowerShell loop ignores a gentle terminate, and an
         // orphaned tap must never outlive the app that started it.
-        process?.destroyForcibly()
+        process?.apply {
+            destroyForcibly()
+            // Let the child release its -File handle before we delete it, so the
+            // temp script does not leak across restarts. deleteOnExit is the backstop.
+            runCatching { waitFor(2, java.util.concurrent.TimeUnit.SECONDS) }
+        }
         process = null
         reader?.interrupt()
         reader = null

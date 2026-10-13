@@ -11,10 +11,14 @@ import com.blanktick.sensor.SensorEvent
  *
  *  * `FILE` — a FileSystemWatcher over the user's document folders, emitting
  *    only writes whose first-4 KB Shannon entropy is in the ciphertext range
- *    (op=ENCRYPT_SUSPECTED). Without a minifilter the OS does not name the
- *    writing process to a user-level watcher, so these carry `pid = -1`; the
- *    burst rule still fires on a mass-encryption run but its response degrades
- *    from kill to alert, because the enforcer refuses a target it cannot name.
+ *    (op=ENCRYPT_SUSPECTED). It watches documents and the desktop but NOT the
+ *    pictures folder, and skips inherently high-entropy media/archive
+ *    extensions, so a bulk photo import or archive extract does not look like
+ *    encryption. Without a minifilter the OS does not name the writing process
+ *    to a user-level watcher, so these carry `pid = -1`; the burst rule still
+ *    fires on a mass-encryption run but, with no process to stop, emits ALERT
+ *    rather than KILL. A Sysmon FileCreate (EID 11) or minifilter source would
+ *    restore the pid and the KILL response.
  *
  *  * `VSSDEL` — a poll of new processes whose command line deletes shadow copies
  *    or disables recovery. This keeps the real pid, so its response stays kill.

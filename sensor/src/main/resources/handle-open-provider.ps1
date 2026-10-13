@@ -59,7 +59,9 @@ while ($true) {
             "$now`t$spid`t$src`t$($d['TargetImage'])`t$acc"
         }
     }
-    if ($hasDef) {
+    # Defender is the FALLBACK source only: when Sysmon EID 10 is present we use
+    # it alone, or the same lsass access is reported twice (once per source).
+    if ($hasDef -and -not $hasSysmon) {
         $evs = Get-WinEvent -FilterHashtable @{ LogName=$defLog; Id=1121, 1122; StartTime=$since } -ErrorAction SilentlyContinue |
             Sort-Object RecordId
         foreach ($ev in $evs) {
@@ -70,7 +72,9 @@ while ($true) {
             foreach ($n in $x.Event.EventData.Data) { if ($n.Name) { $d[$n.Name] = [string]$n.'#text' } }
             $proc = if ($d['Process']) { $d['Process'] } else { $d['Path'] }
             if (-not $proc) { continue }
-            if ($d['ID'] -and $d['ID'] -notmatch '9e6c4e1f') { continue }
+            # Require the lsass ASR rule GUID positively: a missing/empty ID must
+            # NOT fall through as a credential-theft hit.
+            if ($d['ID'] -notmatch '9e6c4e1f') { continue }
             $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
             "$now`t-1`t$proc`tC:\Windows\System32\lsass.exe`tASR"
         }

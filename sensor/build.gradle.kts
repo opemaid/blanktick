@@ -47,7 +47,7 @@ tasks.register<JavaExec>("runSensor") {
     description = "Run the live sensor harness (user-level process tap)."
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("com.blanktick.sensor.SensorMainKt")
-    listOf("blanktick.sensor.seconds", "blanktick.sensor.demo").forEach { key ->
+    listOf("blanktick.sensor.seconds", "blanktick.sensor.demo", "blanktick.sensor.enforce").forEach { key ->
         val v = providers.systemProperty(key)
         if (v.isPresent) systemProperty(key, v.get())
     }

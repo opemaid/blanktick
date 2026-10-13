@@ -33,6 +33,8 @@ private val engine = BehaviorEngine(windowMillis = 600_000, windowMaxEvents = 81
 fun main() {
     val seconds = System.getProperty("blanktick.sensor.seconds")?.toLongOrNull()
     val demo = System.getProperty("blanktick.sensor.demo")?.toBoolean() == true
+    // Enforcement is the one irreversible act; it is off unless explicitly asked for.
+    val enforce = System.getProperty("blanktick.sensor.enforce")?.toBoolean() == true
 
     val admin = WindowsElevation.isAdmin()
     // Prefer Sysmon ProcessCreate (inline parentage, no race) → Win32_ProcessStartTrace
@@ -53,6 +55,7 @@ fun main() {
     if (!admin && processTap.privilege == Privilege.USER) {
         println("  note             : not elevated — process tap is the poll fallback. Run as admin for ETW.")
     }
+    println("  enforcement      : " + (if (enforce) "ON — flagged processes will be STOPPED" else "off (detect-only)"))
     println(if (seconds != null) "Watching for ${seconds}s. Detections print as ALERT lines."
             else "Watching until stopped. Detections print as ALERT lines.")
 
@@ -79,6 +82,10 @@ fun main() {
         }
         engine.observe(e).forEach { d ->
             println("  ALERT  ${d.finding.ruleId}  [${d.response}]  ${d.finding.title}")
+            if (enforce) {
+                val r = Enforcer.enforce(d)
+                println("  ENFORCE  ${d.finding.ruleId}  ${r.outcome}  ${r.detail}")
+            }
         }
     }
 

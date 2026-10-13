@@ -185,17 +185,24 @@ object DefaultBehaviorRules {
                     (it.highEntropy || it.op == FileOp.ENCRYPT_SUSPECTED)
             }
             if (burst < burstThreshold) return emptyList()
+            // Without per-process file attribution (no minifilter) the write has
+            // no owning pid, so there is nothing to stop: the honest response is
+            // ALERT, not a KILL the enforcer could never carry out. With a real
+            // pid (e.g. a Sysmon-FileCreate upgrade) it stays KILL.
+            val attributed = e.pid >= 0L
             return listOf(
                 det(
-                    ruleId = id, category = category, severity = Severity.CRITICAL, response = Response.KILL,
+                    ruleId = id, category = category, severity = Severity.CRITICAL,
+                    response = if (attributed) Response.KILL else Response.ALERT,
                     title = "\"" + Images.basename(e.image) + "\" is rewriting many files at once",
                     detail = Images.basename(e.image) + " rewrote " + burst + " files with encryption-shaped " +
                         "content in the last " + (burstWindowMillis / 1000) + " seconds. That pattern is " +
-                        "ransomware encrypting your data.",
+                        "ransomware encrypting your data." +
+                        (if (attributed) "" else " The writing process could not be identified, so this warns rather than stops it."),
                     remediation = "Kill the process now and disconnect from shared storage. Recover affected " +
                         "files from a backup made before this started.",
-                    subjectId = "pid:" + e.pid,
-                    targetPid = e.pid,
+                    subjectId = if (attributed) "pid:" + e.pid else "ransom-burst",
+                    targetPid = if (attributed) e.pid else null,
                     evidence = mapOf("process" to e.image, "encryptedInWindow" to burst.toString())
                 )
             )
@@ -253,6 +260,14 @@ object DefaultBehaviorRules {
         private val reactWindowMillis = 10_000L
 
         override fun onEvent(e: SensorEvent, w: RollingWindow): List<Detection> {
+            // The pid of the agent that ACTED: itself for a file write, its parent
+            // for a launched child. Intake must be tied to that same process, not
+            // to "any agent", or an unrelated agent's egress would be mis-blamed.
+            val actingPid = when (e) {
+                is SensorEvent.FileModify -> e.pid
+                is SensorEvent.ProcessStart -> e.parentPid
+                else -> return emptyList()
+            }
             val actorHere = when (e) {
                 is SensorEvent.FileModify -> e.actor
                 is SensorEvent.ProcessStart -> w.latestProcessStart(e.parentPid)?.actor ?: e.actor
@@ -262,7 +277,7 @@ object DefaultBehaviorRules {
 
             val recentIntake = w.within(e.at, reactWindowMillis)
                 .filterIsInstance<SensorEvent.ContentIntake>()
-                .lastOrNull { it.pid == e.pid || it.actor in AGENT_ACTORS }
+                .lastOrNull { it.pid >= 0L && it.pid == actingPid }
                 ?: return emptyList()
 
             val action = when (e) {

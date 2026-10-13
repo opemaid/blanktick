@@ -67,14 +67,19 @@ If that *passes*, the gate is dead and its silence means nothing.
 
 ## Status
 
+**Supported platform: Windows (for now).** The desktop product ships Windows-only;
+macOS and Linux are out of scope for this release. Their collectors remain in the
+tree as reviewed drafts, not shipped surfaces — see the rows marked *out of scope*
+below. The phone app (Android) is separate and unaffected.
+
 | Component | State |
 |---|---|
 | `core/` — scoring engine, rules, filters, URL analysis, EXIF | **Builds. 305 tests, 0 failures.** |
 | `app/` — Android, Compose | **Builds. 26.6 MB APK produced. 30 tests, 0 failures.** |
 | `desktop/` — Compose Multiplatform | **Builds and runs. `Blanktick.exe` produced. 52 tests, 0 failures.** |
-| Windows collector | **Runs on real hardware.** 50 of 81 checks answered on the dev machine (2026-09-25); 31 reported as not checkable. |
-| macOS collector | **Written, never executed.** No Mac available. |
-| Linux collector | **Written, exercised only under WSL.** Not a real desktop session. |
+| Windows collector | **Supported. Runs on real hardware.** 50 of 81 checks answered on the dev machine (2026-09-25); 31 reported as not checkable. Behavioural sensor validated live 2026-10-13 (detection, enforcement, 10-min soak). |
+| macOS collector | **Out of scope (Windows-only release).** Written, never executed — no Mac available. |
+| Linux collector | **Out of scope (Windows-only release).** Written, exercised only under WSL, not a real desktop session. |
 | Intel bundle pipeline (Python → Kotlin ×2) | **Working. Cross-language parity proven.** |
 | `web/` — marketing site + live link checker | **Working. 30/30 logic parity tests.** |
 | `design/` — tokens, interactive prototype | **Working.** |

@@ -194,4 +194,39 @@ class DynamicRulesTest {
         )
         assertTrue(ids.isEmpty(), "an agent writing a file on its own is normal; fired: $ids")
     }
+
+    @Test
+    fun `one agent's action is not blamed on a different agent's intake`() {
+        // Agent A (pid 300) reads outside content; a DIFFERENT agent B (pid 999)
+        // acts. DYN-AI-003 must correlate on the acting agent's own pid, so this
+        // must NOT fire — the earlier "any agent" match was a false correlation.
+        val ids = fired(
+            SensorEvent.ContentIntake(
+                at = 1_000, pid = 300, image = "ollama.exe",
+                actor = Actor.AI_AGENT, source = "https://evil.example/post"
+            ),
+            SensorEvent.FileModify(
+                at = 3_000, pid = 999, image = "lmstudio.exe", actor = Actor.AI_AGENT,
+                path = "C:\\Users\\me\\.ssh\\authorized_keys", op = FileOp.WRITE
+            )
+        )
+        assertTrue(ids.isEmpty(), "a different agent's intake must not be blamed; fired: $ids")
+    }
+
+    @Test
+    fun `an unattributed ransomware burst alerts rather than claiming an un-actionable kill`() {
+        // The live FileSystemWatcher tap cannot name the writing process (pid=-1).
+        // The burst must still detect, but as an ALERT it can act on, not a KILL
+        // the enforcer could never carry out.
+        val stream = (0 until 12).map { i ->
+            SensorEvent.FileModify(
+                at = 1_000 + i.toLong(), pid = -1, image = "", actor = Actor.UNKNOWN,
+                path = "C:\\Users\\me\\doc$i.locky", op = FileOp.ENCRYPT_SUSPECTED, highEntropy = true
+            )
+        }
+        val d = BehaviorEngine().observeAll(stream)
+        assertEquals(listOf("DYN-RANSOM-001"), d.map { it.finding.ruleId })
+        assertEquals(Response.ALERT, d.single().response)
+        assertEquals(null, d.single().targetPid)
+    }
 }

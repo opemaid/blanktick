@@ -23,17 +23,31 @@
 #    stays kill.
 $ErrorActionPreference = 'SilentlyContinue'
 
+# Watch documents and the desktop, NOT Pictures: photos (JPEG/PNG/HEIC) are
+# inherently high-entropy, so a bulk import there would trip the burst on benign
+# activity. Documents are the real ransomware target.
 $roots = @(
     [Environment]::GetFolderPath('MyDocuments'),
-    [Environment]::GetFolderPath('Desktop'),
-    [Environment]::GetFolderPath('MyPictures')
+    [Environment]::GetFolderPath('Desktop')
 ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique
+
+# Extensions that are legitimately high-entropy (compressed/media). A bulk copy
+# or archive-extract of these must not count as encryption. Ransomware that
+# encrypts them rewrites to a NEW extension, which is not on this list, so it is
+# still caught.
+# Global so the Register-ObjectEvent action block (a different scope) can see it.
+$global:btBenignHighEntropyExt = @(
+    '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tif', '.tiff', '.heic', '.heif',
+    '.mp4', '.mov', '.avi', '.mkv', '.webm', '.mp3', '.m4a', '.flac', '.ogg',
+    '.zip', '.7z', '.rar', '.gz', '.bz2', '.xz', '.jar'
+)
 
 $watchers = @()
 $onChange = {
     $path = $Event.SourceEventArgs.FullPath
     try {
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return }
+        if ([IO.Path]::GetExtension($path).ToLower() -in $global:btBenignHighEntropyExt) { return }
         $fs = [IO.File]::Open($path, 'Open', 'Read', 'ReadWrite')
         try {
             $buf = New-Object byte[] 4096
@@ -65,14 +79,19 @@ foreach ($r in $roots) {
 # Shadow-copy deletion: catch new processes whose command line removes backups.
 $vssNames = @('vssadmin.exe','wmic.exe','wbadmin.exe','bcdedit.exe','diskshadow.exe','powershell.exe','pwsh.exe')
 $vssPattern = '(?i)(delete\s+shadows|shadowcopy\s+delete|delete\s+catalog|delete\s+systemstatebackup|recoveryenabled\s+no|resize\s+shadowstorage|Win32_ShadowCopy|Remove-?\s*CimInstance.*ShadowCopy)'
+# Key on pid + creation time, not pid alone: Windows reuses pids, and a pid-only
+# "seen" set would skip a later malicious vssadmin that happens to reuse a pid we
+# already marked. The composite key is unique per process instance.
+function ProcKey($proc) { return "$($proc.ProcessId)|$($proc.CreationDate)" }
 $seen = @{}
-foreach ($p in Get-CimInstance Win32_Process) { $seen[$p.ProcessId] = $true }
+foreach ($p in Get-CimInstance Win32_Process) { $seen[(ProcKey $p)] = $true }
 
 try {
     while ($true) {
         foreach ($p in Get-CimInstance Win32_Process) {
-            if ($seen.ContainsKey($p.ProcessId)) { continue }
-            $seen[$p.ProcessId] = $true
+            $key = ProcKey $p
+            if ($seen.ContainsKey($key)) { continue }
+            $seen[$key] = $true
             $cl = if ($p.CommandLine) { $p.CommandLine -replace "[`t`r`n]", ' ' } else { '' }
             if (($p.Name.ToLower() -in $vssNames) -and ($cl -match $vssPattern)) {
                 $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
