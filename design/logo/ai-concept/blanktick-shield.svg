@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Blanktick shield">
+  <defs>
+    <linearGradient id="body" x1="110" y1="452" x2="402" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6D28D9"/>
+      <stop offset="0.45" stop-color="#2563EB"/>
+      <stop offset="0.8" stop-color="#06B6D4"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="256" y1="60" x2="256" y2="460" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A5F3FC"/>
+      <stop offset="1" stop-color="#4F46E5"/>
+    </linearGradient>
+    <linearGradient id="tick" x1="188" y1="300" x2="372" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.7" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EAFFB0"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.5" cy="0.22" r="0.7">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bg" cx="0.5" cy="0.4" r="0.8">
+      <stop offset="0" stop-color="#101320"/><stop offset="1" stop-color="#0A0A0A"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="16" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <path id="shield" d="M110,96 Q256,70 402,96 L402,250 C402,356 342,424 256,452 C170,424 110,356 110,250 Z"/>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- outer glow of the shield -->
+  <use href="#shield" fill="url(#body)" filter="url(#glow)" opacity="0.55"/>
+  <!-- shield body -->
+  <use href="#shield" fill="url(#body)"/>
+  <!-- glossy top sheen -->
+  <use href="#shield" fill="url(#gloss)"/>
+  <!-- bright rim -->
+  <use href="#shield" fill="none" stroke="url(#rim)" stroke-width="10"/>
+  <!-- faint inner shield line for depth -->
+  <path d="M146,124 Q256,106 366,124 L366,246 C366,330 318,388 256,412 C194,388 146,330 146,246 Z"
+        fill="none" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="4"/>
+
+  <!-- the tick (brand DNA) -->
+  <g filter="url(#glow)" opacity="0.5">
+    <path d="M190,256 L236,302 L316,210" fill="none" stroke="url(#tick)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M338,188 L372,150" fill="none" stroke="#D6FF3F" stroke-width="26" stroke-linecap="round"/>
+  </g>
+  <path d="M190,256 L236,302 L316,210" fill="none" stroke="url(#tick)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- detached lime chip (air gap) -->
+  <path d="M338,188 L372,150" fill="none" stroke="#D6FF3F" stroke-width="30" stroke-linecap="round"/>
+</svg>

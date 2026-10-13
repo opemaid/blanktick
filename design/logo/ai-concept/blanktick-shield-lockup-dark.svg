@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="340" viewBox="0 0 1120 340" role="img" aria-label="blanktick">
+  <defs>
+    <linearGradient id="body" x1="70" y1="300" x2="250" y2="70" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6D28D9"/><stop offset="0.45" stop-color="#2563EB"/>
+      <stop offset="0.8" stop-color="#06B6D4"/><stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="160" y1="60" x2="160" y2="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A5F3FC"/><stop offset="1" stop-color="#4F46E5"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.5" cy="0.22" r="0.7">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.4"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <path id="sh" d="M70,92 Q160,74 250,92 L250,196 C250,262 210,306 160,322 C110,306 70,262 70,196 Z"/>
+  </defs>
+  <rect width="1120" height="340" fill="#0A0A0A"/>
+
+  <use href="#sh" fill="url(#body)" filter="url(#glow)" opacity="0.5"/>
+  <use href="#sh" fill="url(#body)"/>
+  <use href="#sh" fill="url(#gloss)"/>
+  <use href="#sh" fill="none" stroke="url(#rim)" stroke-width="6"/>
+  <!-- tick -->
+  <path d="M112,196 L142,228 L196,164" fill="none" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M210,150 L234,122" fill="none" stroke="#D6FF3F" stroke-width="20" stroke-linecap="round"/>
+
+  <!-- wordmark -->
+  <text x="320" y="218" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="150" font-weight="700" letter-spacing="-4">
+    <tspan fill="#9AA0A6">blank</tspan><tspan fill="#FFFFFF">tick</tspan>
+  </text>
+</svg>

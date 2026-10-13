@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Blanktick shield">
+  <defs>
+    <linearGradient id="body" x1="70" y1="478" x2="442" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6D28D9"/>
+      <stop offset="0.45" stop-color="#2563EB"/>
+      <stop offset="0.8" stop-color="#06B6D4"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="256" y1="60" x2="256" y2="486" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A5F3FC"/><stop offset="1" stop-color="#4F46E5"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.5" cy="0.18" r="0.72">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.42"/>
+      <stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0.07"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bg" cx="0.5" cy="0.4" r="0.8">
+      <stop offset="0" stop-color="#101320"/><stop offset="1" stop-color="#0A0A0A"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="15" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <path id="shield" d="M70,88 Q256,66 442,88 L442,300 C442,392 360,452 256,478 C152,452 70,392 70,300 Z"/>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <use href="#shield" fill="url(#body)" filter="url(#glow)" opacity="0.5"/>
+  <use href="#shield" fill="url(#body)"/>
+  <use href="#shield" fill="url(#gloss)"/>
+  <use href="#shield" fill="none" stroke="url(#rim)" stroke-width="9"/>
+  <path d="M104,112 Q256,94 408,112 L408,296 C408,372 338,424 256,448 C174,424 104,372 104,296 Z"
+        fill="none" stroke="#FFFFFF" stroke-opacity="0.16" stroke-width="4"/>
+
+  <!-- tick (upper) -->
+  <g filter="url(#glow)" opacity="0.5">
+    <path d="M198,196 L236,236 L306,156" fill="none" stroke="#FFFFFF" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M326,138 L360,102" fill="none" stroke="#D6FF3F" stroke-width="22" stroke-linecap="round"/>
+  </g>
+  <path d="M198,196 L236,236 L306,156" fill="none" stroke="#FFFFFF" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M326,138 L360,102" fill="none" stroke="#D6FF3F" stroke-width="25" stroke-linecap="round"/>
+
+  <!-- wordmark inside shield (lower) -->
+  <text x="256" y="330" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="62" font-weight="700" letter-spacing="-2">
+    <tspan fill="#DCEBFF">blank</tspan><tspan fill="#FFFFFF">tick</tspan>
+  </text>
+</svg>

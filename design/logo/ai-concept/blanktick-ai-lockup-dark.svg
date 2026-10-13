@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="320" viewBox="0 0 1100 320" role="img" aria-label="blanktick">
+  <defs>
+    <linearGradient id="ribbon" x1="40" y1="230" x2="250" y2="70" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7C3AED"/>
+      <stop offset="0.45" stop-color="#2563EB"/>
+      <stop offset="0.75" stop-color="#06B6D4"/>
+      <stop offset="1" stop-color="#D6FF3F"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="9" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1100" height="320" fill="#0A0A0A"/>
+
+  <!-- mark -->
+  <g transform="translate(40,40)">
+    <g filter="url(#glow)" opacity="0.5">
+      <path d="M20 150 L 86 214 L 168 126" fill="none" stroke="url(#ribbon)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M190 104 L 226 66" fill="none" stroke="#D6FF3F" stroke-width="26" stroke-linecap="round"/>
+    </g>
+    <path d="M20 150 L 86 214 L 168 126" fill="none" stroke="url(#ribbon)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M190 104 L 226 66" fill="none" stroke="#D6FF3F" stroke-width="30" stroke-linecap="round"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="330" y="205" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="150" font-weight="700" letter-spacing="-4">
+    <tspan fill="#9AA0A6">blank</tspan><tspan fill="#FFFFFF">tick</tspan>
+  </text>
+</svg>
