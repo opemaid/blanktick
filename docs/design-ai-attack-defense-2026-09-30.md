@@ -151,12 +151,48 @@ Verified: 31 sensor tests green, gate clean; the demo fired all four of
 DYN-OFFICE-001, DYN-AI-001, DYN-DNS-001, DYN-C2-001. ETW `Kernel-Network`/
 `DNS-Client` (admin, live, per-query with process) remain the fidelity upgrade.
 
+**The three remaining live providers built + proven elevated (2026-10-12).** The
+rules that had no real-world source now each have one, all native (no kernel
+driver), all inside the no-network gate:
+- `HandleOpenProvider` → **DYN-CRED-001**. Reads Sysmon ProcessAccess (EID 10,
+  the spec source) or the Defender ASR lsass rule's 1121/1122. `Privilege.ADMIN`.
+- `FileActivityProvider` → **DYN-RANSOM-001**. A FileSystemWatcher over the
+  user's document folders emits only ciphertext-entropy writes (first-4 KB
+  Shannon ≥ 7.8), plus a command-line poll for shadow-copy deletion. Entropy
+  writes carry `pid = -1` (no minifilter = no process attribution), so a burst
+  detects but degrades kill→alert; shadow-delete keeps its pid and stays kill.
+- `ContentIntakeProvider` → **DYN-AI-003**. A *labelled proxy*: outbound
+  connections by known model-runner images. Misses claude/MCP helpers and
+  in-process intake; real coverage still needs the MCP tool-call instrumentation
+  below. Honest in code and UI.
+
+Run elevated on the dev machine 2026-10-12 (Sysmon installed with an
+lsass-only ProcessAccess config; Gradle `--no-daemon` so the JVM actually
+inherited admin — a reused non-elevated daemon had masked it on the first try).
+ETW process tap active, credential tap `source=sysmon [elevated]`, all seven
+rules fired in the synthetic demo. **Live finding (now fixed):** DYN-CRED-001
+false-positived on `svchost.exe` opening lsass — the allow-list
+(lsass/wininit/services/csrss) is too narrow for a real session.
+
+**Fix shipped + verified 2026-10-12.** `accessReadsMemory()` in DynamicRules.kt
+now gates the rule on the `GrantedAccess` mask: it fires only when the open
+grants PROCESS_VM_READ (0x10) — the bit every credential-dumping mask
+(0x1010/0x1410/0x143a/0x1fffff) carries and that a benign *query* lacks. It reads
+Sysmon hex masks, the Defender "ASR" sentinel (already classified), and symbolic
+names; an empty/unknown access does not fire. A second elevated run confirmed the
+real svchost/ServiceHost opens were 0x1000 and 0x2000 (VM_READ=false) and no
+longer alert, while the 0x1410 mimikatz shape still fires SUSPEND. 46 sensor
+tests green, including a svchost-query regression test; no-network gate still
+passes. Broadening the name allow-list was rejected as it invites masquerade.
+
 **Still to build (needs elevated hardware, cannot be unit-tested off it):**
 - [ ] The **AMSI** provider (fileless/macro content → `ScriptExecution`) and WMI
   watchers; the ETW upgrades of the network and DNS taps.
 - [ ] Richer actor tagging: mark `node`/`python` started by an MCP config as
   `MCP_SERVER` (lineage from the AI/MCP config the free tier already reads), so
   DYN-AI-001/003 catch injected tool calls, not just named model runners.
+- [x] **GrantedAccess-mask gating for DYN-CRED-001** — shipped + verified
+  elevated 2026-10-12 (above). The credential rule's go-live blocker is cleared.
 **Live-protection screen built into the app (2026-09-30).** The desktop app now
 depends on `:sensor`; a `LiveProtectionController` bridges the engine and taps to
 the UI as StateFlows, and `LiveProtectionScreen` (nav entry "Live protection",

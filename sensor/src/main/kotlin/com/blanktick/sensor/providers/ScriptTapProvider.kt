@@ -29,6 +29,10 @@ abstract class ScriptTapProvider(
     @Volatile var reportedElevated: Boolean? = null
         private set
 
+    /** The telemetry source a tap chose at startup (its `#source=` line), if it emits one. */
+    @Volatile var reportedSource: String? = null
+        private set
+
     /** Turn one output line into an event, or null if it is not one. */
     protected abstract fun parse(line: String): SensorEvent?
 
@@ -52,6 +56,8 @@ abstract class ScriptTapProvider(
             p.inputStream.bufferedReader().forEachLine { line ->
                 if (line.startsWith("#elevated=")) {
                     reportedElevated = line.substringAfter('=').trim() == "true"
+                } else if (line.startsWith("#source=")) {
+                    reportedSource = line.substringAfter('=').trim()
                 } else {
                     parse(line)?.let(sink)
                 }

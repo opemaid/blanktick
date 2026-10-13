@@ -56,10 +56,14 @@ class WindowsProcessProvider private constructor(
     companion object {
         private const val POLL_SCRIPT = "/process-provider.ps1"
         private const val ETW_SCRIPT = "/process-provider-etw.ps1"
+        private const val SYSMON_SCRIPT = "/process-provider-sysmon.ps1"
         private const val POLL_NOTE =
             "user-level Win32_Process poll; ETW Kernel-Process (admin) is the higher-fidelity upgrade"
         private const val ETW_NOTE =
             "privileged Win32_ProcessStartTrace (ETW-backed, machine-wide, event-driven)"
+        private const val SYSMON_NOTE =
+            "privileged Sysmon ProcessCreate (EID 1): parent image + command line captured inline at " +
+                "the kernel callback and persisted to the log, so fast parent→child→exit chains are not lost"
 
         /** The elevation-free poll tap. */
         fun poll(): WindowsProcessProvider = WindowsProcessProvider()
@@ -69,5 +73,31 @@ class WindowsProcessProvider private constructor(
             WindowsProcessProvider(
                 ETW_SCRIPT, "windows-process (Win32_ProcessStartTrace / ETW)", Privilege.ADMIN, ETW_NOTE
             )
+
+        /**
+         * The highest-fidelity tap: Sysmon ProcessCreate (EID 1). Preferred over
+         * [etw] because it carries parentage inline (no WMI enrichment race, the
+         * gap that made the ETW tap miss fast Office/agent shell spawns). Needs
+         * admin and a Sysmon config that logs ProcessCreate.
+         */
+        fun sysmon(): WindowsProcessProvider =
+            WindowsProcessProvider(
+                SYSMON_SCRIPT, "windows-process (Sysmon ProcessCreate / EID 1)", Privilege.ADMIN, SYSMON_NOTE
+            )
+
+        /**
+         * Whether the Sysmon Operational log exists, so [sysmon] has a source.
+         * A one-shot local check (spawns a child PowerShell, opens no socket).
+         */
+        fun sysmonProcessLogAvailable(): Boolean = runCatching {
+            val p = ProcessBuilder(
+                "powershell", "-NoProfile", "-Command",
+                "if (Get-WinEvent -ListLog 'Microsoft-Windows-Sysmon/Operational' " +
+                    "-ErrorAction SilentlyContinue) { 'yes' } else { 'no' }"
+            ).redirectErrorStream(true).start()
+            val out = p.inputStream.bufferedReader().readText()
+            p.waitFor()
+            out.contains("yes")
+        }.getOrDefault(false)
     }
 }

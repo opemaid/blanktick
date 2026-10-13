@@ -68,6 +68,57 @@ class DynamicRulesTest {
         assertTrue(ids.isEmpty(), "fired on a legitimate reader: $ids")
     }
 
+    @Test
+    fun `svchost querying lsass without VM_READ is not flagged`() {
+        // The real false positive a live elevated run produced: svchost opens
+        // lsass with a query-only mask (PROCESS_QUERY_LIMITED_INFORMATION, 0x1000),
+        // no PROCESS_VM_READ bit. It must not fire.
+        val ids = fired(
+            SensorEvent.HandleOpen(
+                at = 1_000, pid = 1816, image = "svchost.exe",
+                targetImage = "C:\\Windows\\System32\\lsass.exe", access = "0x1000"
+            )
+        )
+        assertTrue(ids.isEmpty(), "fired on a query-only svchost->lsass open: $ids")
+    }
+
+    @Test
+    fun `a mimikatz-style VM_READ mask on lsass fires DYN-CRED-001 and intends to suspend`() {
+        val detections = BehaviorEngine().observeAll(
+            listOf(
+                SensorEvent.HandleOpen(
+                    at = 1_000, pid = 6164, image = "mimikatz.exe",
+                    targetImage = "C:\\Windows\\System32\\lsass.exe", access = "0x1410"
+                )
+            )
+        )
+        assertEquals(listOf("DYN-CRED-001"), detections.map { it.finding.ruleId })
+        assertEquals(Response.SUSPEND, detections.single().response)
+        assertEquals(Severity.CRITICAL, detections.single().finding.severity)
+    }
+
+    @Test
+    fun `a Defender ASR lsass hit fires even without a numeric mask`() {
+        val ids = fired(
+            SensorEvent.HandleOpen(
+                at = 1_000, pid = 4242, image = "evil.exe",
+                targetImage = "C:\\Windows\\System32\\lsass.exe", access = "ASR"
+            )
+        )
+        assertEquals(listOf("DYN-CRED-001"), ids)
+    }
+
+    @Test
+    fun `an lsass open with an unknown access does not fire`() {
+        val ids = fired(
+            SensorEvent.HandleOpen(
+                at = 1_000, pid = 500, image = "unknown.exe",
+                targetImage = "C:\\Windows\\System32\\lsass.exe", access = ""
+            )
+        )
+        assertTrue(ids.isEmpty(), "fired without evidence of a memory-read right: $ids")
+    }
+
     // ------------------------------------------------------------- ransomware
 
     @Test

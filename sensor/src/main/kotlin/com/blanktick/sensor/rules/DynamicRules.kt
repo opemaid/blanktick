@@ -18,6 +18,37 @@ private val AGENT_ACTORS = setOf(Actor.AI_AGENT, Actor.MCP_SERVER)
 /** Legitimate readers of lsass; anything else opening it is the credential-theft tell. */
 private val LSASS_LEGITIMATE_READERS = setOf("lsass.exe", "wininit.exe", "services.exe", "csrss.exe")
 
+/** PROCESS_VM_READ — the access right a credential dumper must hold to read lsass memory. */
+private const val PROCESS_VM_READ = 0x10L
+
+/**
+ * Whether a granted-access value permits reading another process's memory.
+ *
+ * Credential theft must *read* lsass memory, so it holds PROCESS_VM_READ (0x10):
+ * the masks mimikatz-style tools request — 0x1010, 0x1410, 0x143a, 0x1fffff — all
+ * include that bit. Windows' own components that merely *query* lsass (svchost,
+ * taskmgr, wmiprvse) open it without that bit, which is why gating on the mask
+ * removes the routine false positives a bare "opened lsass" check produces: a
+ * live elevated run flagged svchost on exactly that.
+ *
+ * It handles every form a provider can emit: a hex mask from Sysmon ("0x1410"),
+ * the "ASR" sentinel from the Defender rule (which Defender has *already*
+ * classified as lsass credential theft, so it counts), and symbolic names
+ * ("PROCESS_VM_READ" / "PROCESS_ALL_ACCESS"). An empty or unrecognised access
+ * does NOT fire — without evidence of a memory-read right the open is
+ * indistinguishable from a benign query, and guessing is what produced the
+ * false positive this gate exists to remove.
+ */
+internal fun accessReadsMemory(access: String): Boolean {
+    val a = access.trim()
+    if (a.isEmpty()) return false
+    if (a.equals("ASR", ignoreCase = true)) return true
+    val hex = a.removePrefix("0x").removePrefix("0X").toLongOrNull(16)
+    if (hex != null) return (hex and PROCESS_VM_READ) != 0L
+    val upper = a.uppercase()
+    return "PROCESS_VM_READ" in upper || "PROCESS_ALL_ACCESS" in upper
+}
+
 private fun det(
     ruleId: String,
     category: Category,
@@ -97,6 +128,9 @@ object DefaultBehaviorRules {
             if (e !is SensorEvent.HandleOpen) return emptyList()
             if (!Images.isLsass(e.targetImage)) return emptyList()
             if (Images.basename(e.image) in LSASS_LEGITIMATE_READERS) return emptyList()
+            // The discriminator: credential theft reads lsass memory. An open that
+            // does not grant PROCESS_VM_READ is a query, which Windows does routinely.
+            if (!accessReadsMemory(e.access)) return emptyList()
             return listOf(
                 det(
                     ruleId = id, category = category, severity = Severity.CRITICAL, response = Response.SUSPEND,
