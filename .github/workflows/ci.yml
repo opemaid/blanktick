@@ -13,7 +13,13 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # windows-latest matches the Windows-only target and avoids building the
+    # Compose Desktop module on Linux. Steps use bash (preinstalled as Git Bash
+    # on Windows runners) so the shell syntax below stays portable.
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
