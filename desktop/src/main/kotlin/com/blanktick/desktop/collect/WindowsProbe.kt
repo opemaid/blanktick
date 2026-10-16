@@ -140,6 +140,25 @@ internal object WindowsProbe {
           } catch { return '' }
         }
 
+        # Like FileHash but without the "skip when a scanner is present" gate:
+        # the vulnerable-driver check is independent of the antivirus, because a
+        # driver with a known flaw is a problem whether or not the scanner flags
+        # it, and most will not be flagged at all (they are signed, legitimate
+        # software). Still read-only, still capped, still never throws out.
+        function DriverHash(${'$'}path) {
+          if (-not ${'$'}path) { return '' }
+          try {
+            ${'$'}f = Get-Item -LiteralPath ${'$'}path -ErrorAction Stop
+            if (${'$'}f.Length -gt 209715200) { return '' }
+            ${'$'}sha = [System.Security.Cryptography.SHA256]::Create()
+            try {
+              ${'$'}stream = [System.IO.File]::OpenRead(${'$'}f.FullName)
+              try { return [System.BitConverter]::ToString(${'$'}sha.ComputeHash(${'$'}stream)).Replace('-', '').ToLower() }
+              finally { ${'$'}stream.Dispose() }
+            } finally { ${'$'}sha.Dispose() }
+          } catch { return '' }
+        }
+
         # A file carries a Zone.Identifier stream when it was downloaded. On a
         # program that has been set to start automatically, that pairing --
         # arrived from the internet, and now runs every time you sign in -- is
@@ -1211,6 +1230,65 @@ internal object WindowsProbe {
             Emit 'svc.unquoted' (San ${'$'}svc.Name)
           }
           Emit 'svc.unquotedRead' 'True'
+        } catch { }
+        # Saved Remote Desktop credentials. cmdkey lists them without elevation;
+        # the passwords are never read, only that TERMSRV targets exist and how
+        # many. Generic saved credentials are not counted -- they are stock.
+        # Emitted even when zero, so the rule reads "none saved" as a pass
+        # rather than "not checkable".
+        try {
+          ${'$'}rdp = @(cmdkey /list 2>${'$'}null | Select-String -SimpleMatch 'TERMSRV/').Count
+          Emit 'cred.savedRdp' ${'$'}rdp
+        } catch { }
+        # Office macro policy. Absent keys are the modern safe default (macros
+        # carrying a mark-of-the-web are blocked, VBA is warned about), so an
+        # unset value emits nothing. Only an explicit weakening is listed:
+        # blockcontentexecutionfrominternet=0 (internet macros un-blocked) or
+        # vbawarnings=1 (enable all macros). Both the per-user hive and the
+        # policy hive are read. 'office.read' is emitted only when an Office app
+        # key was actually found, so the rule reports "not checkable" rather
+        # than passing on a machine with no Office at all.
+        try {
+          ${'$'}officeSeen = ${'$'}false
+          foreach (${'$'}root in @('HKCU:\Software\Microsoft\Office','HKCU:\Software\Policies\Microsoft\Office')) {
+            if (-not (Test-Path ${'$'}root)) { continue }
+            foreach (${'$'}ver in Get-ChildItem ${'$'}root -ErrorAction SilentlyContinue |
+                Where-Object { ${'$'}_.PSChildName -match '^\d+\.\d+${'$'}' }) {
+              foreach (${'$'}app in @('Word','Excel','PowerPoint','Outlook','Access','Publisher','Visio')) {
+                ${'$'}appKey = Join-Path ${'$'}ver.PSPath ${'$'}app
+                if (-not (Test-Path ${'$'}appKey)) { continue }
+                ${'$'}officeSeen = ${'$'}true
+                ${'$'}sec = Join-Path ${'$'}appKey 'Security'
+                if (-not (Test-Path ${'$'}sec)) { continue }
+                ${'$'}sp = Get-ItemProperty -LiteralPath ${'$'}sec -ErrorAction SilentlyContinue
+                if (${'$'}sp.blockcontentexecutionfrominternet -eq 0) { Emit 'office.macroWeak' ("${'$'}{app}: internet macros unblocked") }
+                if (${'$'}sp.vbawarnings -eq 1) { Emit 'office.macroWeak' ("${'$'}{app}: all macros enabled") }
+              }
+            }
+          }
+          if (${'$'}officeSeen) { Emit 'office.read' 'True' }
+        } catch { }
+        # Bring-your-own-vulnerable-driver (BYOVD). A legitimately signed driver
+        # with a known flaw lets a program on this machine reach the kernel --
+        # the usual way an endpoint protection product is switched off before
+        # ransomware runs. EVERY loaded driver is hashed and its hash emitted for
+        # the collector to confirm against the bundled LOLDrivers list. Matching
+        # by hash, not filename, is deliberate: a renamed copy of a vulnerable
+        # driver keeps its hash, and the public guidance is explicit that a
+        # name match is neither necessary nor sufficient. ~200 small files, well
+        # under the 90s and 4 MiB ceilings. Read-only: nothing is loaded,
+        # unloaded, or changed.
+        try {
+          foreach (${'$'}d in Get-CimInstance Win32_SystemDriver -ErrorAction Stop |
+              Where-Object { ${'$'}_.State -eq 'Running' }) {
+            ${'$'}pn = "${'$'}(${'$'}d.PathName)".Trim()
+            if (-not ${'$'}pn) { continue }
+            ${'$'}pn = ${'$'}pn -replace '^\\\?\?\\', ''
+            ${'$'}leaf = ([System.IO.Path]::GetFileName(${'$'}pn)).ToLower()
+            ${'$'}dh = DriverHash ${'$'}pn
+            if (${'$'}dh) { Emit 'driver.loaded' ("{0}`t{1}" -f (San ${'$'}leaf), ${'$'}dh) }
+          }
+          Emit 'driver.enumerated' 'True'
         } catch { }
         Emit 'hard.settingsRead' 'True'
 

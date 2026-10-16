@@ -25,7 +25,8 @@ class DesktopIntel private constructor(
     private val breachedPasswords: BloomFilter?,
     private val blockedDomains: SortedHashSet64?,
     private val allowedDomains: SortedHashSet64?,
-    private val malwareHashes: SortedHashSet64?
+    private val malwareHashes: SortedHashSet64?,
+    private val vulnerableDriverHashes: SortedHashSet64?
 ) {
 
     data class Manifest(
@@ -46,7 +47,8 @@ class DesktopIntel private constructor(
         stalenessDays = manifest?.builtOn?.let {
             IsoDate.daysBetween(it, nowIsoDate)?.toInt()?.coerceAtLeast(0)
         },
-        isKnownMalware = malwareHashes?.let { table -> { hash -> table.contains(hash.trim().lowercase()) } }
+        isKnownMalware = malwareHashes?.let { table -> { hash -> table.contains(hash.trim().lowercase()) } },
+        isVulnerableDriver = vulnerableDriverHashes?.let { table -> { hash -> table.contains(hash.trim().lowercase()) } }
     )
 
     /**
@@ -80,11 +82,13 @@ class DesktopIntel private constructor(
             malwareHashes = resource("$DIR/malware.mus")
                 ?.let { runCatching { SortedHashSet64.parse(it) }.getOrNull() },
             allowedDomains = resource("$DIR/allowlist.mus")
+                ?.let { runCatching { SortedHashSet64.parse(it) }.getOrNull() },
+            vulnerableDriverHashes = resource("$DIR/drivers.mus")
                 ?.let { runCatching { SortedHashSet64.parse(it) }.getOrNull() }
         )
 
         /** An empty bundle, for tests and for a build with no generated assets. */
-        fun empty(): DesktopIntel = DesktopIntel(null, null, null, null, null)
+        fun empty(): DesktopIntel = DesktopIntel(null, null, null, null, null, null)
 
         private fun resource(path: String): ByteArray? = try {
             DesktopIntel::class.java.getResourceAsStream(path)?.use { it.readBytes() }

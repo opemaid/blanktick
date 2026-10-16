@@ -160,6 +160,43 @@ def read_lines(path: pathlib.Path):
                 yield parts[0]
 
 
+_HEX = set("0123456789abcdef")
+
+
+def _looks_like_loldrivers(path: pathlib.Path) -> bool:
+    """True when the file is the LOLDrivers JSON corpus rather than a hash list.
+
+    Checked by content, not just suffix, so a `.txt` export of the JSON or a
+    `.json` of bare hashes are both handled correctly: a LOLDrivers dump starts
+    with a JSON array/object, a hash list starts with hex.
+    """
+    if path.suffix.lower() == ".json":
+        return True
+    with path.open("r", encoding="utf-8", errors="replace") as fh:
+        head = fh.read(256).lstrip()
+    return head.startswith(("[", "{"))
+
+
+def loldrivers_hashes(path: pathlib.Path) -> list[str]:
+    """Every valid SHA-256 in a LOLDrivers `drivers.json` corpus, lowercased.
+
+    Pulls `KnownVulnerableSamples[].SHA256` from each driver entry. Both the
+    "vulnerable" and "malicious" categories are kept: a loaded driver matching
+    either is worth telling the user about. Non-64-hex values (blanks, the
+    occasional SHA1/MD5 landing in the wrong field) are dropped.
+    """
+    import json
+
+    data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+    out: list[str] = []
+    for entry in data if isinstance(data, list) else []:
+        for sample in (entry.get("KnownVulnerableSamples") or []):
+            h = str(sample.get("SHA256") or "").strip().lower()
+            if len(h) == 64 and all(c in _HEX for c in h):
+                out.append(h)
+    return out
+
+
 def synthetic_passwords(count: int, seed: int = 20260828):
     """
     Deterministic filler so the pipeline can be built and measured end to end
@@ -202,6 +239,14 @@ def main() -> int:
                          "anything that is not 64 hex characters is skipped.")
     ap.add_argument("--allowlist", type=pathlib.Path,
                     help="domains that must never be blocked")
+    ap.add_argument("--drivers", type=pathlib.Path,
+                    help="known-vulnerable kernel driver corpus (BYOVD). Accepts "
+                         "EITHER the LOLDrivers drivers.json (fetch with "
+                         "tools/fetch_loldrivers.py) — every KnownVulnerableSamples "
+                         "SHA256 is pulled — OR a plain list of SHA-256 hashes, one "
+                         "per line (bare hex or CSV, hash first). Omitted => no "
+                         "drivers.mus is written and DSK-DRV-001 reports 'not "
+                         "checkable' rather than a false pass.")
     ap.add_argument("--password-limit", type=int, default=2_000_000)
     ap.add_argument("--domain-limit", type=int, default=2_000_000)
     ap.add_argument("--fpr", type=float, default=DEFAULT_PASSWORD_FPR)
@@ -325,6 +370,41 @@ def main() -> int:
           + ("  (EICAR only -- pass --malware to add a real corpus)"
              if len(hashes) == 1 else ""))
 
+    # ---- known-vulnerable driver hashes (BYOVD) --------------------------
+    #
+    # Same exact-table structure and the same no-false-positive discipline as
+    # the malware list, for the same reason: a false positive here calls a
+    # legitimately signed driver on someone's machine exploitable.
+    #
+    # Unlike malware there is no universal benign test value (no "EICAR for
+    # drivers"), so a synthetic build writes NOTHING here. An empty-but-present
+    # corpus would make DSK-DRV-001 answer "no vulnerable drivers found" on a
+    # machine where nothing was actually checked -- the false reassurance this
+    # product exists to avoid. No file => the rule reports *not checkable*.
+    driver_hashes = []
+    if args.drivers and args.drivers.exists():
+        if _looks_like_loldrivers(args.drivers):
+            # The LOLDrivers corpus itself: a JSON array of drivers, each with a
+            # KnownVulnerableSamples list carrying the SHA256 of every known
+            # sample. Pull them all; dedup happens in build_sorted_set.
+            driver_hashes = loldrivers_hashes(args.drivers)
+            print(f"Drivers:   LOLDrivers corpus -> {len(driver_hashes):,} sample hashes")
+        else:
+            for line in read_lines(args.drivers):
+                candidate = line.split(",")[0].strip().strip('"').lower()
+                if len(candidate) == 64 and all(c in "0123456789abcdef" for c in candidate):
+                    driver_hashes.append(candidate)
+    if driver_hashes:
+        dblob = build_sorted_set(driver_hashes, normalize=False)
+        (out / "drivers.mus").write_bytes(dblob)
+        print(f"Drivers:   {len(driver_hashes):,} hashes · {len(dblob) / 1024:.1f} KiB")
+    else:
+        # Remove any stale file so a demo build never ships a usable-looking
+        # but empty corpus.
+        (out / "drivers.mus").unlink(missing_ok=True)
+        print("Drivers:   none (pass --drivers to add a BYOVD corpus; "
+              "DSK-DRV-001 reports 'not checkable' without one)")
+
     # ---- signers ---------------------------------------------------------
     seed_signers = SEEDS / "signers-seed.txt"
     if seed_signers.exists():
@@ -344,6 +424,7 @@ def main() -> int:
         f"passwords={bloom.inserted}",
         f"domains={len(domains)}",
         f"malware={len(hashes)}",
+        f"drivers={len(driver_hashes)}",
         "version=1",
         f"synthetic={'true' if synthetic else 'false'}",
         "",

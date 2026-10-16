@@ -98,14 +98,14 @@ rather than presenting meaningless password and link verdicts as findings.
 
 ## What it checks
 
-**85 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
+**88 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
 rather than estimated:
 
 | Platform | Eligible | Run on an *idealised* device | Not checkable |
 |---|---|---|---|
-| Android | 29 | 29 | 56 (rules with no Android equivalent) |
-| iPhone | 15 | 12 | 73 |
-| Desktop | 67 | 66 | 19 |
+| Android | 29 | 29 | 59 (rules with no Android equivalent) |
+| iPhone | 15 | 12 | 76 |
+| Desktop | 70 | 69 | 19 |
 
 Those are fixture numbers — a device that answers every question it can. **A real
 machine answers fewer.** On the development laptop (Windows 11, standard user, no

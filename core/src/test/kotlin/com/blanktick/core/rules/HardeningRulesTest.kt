@@ -295,4 +295,62 @@ class HardeningRulesTest {
             "the healthy fixture must model exclusions as unreadable, which is the real case"
         )
     }
+
+    // ------------------------------------------------- saved RDP credentials
+
+    @Test
+    fun `a saved remote-desktop password is a medium finding`() {
+        val outcome = HardeningRules.SavedRemoteDesktopPassword.evaluate(
+            withHardening(healthyHardening.copy(savedRemoteDesktopCredentials = 2))
+        )
+        val f = (outcome as RuleOutcome.Fail).findings.single()
+        assertEquals(Severity.MEDIUM, f.severity)
+        assertTrue(f.title.contains("2"), "the count is carried into the message")
+    }
+
+    @Test
+    fun `generic saved credentials do not fire the RDP rule`() {
+        // Stock reading is 0 TERMSRV targets even with generic creds present.
+        val outcome = HardeningRules.SavedRemoteDesktopPassword.evaluate(
+            withHardening(healthyHardening.copy(savedRemoteDesktopCredentials = 0))
+        )
+        assertTrue(outcome is RuleOutcome.Pass)
+    }
+
+    @Test
+    fun `unread credential store is not-applicable, never a pass`() {
+        val outcome = HardeningRules.SavedRemoteDesktopPassword.evaluate(
+            withHardening(healthyHardening.copy(savedRemoteDesktopCredentials = null))
+        )
+        assertTrue(outcome is RuleOutcome.NotApplicable)
+    }
+
+    // ---------------------------------------------------- Office macro policy
+
+    @Test
+    fun `explicitly weakened Office macros are a medium finding`() {
+        val outcome = HardeningRules.OfficeMacroPolicyWeak.evaluate(
+            withHardening(healthyHardening.copy(
+                officeMacroSecurityWeak = listOf("Excel: internet macros unblocked")
+            ))
+        )
+        val f = (outcome as RuleOutcome.Fail).findings.single()
+        assertEquals(Severity.MEDIUM, f.severity)
+    }
+
+    @Test
+    fun `office present with default macro settings passes`() {
+        val outcome = HardeningRules.OfficeMacroPolicyWeak.evaluate(
+            withHardening(healthyHardening.copy(officeMacroSecurityWeak = emptyList()))
+        )
+        assertTrue(outcome is RuleOutcome.Pass)
+    }
+
+    @Test
+    fun `no readable Office install is not-applicable, never a pass`() {
+        val outcome = HardeningRules.OfficeMacroPolicyWeak.evaluate(
+            withHardening(healthyHardening.copy(officeMacroSecurityWeak = null))
+        )
+        assertTrue(outcome is RuleOutcome.NotApplicable)
+    }
 }

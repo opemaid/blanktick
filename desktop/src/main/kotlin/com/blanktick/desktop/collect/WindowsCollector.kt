@@ -65,6 +65,9 @@ internal class WindowsCollector : PlatformCollector {
      */
     private var knownMalware: ((String) -> Boolean?)? = null
 
+    /** Set for the duration of [collect] so the driver sweep can confirm a hash. */
+    private var vulnerableDriver: ((String) -> Boolean?)? = null
+
     /**
      * Resolves one file hash against the bundled corpus.
      *
@@ -97,6 +100,26 @@ internal class WindowsCollector : PlatformCollector {
         return knownMalware?.invoke(hash)
     }
 
+    /**
+     * Loaded drivers whose hash the bundled LOLDrivers corpus confirms as
+     * known-vulnerable. The probe hashes every loaded driver; this keeps only
+     * the matches, by hash — so a renamed copy of a vulnerable driver is still
+     * caught and a benign file is never reported on a name coincidence.
+     *
+     * `null` when the sweep did not complete (no sentinel) or no corpus is
+     * bundled to confirm against — reported as *not checkable*, never as a pass.
+     */
+    private fun vulnerableDrivers(): List<String>? {
+        if (one("driver.enumerated") == null) return null
+        val confirm = vulnerableDriver ?: return null
+        return all("driver.loaded").orEmpty().mapNotNull { row ->
+            val parts = row.split('\t')
+            if (parts.size != 2) return@mapNotNull null
+            val hash = parts[1].trim().lowercase().takeIf { it.length == 64 } ?: return@mapNotNull null
+            if (confirm(hash) == true) DisplaySafe.label(parts[0]) else null
+        }.distinct()
+    }
+
     private fun one(key: String): String? = probe[key]?.firstOrNull()
     private fun all(key: String): List<String>? = probe[key]
     private fun bool(key: String): Boolean? = Shell.parseBoolean(one(key))
@@ -106,6 +129,7 @@ internal class WindowsCollector : PlatformCollector {
 
     override fun collect(intel: DesktopIntelSnapshot): DesktopFacts {
         knownMalware = intel.isKnownMalware
+        vulnerableDriver = intel.isVulnerableDriver
         // The sentinel, not the row count, decides whether this is an answer.
         // Two profiles enumerated and both enabled is not "the firewall is on"
         // -- Windows has three, and the one that failed to read is exactly the
@@ -171,6 +195,7 @@ internal class WindowsCollector : PlatformCollector {
             autoRunKeysUnread = if (all("autorun.read").isNullOrEmpty()) null
             else all("autorun.denied").orEmpty().map { DisplaySafe.label(it) }.distinct(),
             installedPrograms = installedPrograms(),
+            vulnerableDriversLoaded = vulnerableDrivers(),
             browserExtensions = browserExtensions(),
             // An empty list means every browser profile that exists was read;
             // null means none were found. Mirrors the autorun coverage pattern.
@@ -582,7 +607,15 @@ internal class WindowsCollector : PlatformCollector {
             powerShellScriptBlockLogging = one("hard.scriptBlockLogging")?.let { it == "1" } ?: false,
             // Service names are installer-chosen text headed for the screen.
             unquotedServicePaths = if (one("svc.unquotedRead") == null) null
-            else all("svc.unquoted").orEmpty().map { DisplaySafe.label(it) }.distinct()
+            else all("svc.unquoted").orEmpty().map { DisplaySafe.label(it) }.distinct(),
+            // Count of TERMSRV/ targets from cmdkey; emitted even at zero, so a
+            // missing key (cmdkey unreadable) is null and zero is a real pass.
+            savedRemoteDesktopCredentials = int("cred.savedRdp"),
+            // Only an explicitly weakened Office macro setting is emitted;
+            // 'office.read' marks that an Office app was actually found, so no
+            // Office install reads null rather than an empty (passing) list.
+            officeMacroSecurityWeak = if (one("office.read") == null) null
+            else all("office.macroWeak").orEmpty().map { DisplaySafe.label(it) }.distinct()
         )
     }
 

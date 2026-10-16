@@ -183,6 +183,8 @@ class WindowsProbeTest {
                 "hard.enableLua", "hard.llmnr", "hard.psV2Present", "hard.remoteRegistry",
                 "hard.runAsPPL", "hard.settingsRead", "hard.smb1", "hard.wdigest",
                 "hard.winrmStatus",
+                "cred.savedRdp", "office.macroWeak", "office.read",
+                "driver.loaded", "driver.enumerated",
                 "lock.screenSaverActive", "lock.screenSaverIsSecure", "lock.screenSaverTimeout",
                 "os.build", "ps.languageMode", "probe.complete",
                 "avscan", "avscan.enumerated", "av.scannerAvailable",

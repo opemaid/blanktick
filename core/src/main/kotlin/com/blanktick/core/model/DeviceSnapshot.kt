@@ -507,7 +507,26 @@ data class DesktopFacts(
      * would have meant six fields that are permanently null and one rule set
      * that cannot run.
      */
-    val installedPrograms: List<InstalledProgram>? = null
+    val installedPrograms: List<InstalledProgram>? = null,
+
+    /**
+     * Loaded kernel drivers whose SHA-256 is on the bundled known-vulnerable
+     * (LOLDrivers) list, by driver filename.
+     *
+     * This is the "bring your own vulnerable driver" (BYOVD) surface: a signed
+     * but exploitable driver that a normal user — or malware running as one —
+     * can load to reach the kernel, the standard move for disabling an EDR or a
+     * ransomware pre-kill. Matched at collection time against the bundled
+     * corpus, so the rule stays a pure function of this list.
+     *
+     * Every loaded driver is hashed and matched by SHA-256, not by name: a
+     * renamed copy of a vulnerable driver keeps its hash and is still caught,
+     * and a benign file is never reported on a name coincidence.
+     *
+     * Empty = drivers were enumerated and none matched. `null` = drivers could
+     * not be enumerated or hashed, or no corpus is bundled. Stock: empty.
+     */
+    val vulnerableDriversLoaded: List<String>? = null
 )
 
 /**
@@ -720,7 +739,42 @@ data class HardeningFacts(
      * "C:\Program Files\A B\svc.exe" runs "C:\Program.exe" if one exists.
      * Names only. Stock: none.
      */
-    val unquotedServicePaths: List<String>? = null
+    val unquotedServicePaths: List<String>? = null,
+
+    // ---- added 2026-10-16: coverage-review gap closers --------------------
+    // Each measured non-elevated on Windows 11 Home 26200 before a rule was
+    // written against it; the stock reading is noted per field.
+
+    /**
+     * Saved Remote Desktop credentials in Credential Manager — the count of
+     * targets whose name begins `TERMSRV/`, from `cmdkey /list`.
+     *
+     * Generic saved credentials (browsers, apps) are stock noise: 13 on a plain
+     * machine, so a count of *all* saved credentials would fire on everything.
+     * A saved RDP password is different — it is a reusable key to another host
+     * sitting on disk, and the stock reading is 0.
+     *
+     * The passwords themselves are never collected, only that TERMSRV targets
+     * exist and how many — the same discipline the auto-logon password check
+     * follows. `null` when `cmdkey` could not be read.
+     */
+    val savedRemoteDesktopCredentials: Int? = null,
+
+    /**
+     * Office macro settings explicitly weakened from the shipped default, as
+     * `"App: what"` strings (e.g. `"Excel: internet macros unblocked"`).
+     *
+     * Absence is the safe default and never listed: modern Office blocks macros
+     * that carry a mark-of-the-web and warns before running VBA, and those
+     * policies are simply not written on a stock install (measured: Microsoft
+     * 365 16.0 present, the keys unset). Only an explicit weakening —
+     * `blockcontentexecutionfrominternet=0` or `vbawarnings=1` — is a finding,
+     * the same "absent means off/safe" reading as WDigest.
+     *
+     * Empty = Office present and not weakened. `null` = no Office install was
+     * readable for this user.
+     */
+    val officeMacroSecurityWeak: List<String>? = null
 )
 
 /**

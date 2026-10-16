@@ -559,8 +559,100 @@ object HardeningRules {
         }
     }
 
+    // ----------------------------------------------- Saved RDP credentials
+
+    /**
+     * A saved Remote Desktop password sits in Credential Manager.
+     *
+     * Not the generic saved credentials every browser and app leaves there —
+     * those are stock (13 on a plain machine) and firing on them would be
+     * noise. A `TERMSRV/` entry is a reusable password to *another* computer,
+     * cached on this one, which is exactly what turns one compromised laptop
+     * into movement across a network. Stock reading is zero.
+     */
+    val SavedRemoteDesktopPassword = object : BaseRule(
+        id = "DSK-CRED-003",
+        category = Category.ACCOUNT_SECURITY,
+        description = "No remote-desktop passwords are left saved on this machine",
+        platforms = Platforms.DESKTOP_ONLY
+    ) {
+        override fun check(s: DeviceSnapshot) = facts(s) { d ->
+            val h = d.hardening ?: return@facts RuleOutcome.NotApplicable
+            val saved = h.savedRemoteDesktopCredentials ?: return@facts RuleOutcome.NotApplicable
+            if (saved <= 0) return@facts RuleOutcome.Pass
+
+            RuleOutcome.Fail(
+                Finding(
+                    ruleId = id,
+                    category = category,
+                    severity = Severity.MEDIUM,
+                    title = if (saved == 1) "A remote-desktop password is saved on this computer"
+                    else "$saved remote-desktop passwords are saved on this computer",
+                    detail = "Windows is storing " + (if (saved == 1) "a password" else "$saved passwords") +
+                        " for connecting to another computer by Remote Desktop, so the connection " +
+                        "happens without anyone typing it. Anyone who gets onto this machine can " +
+                        "reuse that saved password to reach the other computer too — it is how " +
+                        "access to one device becomes access to several.",
+                    remediation = "If you do not need the saved sign-in, open Credential Manager " +
+                        "(or run cmdkey /list) and remove the entries beginning TERMSRV/. The " +
+                        "connection still works; it just asks for the password next time.",
+                    subjectId = "termsrv",
+                    evidence = mapOf("savedRemoteDesktopCredentials" to saved.toString())
+                )
+            )
+        }
+    }
+
+    // --------------------------------------------------- Office macro policy
+
+    /**
+     * Office is set to run macros it should warn about or block.
+     *
+     * A macro in a downloaded document is still a front-line way onto a machine.
+     * Modern Office already blocks macros carrying a mark-of-the-web and warns
+     * before running VBA, and those defaults are not written to the registry —
+     * so absence is safe and never a finding. The rule fires only where a
+     * policy has explicitly turned a protection *off*: internet macros
+     * un-blocked, or "enable all macros" selected.
+     */
+    val OfficeMacroPolicyWeak = object : BaseRule(
+        id = "DSK-OFF-001",
+        category = Category.APP_HYGIENE,
+        description = "Office is not set to run macros it should block",
+        platforms = Platforms.DESKTOP_ONLY
+    ) {
+        override fun check(s: DeviceSnapshot) = facts(s) { d ->
+            val h = d.hardening ?: return@facts RuleOutcome.NotApplicable
+            val weak = h.officeMacroSecurityWeak ?: return@facts RuleOutcome.NotApplicable
+            if (weak.isEmpty()) return@facts RuleOutcome.Pass
+
+            RuleOutcome.Fail(
+                Finding(
+                    ruleId = id,
+                    category = category,
+                    severity = Severity.MEDIUM,
+                    title = "Office is set to run macros it would normally block",
+                    detail = "Office protects you from documents that carry hidden code (macros) " +
+                        "by refusing to run it from files off the internet and warning before " +
+                        "running it at all. On this machine that protection has been turned down: " +
+                        weak.joinToString("; ") + ". A booby-trapped document is one of the most " +
+                        "common ways a computer gets taken over, and this removes the step that " +
+                        "stops it.",
+                    remediation = "Unless a specific business document needs macros, put these back: " +
+                        "in each Office app, File > Options > Trust Center > Macro Settings, choose " +
+                        "to disable macros with notification, and keep \"Block macros from the " +
+                        "internet\" on.",
+                    subjectId = "office-macros",
+                    evidence = mapOf("weakened" to weak.joinToString(", "))
+                )
+            )
+        }
+    }
+
     val ALL: List<Rule> = listOf(
         MachineWideRootCertificate,
+        SavedRemoteDesktopPassword,
+        OfficeMacroPolicyWeak,
         UacDisabled,
         CredentialsExposedInMemory,
         AutoLogonPasswordStored,

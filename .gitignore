@@ -59,3 +59,6 @@ tools/rc/
 .claude/
 # footage-derived ad outputs (external reference clip; keep source only)
 ad/blanktick-hack/*.mp4
+
+# LOLDrivers raw corpus (33MB) - build-time source for drivers.mus; regenerate with tools/fetch_loldrivers.py
+tools/seeds/loldrivers.json
