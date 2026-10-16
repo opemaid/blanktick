@@ -62,3 +62,6 @@ ad/blanktick-hack/*.mp4
 
 # LOLDrivers raw corpus (33MB) - build-time source for drivers.mus; regenerate with tools/fetch_loldrivers.py
 tools/seeds/loldrivers.json
+
+# Python bytecode cache
+__pycache__/

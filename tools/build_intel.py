@@ -432,7 +432,13 @@ def main() -> int:
     (out / "manifest.txt").write_text(manifest, encoding="utf-8", newline="\n")
 
     total = sum(p.stat().st_size for p in out.iterdir() if p.is_file())
-    print(f"\nBundle written to {out.relative_to(ROOT)}")
+    # Resolve first: --out may be relative (CI passes a repo-relative path) or
+    # outside the tree, either of which makes a bare relative_to() raise.
+    try:
+        shown = out.resolve().relative_to(ROOT)
+    except ValueError:
+        shown = out.resolve()
+    print(f"\nBundle written to {shown}")
     print(f"Total: {total / 1048576:.2f} MiB")
     if synthetic:
         print("\n  NOTE: this bundle is SYNTHETIC. manifest.txt records synthetic=true.")

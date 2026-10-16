@@ -1,0 +1,15 @@
+# A small, fixed subset of real LOLDrivers SHA-256 hashes, committed so CI can
+# build a drivers.mus and run DriverCorpusTest's cross-language positive control
+# WITHOUT a 33 MiB network fetch. These are public, canonical BYOVD drivers.
+#
+# This is NOT the shipping corpus. A real build fetches the full list:
+#   python tools/fetch_loldrivers.py
+#   python tools/build_intel.py --drivers tools/seeds/loldrivers.json \
+#       --out desktop/src/main/resources/intel
+#
+# name is a comment only; the hash is authoritative.
+03e0581432f5c8cc727a8aa387f5b69ff84d38d0df6f1226c19c6e960a81e1e9  # rtcore64.sys   CVE-2019-16098 (MSI Afterburner) — DriverCorpusTest's known-positive
+0296e2ce999e67c76352613a718e11516fe1b0efc3ffdb8918fc999dd76a73a5  # dbutil_2_3.sys CVE-2021-21551 (Dell)
+31f4cfb4c71da44120752721103a16512444c13c2ac2d857a7e6f13cb679b427  # gdrv.sys       (Gigabyte)
+11bd2c9f9e2397c9a16e0990e4ed2cf0679498fe0fd418a3dfdac60b5c160ee5  # winring0x64.sys (OpenLibSys, widely abused)
+4429f32db1cc70567919d7d47b844a91cf1329a6cd116f582305f3b7b60cd60b  # iqvw64e.sys    CVE-2015-2291 (Intel)

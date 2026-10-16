@@ -144,12 +144,18 @@ internal object WindowsProbe {
         # the vulnerable-driver check is independent of the antivirus, because a
         # driver with a known flaw is a problem whether or not the scanner flags
         # it, and most will not be flagged at all (they are signed, legitimate
-        # software). Still read-only, still capped, still never throws out.
+        # software). Still read-only and never throws out.
+        #
+        # Capped at 16 MiB, far lower than FileHash's 200 MiB: a real kernel
+        # driver is tiny (RTCore64 is 14 KB; the LOLDrivers samples are all well
+        # under a megabyte), so anything larger is a GPU or AV blob that cannot
+        # be a match. Measured: two such outliers (one 108 MiB) turned a 2-second
+        # sweep into 42, for files that could never be on the list.
         function DriverHash(${'$'}path) {
           if (-not ${'$'}path) { return '' }
           try {
             ${'$'}f = Get-Item -LiteralPath ${'$'}path -ErrorAction Stop
-            if (${'$'}f.Length -gt 209715200) { return '' }
+            if (${'$'}f.Length -gt 16777216) { return '' }
             ${'$'}sha = [System.Security.Cryptography.SHA256]::Create()
             try {
               ${'$'}stream = [System.IO.File]::OpenRead(${'$'}f.FullName)
@@ -1250,7 +1256,12 @@ internal object WindowsProbe {
         # than passing on a machine with no Office at all.
         try {
           ${'$'}officeSeen = ${'$'}false
-          foreach (${'$'}root in @('HKCU:\Software\Microsoft\Office','HKCU:\Software\Policies\Microsoft\Office')) {
+          # Per-user settings and per-user policy (HKCU), plus machine-wide GPO
+          # policy (HKLM\Software\Policies): a GPO that weakens macros lands in
+          # the HKLM policy hive, which is world-readable without elevation. The
+          # Policies key is not WOW64-redirected, so one path covers 32- and
+          # 64-bit Office.
+          foreach (${'$'}root in @('HKCU:\Software\Microsoft\Office','HKCU:\Software\Policies\Microsoft\Office','HKLM:\Software\Policies\Microsoft\Office')) {
             if (-not (Test-Path ${'$'}root)) { continue }
             foreach (${'$'}ver in Get-ChildItem ${'$'}root -ErrorAction SilentlyContinue |
                 Where-Object { ${'$'}_.PSChildName -match '^\d+\.\d+${'$'}' }) {
@@ -1271,13 +1282,13 @@ internal object WindowsProbe {
         # Bring-your-own-vulnerable-driver (BYOVD). A legitimately signed driver
         # with a known flaw lets a program on this machine reach the kernel --
         # the usual way an endpoint protection product is switched off before
-        # ransomware runs. EVERY loaded driver is hashed and its hash emitted for
-        # the collector to confirm against the bundled LOLDrivers list. Matching
-        # by hash, not filename, is deliberate: a renamed copy of a vulnerable
-        # driver keeps its hash, and the public guidance is explicit that a
-        # name match is neither necessary nor sufficient. ~200 small files, well
-        # under the 90s and 4 MiB ceilings. Read-only: nothing is loaded,
-        # unloaded, or changed.
+        # ransomware runs. Every loaded driver up to DriverHash's 16 MiB cap is
+        # hashed and its hash emitted for the collector to confirm against the
+        # bundled LOLDrivers list. Matching by hash, not filename, is deliberate:
+        # a renamed copy of a vulnerable driver keeps its hash, and the public
+        # guidance is explicit that a name match is neither necessary nor
+        # sufficient. Measured ~2.3s for ~200 drivers. Read-only: nothing is
+        # loaded, unloaded, or changed.
         try {
           foreach (${'$'}d in Get-CimInstance Win32_SystemDriver -ErrorAction Stop |
               Where-Object { ${'$'}_.State -eq 'Running' }) {
