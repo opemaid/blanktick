@@ -249,7 +249,10 @@ internal object WindowsProbe {
         }
 
         # ---- accounts -------------------------------------------------------
-        Emit 'acct.sessionIsAdmin' (([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
+        # Kept in a script var too: the Defender-exclusion read below gates on
+        # the real elevation state rather than string-matching an English error.
+        ${'$'}script:isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        Emit 'acct.sessionIsAdmin' ${'$'}script:isAdmin
 
         # Resolved by SID, not by the name "Administrators", which is localised:
         # on a German install the group is "Administratoren" and a name lookup
@@ -1369,10 +1372,16 @@ internal object WindowsProbe {
         # a known blind spot rather than as an empty list, because an empty list
         # would read as "no exclusions configured", which is a different and
         # much more reassuring claim than the truth.
-        ${'$'}excl = (Get-MpPreference).ExclusionPath
-        if (${'$'}excl -and "${'$'}excl" -notmatch 'must be an administrator') {
+        # Gate on the real elevation state, not Defender's English refusal
+        # string: on non-English Windows the localized "must be an administrator"
+        # message would not match, so the sentence itself was emitted as an
+        # exclusion path and invented as a finding. When elevated, the read is
+        # trustworthy (an empty result then genuinely means none configured);
+        # when not, it is an honest blind spot.
+        if (${'$'}script:isAdmin) {
           Emit 'av.exclusionsReadable' 'True'
-          foreach (${'$'}e in ${'$'}excl) { Emit 'av.exclusion' (San ${'$'}e) }
+          ${'$'}excl = (Get-MpPreference).ExclusionPath
+          if (${'$'}excl) { foreach (${'$'}e in ${'$'}excl) { Emit 'av.exclusion' (San ${'$'}e) } }
         } else {
           Emit 'av.exclusionsReadable' 'False'
         }
