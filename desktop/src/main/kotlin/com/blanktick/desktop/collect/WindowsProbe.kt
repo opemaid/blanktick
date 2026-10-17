@@ -1272,8 +1272,8 @@ internal object WindowsProbe {
                 ${'$'}sec = Join-Path ${'$'}appKey 'Security'
                 if (-not (Test-Path ${'$'}sec)) { continue }
                 ${'$'}sp = Get-ItemProperty -LiteralPath ${'$'}sec -ErrorAction SilentlyContinue
-                if (${'$'}sp.blockcontentexecutionfrominternet -eq 0) { Emit 'office.macroWeak' ("${'$'}{app}: internet macros unblocked") }
-                if (${'$'}sp.vbawarnings -eq 1) { Emit 'office.macroWeak' ("${'$'}{app}: all macros enabled") }
+                if (${'$'}sp.blockcontentexecutionfrominternet -eq 0) { Emit 'office.macroWeak' (San ("${'$'}{app}: internet macros unblocked")) }
+                if (${'$'}sp.vbawarnings -eq 1) { Emit 'office.macroWeak' (San ("${'$'}{app}: all macros enabled")) }
               }
             }
           }

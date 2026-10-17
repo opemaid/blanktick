@@ -53,6 +53,37 @@ class WindowsProbeTest {
     }
 
     /**
+     * The same no-mutation fence, extended to NATIVE executables.
+     *
+     * [mutatingVerbs] only catches PowerShell cmdlet verbs. The probe also
+     * shells out to native tools — `cmdkey /list`, `net accounts` — and a native
+     * mutation like `cmdkey /delete` or `reg add` carries no `Add-`/`Set-` token,
+     * so the cmdlet fence is blind to it. The `cmdkey` call was the first native
+     * mutation-capable exe the probe invoked; this closes the gap it opened. The
+     * current read-only forms (`cmdkey /list`, `net accounts`, `netsh … show`,
+     * `attrib` reads) are deliberately NOT in this list.
+     */
+    private val mutatingNativeCommands = listOf(
+        "cmdkey /add", "cmdkey /delete", "cmdkey /generic",
+        "reg add", "reg delete", "reg import", "reg load", "reg unload",
+        "schtasks /create", "schtasks /change", "schtasks /delete", "schtasks /run",
+        "net user ", "net localgroup ",
+        "wmic ", "bcdedit ", "takeown "
+    )
+
+    @Test
+    fun `the probe runs no mutating native command`() {
+        val offenders = statements.filter { line ->
+            mutatingNativeCommands.any { cmd -> line.contains(cmd, ignoreCase = true) }
+        }
+        assertTrue(
+            offenders.isEmpty(),
+            "the Windows probe must only query, but found a native mutation:\n" +
+                offenders.joinToString("\n")
+        )
+    }
+
+    /**
      * Two COM handles are allowed, and they are named here so that the blanket
      * ban above stays meaningful.
      *

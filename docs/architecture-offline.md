@@ -138,7 +138,7 @@ blanktick/
 ├── core/                    Pure Kotlin/JVM · no I/O · no Android · no network
 │   ├── model/               DeviceSnapshot, Finding, Severity, Category
 │   ├── scoring/             ScoringEngine + ScoringPolicy  (the normative one)
-│   ├── rules/               25 rules, stable IDs, platform-gated
+│   ├── rules/               88 rules, stable IDs, platform-gated
 │   ├── filters/             BloomFilter, SortedHashSet64, Hashing
 │   ├── intel/               IntelBundle readers + staleness
 │   └── analysis/            UrlAnalyzer, PermissionClusterAnalyzer, ExifAnalyzer

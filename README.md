@@ -134,7 +134,7 @@ The asymmetry is real and every app says so on screen — listing what it could
   root CA. We enumerate every CA the OS did not ship — and say when it was an
   employer's MDM rather than an attacker.
 
-**Desktop only — 16 rules that have no phone equivalent:**
+**Desktop only — 59 rules that have no phone equivalent:**
 
 - **Host firewall**, per profile. The common failure is not "firewall off", it is
   "Public profile off since that printer thing", which disarms it precisely when
@@ -318,7 +318,7 @@ offline phishing-link checker.
 core/                Pure Kotlin/JVM · no I/O · no Android · no network
   model/             DeviceSnapshot, DesktopFacts, Finding, Severity, Category
   scoring/           ScoringEngine + ScoringPolicy  (the normative one)
-  rules/             81 rules, stable IDs, platform-gated
+  rules/             88 rules, stable IDs, platform-gated
   filters/           BloomFilter, SortedHashSet64, Hashing
   analysis/          UrlAnalyzer, Punycode, Confusables, PublicSuffix, ExifGps
 app/                 Android · Compose · collectors only
@@ -351,8 +351,8 @@ answers. The bug cost coverage. It could not cost correctness.
 ### Adding a platform cannot silently change an old one
 
 `BaseRule` defaults to the two mobile platforms. Adding `Platform.DESKTOP` to the
-enum therefore enrolled **no** existing rule automatically; each of the eleven
-that now run on a desktop had to opt in by name, and
+enum therefore enrolled **no** existing rule automatically; each of the 59
+desktop-only rules had to opt in by name, and
 `PlatformCoverageTest` asserts that the Android and iOS numbers did not move.
 
 ### Two data structures, on purpose
@@ -594,8 +594,10 @@ problems are not present. The app says that too.
 
 Blanktick speaks [MCP](https://modelcontextprotocol.io) over stdio, so any model with
 an MCP client can ask about this computer and get real answers rather than
-guesses: `Blanktick.exe --mcp`. Four tools, all read-only — a scan, the raw facts
-including the nulls, the exact script it runs, and its coverage on this platform.
+guesses: `Blanktick.exe --mcp`. Eight tools, all read-only — a scan, the raw facts
+including the nulls, the exact script it runs, its coverage on this platform,
+three that query the stored scan history, and one that reviews an exported
+network capture. `docs/mcp.md` has the full table.
 
 Stdio, not HTTP: your client launches Blanktick and talks to it over standard input
 and output. No socket is opened and the bytecode gate that forbids networking
