@@ -960,11 +960,13 @@ class IsoDateTest {
     }
 
     @Test
-    fun `an active vpn is surfaced as info, inactive passes, null is not-checkable`() {
+    fun `an active vpn with a known owner is info, inactive passes, unknowns not-checkable`() {
         val r = com.blanktick.core.rules.NetworkRules.VpnOwner
-        val fail = r.evaluate(Snapshots.healthyAndroid().copy(vpnActive = true))
+        val fail = r.evaluate(Snapshots.healthyAndroid().copy(vpnActive = true, vpnOwnerPackage = "com.example.vpn"))
         assertEquals(Severity.INFO, (fail as RuleOutcome.Fail).findings.first().severity)
         assertTrue(r.evaluate(Snapshots.healthyAndroid().copy(vpnActive = false)) is RuleOutcome.Pass)
         assertTrue(r.evaluate(Snapshots.healthyAndroid().copy(vpnActive = null)) is RuleOutcome.NotApplicable)
+        // Active but the owner cannot be named: not-checkable, not a finding.
+        assertTrue(r.evaluate(Snapshots.healthyAndroid().copy(vpnActive = true, vpnOwnerPackage = null)) is RuleOutcome.NotApplicable)
     }
 }
