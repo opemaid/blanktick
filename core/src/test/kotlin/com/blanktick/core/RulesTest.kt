@@ -938,4 +938,33 @@ class IsoDateTest {
         assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(screenLockTimeoutSeconds = 120)) is RuleOutcome.Pass)
         assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(screenLockTimeoutSeconds = null)) is RuleOutcome.NotApplicable)
     }
+
+    // --------------- mobile rules (low priority under Windows-only scope) -----
+
+    @Test
+    fun `an unlocked bootloader is high, locked passes, null is not-checkable`() {
+        val r = com.blanktick.core.rules.DeviceIntegrityRules.Bootloader
+        val fail = r.evaluate(Snapshots.healthyAndroid().copy(bootloaderUnlocked = true))
+        assertEquals(Severity.HIGH, (fail as RuleOutcome.Fail).findings.first().severity)
+        assertTrue(r.evaluate(Snapshots.healthyAndroid().copy(bootloaderUnlocked = false)) is RuleOutcome.Pass)
+        assertTrue(r.evaluate(Snapshots.healthyAndroid().copy(bootloaderUnlocked = null)) is RuleOutcome.NotApplicable)
+    }
+
+    @Test
+    fun `developer options enabled is low, off passes, null is not-checkable`() {
+        val r = com.blanktick.core.rules.DeviceIntegrityRules.DeveloperOptions
+        val fail = r.evaluate(Snapshots.healthyAndroid().copy(developerOptionsEnabled = true))
+        assertEquals(Severity.LOW, (fail as RuleOutcome.Fail).findings.first().severity)
+        assertTrue(r.evaluate(Snapshots.healthyAndroid().copy(developerOptionsEnabled = false)) is RuleOutcome.Pass)
+        assertTrue(r.evaluate(Snapshots.healthyAndroid().copy(developerOptionsEnabled = null)) is RuleOutcome.NotApplicable)
+    }
+
+    @Test
+    fun `an active vpn is surfaced as info, inactive passes, null is not-checkable`() {
+        val r = com.blanktick.core.rules.NetworkRules.VpnOwner
+        val fail = r.evaluate(Snapshots.healthyAndroid().copy(vpnActive = true))
+        assertEquals(Severity.INFO, (fail as RuleOutcome.Fail).findings.first().severity)
+        assertTrue(r.evaluate(Snapshots.healthyAndroid().copy(vpnActive = false)) is RuleOutcome.Pass)
+        assertTrue(r.evaluate(Snapshots.healthyAndroid().copy(vpnActive = null)) is RuleOutcome.NotApplicable)
+    }
 }
