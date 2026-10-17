@@ -1124,16 +1124,40 @@ internal object WindowsProbe {
           if (-not (Test-Path -LiteralPath ${'$'}path -PathType Leaf)) { return '' }
           try {
             ${'$'}out = & ${'$'}script:mpCmdRun -Scan -ScanType 3 -File ${'$'}path -DisableRemediation 2>&1 | Out-String
-            if (${'$'}out -match 'found\s+(\d+)\s+threat') {
-              if ([int]${'$'}Matches[1] -gt 0) { return 'threat' }
-            }
-            if (${'$'}out -match 'found no threats') { return 'clean' }
+            ${'$'}code = ${'$'}LASTEXITCODE
+            # Exit code is locale-independent; the text match only works on
+            # English Windows. With the file's existence already confirmed above,
+            # MpCmdRun exits 2 on a detection and 0 when clean. Trust the code
+            # first, fall back to the English text so this never regresses where
+            # it already worked.
+            if (${'$'}code -eq 2) { return 'threat' }
+            if (${'$'}out -match 'found\s+(\d+)\s+threat' -and [int]${'$'}Matches[1] -gt 0) { return 'threat' }
+            if (${'$'}code -eq 0 -or ${'$'}out -match 'found no threats') { return 'clean' }
             return ''
           } catch { return '' }
         }
 
+        # MpCmdRun -Scan costs seconds PER FILE, and scanTargets grows with every
+        # autorun exe and every userland (AppData) process -- dozens on an
+        # ordinary machine. Unbounded, this loop could run the whole probe past
+        # its time ceiling, at which point PowerShell is killed and the ENTIRE
+        # scan is discarded (score suppressed) -- the worst outcome. Bound it two
+        # ways: a count cap and a cumulative wall-clock budget, checked before
+        # each call. Autorun targets are appended before userland ones, so the
+        # cap keeps the higher-risk persistence entries. A target left unscanned
+        # simply gets no verdict downstream (not-asked), never a false "clean".
+        # (A single hung MpCmdRun can still overrun one budget check; the
+        # Shell-level timeout is the backstop. A per-call timeout is tracked in
+        # docs/production-readiness.md.)
+        ${'$'}avScanCap = 20
+        ${'$'}avBudgetMs = 45000
+        ${'$'}avSw = [System.Diagnostics.Stopwatch]::StartNew()
+        ${'$'}avDone = 0
         foreach (${'$'}t in (${'$'}script:scanTargets | Select-Object -Unique)) {
+          if (${'$'}avDone -ge ${'$'}avScanCap) { break }
+          if (${'$'}avSw.Elapsed.TotalMilliseconds -ge ${'$'}avBudgetMs) { break }
           ${'$'}verdict = AskDefender ${'$'}t
+          ${'$'}avDone++
           if (${'$'}verdict) { Emit 'avscan' ("{0}`t{1}" -f (San ${'$'}t), ${'$'}verdict) }
         }
         if (${'$'}script:defenderUsable) { Emit 'avscan.enumerated' 'True' }
