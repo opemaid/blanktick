@@ -909,4 +909,33 @@ class IsoDateTest {
         assertEquals(0L, IsoDate.daysBetween("2026-02-01", "2026-02-01"))
         assertNull(IsoDate.daysBetween("bad", "2026-02-01"))
     }
+
+    // -------------- account-security rules: Fail / Pass / NotApplicable -------
+
+    @Test
+    fun `disk encryption off is high, on passes, null is not-checkable`() {
+        val r = com.blanktick.core.rules.AccountSecurityRules.DiskEncryption
+        val fail = r.evaluate(Snapshots.healthyDesktop().copy(diskEncrypted = false))
+        assertEquals(Severity.HIGH, (fail as RuleOutcome.Fail).findings.first().severity)
+        assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(diskEncrypted = true)) is RuleOutcome.Pass)
+        assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(diskEncrypted = null)) is RuleOutcome.NotApplicable)
+    }
+
+    @Test
+    fun `reused passwords is medium, none passes, null is not-checkable`() {
+        val r = com.blanktick.core.rules.AccountSecurityRules.ReusedPasswords
+        val fail = r.evaluate(Snapshots.healthyDesktop().copy(passwordAudit = PasswordAudit(20, 0, 3, 0)))
+        assertEquals(Severity.MEDIUM, (fail as RuleOutcome.Fail).findings.first().severity)
+        assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(passwordAudit = PasswordAudit(20, 0, 0, 0))) is RuleOutcome.Pass)
+        assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(passwordAudit = null)) is RuleOutcome.NotApplicable)
+    }
+
+    @Test
+    fun `a slow screen-lock timeout is low, prompt passes, null is not-checkable`() {
+        val r = com.blanktick.core.rules.AccountSecurityRules.LockTimeout
+        val fail = r.evaluate(Snapshots.healthyDesktop().copy(screenLockTimeoutSeconds = 600))
+        assertEquals(Severity.LOW, (fail as RuleOutcome.Fail).findings.first().severity)
+        assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(screenLockTimeoutSeconds = 120)) is RuleOutcome.Pass)
+        assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(screenLockTimeoutSeconds = null)) is RuleOutcome.NotApplicable)
+    }
 }

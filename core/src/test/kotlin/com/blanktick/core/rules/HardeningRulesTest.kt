@@ -353,4 +353,15 @@ class HardeningRulesTest {
         )
         assertTrue(outcome is RuleOutcome.NotApplicable)
     }
+
+    // ---------------------------------------------- PowerShell 2.0 engine
+
+    @Test
+    fun `the PowerShell v2 engine present is a low finding`() {
+        val r = HardeningRules.PowerShellV2Available
+        val fail = r.evaluate(withHardening(healthyHardening.copy(powerShellV2Available = true)))
+        assertEquals(Severity.LOW, (fail as RuleOutcome.Fail).findings.first().severity)
+        assertTrue(r.evaluate(withHardening(healthyHardening.copy(powerShellV2Available = false))) is RuleOutcome.Pass)
+        assertTrue(r.evaluate(withHardening(healthyHardening.copy(powerShellV2Available = null))) is RuleOutcome.NotApplicable)
+    }
 }
