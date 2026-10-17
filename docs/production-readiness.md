@@ -13,19 +13,19 @@ release, not construction.
 
 ## P0 — Security & correctness (fix before any release)
 
-- [ ] **AskDefender spawns one `MpCmdRun.exe` scan per file, uncapped** (WindowsProbe.kt ~1126/1135). `scanTargets` includes every AppData process (Discord/Slack/Teams/VS Code/browsers), so on a normal machine this fires dozens of multi-second scans and can push the probe past its 240s ceiling → PowerShell killed → whole scan discarded. Same class as the driver-hash bug already fixed. Fix: cap to top-N by risk + cumulative time budget + per-call timeout, or one batched MpCmdRun call.
-- [ ] **Sensor `ScriptTapProvider` launches `powershell` via PATH, not `Shell.resolve`** (ScriptTapProvider.kt:45-47) — HKCU `%PATH%` injection, and the ETW tap runs elevated → RCE. Fix: resolve through the hardened trusted-dir logic.
-- [ ] **Sensor tap `.ps1` written to shared temp (TOCTOU)** (ScriptTapProvider.kt:41-42) — swappable between write and elevated execution → LPE. Fix: mirror `Shell.powershell`'s private random dir + immediate delete.
-- [ ] **Sensor tap stderr never drained** (ScriptTapProvider.kt:47,52) — pipe fills, child blocks, live protection silently stops. Fix: drain stderr on its own daemon thread.
-- [ ] **`WindowsElevation` PATH-based powershell + no timeout** (WindowsElevation.kt:12-18) — same injection class; unbounded blocking on startup. Fix: hardened Shell + bounded timeout.
-- [ ] **`Enforcer.isProtected` only guards pid ≤ 4** (Enforcer.kt:37-40) — a misfired `destroyForcibly()` on a real system process (csrss/wininit/services, pid > 4) can crash Windows; also a PID-reuse race. The one irreversible action in the app. Fix: refuse by image path / known-critical set and re-verify the image at enforce time. **[HUMAN review recommended — irreversible, elevated.]**
+- [x] **AskDefender spawns one `MpCmdRun.exe` scan per file, uncapped** (WindowsProbe.kt ~1126/1135). `scanTargets` includes every AppData process (Discord/Slack/Teams/VS Code/browsers), so on a normal machine this fires dozens of multi-second scans and can push the probe past its 240s ceiling → PowerShell killed → whole scan discarded. Same class as the driver-hash bug already fixed. Fix: cap to top-N by risk + cumulative time budget + per-call timeout, or one batched MpCmdRun call.
+- [x] **Sensor `ScriptTapProvider` launches `powershell` via PATH, not `Shell.resolve`** (ScriptTapProvider.kt:45-47) — HKCU `%PATH%` injection, and the ETW tap runs elevated → RCE. Fix: resolve through the hardened trusted-dir logic.
+- [x] **Sensor tap `.ps1` written to shared temp (TOCTOU)** (ScriptTapProvider.kt:41-42) — swappable between write and elevated execution → LPE. Fix: mirror `Shell.powershell`'s private random dir + immediate delete.
+- [x] **Sensor tap stderr never drained** (ScriptTapProvider.kt:47,52) — pipe fills, child blocks, live protection silently stops. Fix: drain stderr on its own daemon thread.
+- [x] **`WindowsElevation` PATH-based powershell + no timeout** (WindowsElevation.kt:12-18) — same injection class; unbounded blocking on startup. Fix: hardened Shell + bounded timeout.
+- [x] **`Enforcer.isProtected` only guards pid ≤ 4** (critical-image refusal done; pid-reuse-to-benign re-verification still needs the detection to carry its recorded image) (Enforcer.kt:37-40) — a misfired `destroyForcibly()` on a real system process (csrss/wininit/services, pid > 4) can crash Windows; also a PID-reuse race. The one irreversible action in the app. Fix: refuse by image path / known-critical set and re-verify the image at enforce time. **[HUMAN review recommended — irreversible, elevated.]**
 
 ## P1 — Robustness & honesty (locale, consistency, silent failures)
 
 - [ ] **Defender exclusions matched by English literal** (WindowsProbe.kt ~1348) — on non-English Windows the "must be an administrator" blind-spot message doesn't match → a localized sentence is emitted as a fabricated "exclusion configured" finding. Fix: detect the blind spot structurally, not by English text.
-- [ ] **AskDefender parses English MpCmdRun output** (WindowsProbe.kt ~1126) — non-English → every file reads not-checkable while paying full scan cost. Fix: use exit code / numeric parse.
+- [x] **AskDefender parses English MpCmdRun output** (WindowsProbe.kt ~1126) — non-English → every file reads not-checkable while paying full scan cost. Fix: use exit code / numeric parse.
 - [ ] **CLI and GUI disagree on score trust** (Main.kt:506 vs Dashboard.kt:428) — CLI suppresses only on `collectionCompleted==false`; GUI suppresses on any caveat. Same scan → full score in `--cli`, "No score this time" in the GUI. Fix: one shared threshold.
-- [ ] **`DesktopIntel` swallows corpus parse failures** (DesktopIntel.kt:79-87) — `runCatching{…}.getOrNull()` makes a *corrupt* (not absent) bundled corpus degrade silently to "not checkable". Fix: distinguish absent from present-but-unparseable and surface the latter.
+- [x] **`DesktopIntel` swallows corpus parse failures** (DesktopIntel.kt:79-87) — `runCatching{…}.getOrNull()` makes a *corrupt* (not absent) bundled corpus degrade silently to "not checkable". Fix: distinguish absent from present-but-unparseable and surface the latter.
 
 ## P2 — Test coverage (17 untested rules + a structural seam)
 
