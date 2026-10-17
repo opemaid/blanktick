@@ -31,7 +31,7 @@ release, not construction.
 
 - [x] **Add a parse seam to `WindowsCollector`** — it ran PowerShell in a field initializer, so NO test exercised key=value→DesktopFacts parsing. Added an `internal constructor(Map<String,List<String>>?)` seam.
   - [x] Parse tests for the 3 new facts (`WindowsCollectorParseTest`): `driver.loaded`→vulnerableDriversLoaded (sentinel/corpus/hex gating + de-dup), `office.macroWeak`→officeMacroSecurityWeak (null-vs-empty), `cred.savedRdp`→savedRemoteDesktopCredentials (null-vs-0). The seam now also enables the broader parse tests in item P2.
-- [ ] **Fail-path tests for 17 rules** with none today. HIGH/CRITICAL first: DSK-MAL-005, DSK-AV-001, DSK-USB-001, DSK-SW-001, ACC-CRYPT-001, DEV-BOOT-001. Then MEDIUM (DSK-BOOT-001, DSK-UPD-001, DSK-LOCK-001, ACC-PWD-002) and LOW/INFO batch.
+- [~] **Fail-path tests for 17 rules** — DONE (6): DSK-AV-001, DSK-USB-001, DSK-BOOT-001, DSK-UPD-001, DSK-LOCK-001, DSK-ACC-002 (single-fact triads in DesktopRulesTest). REMAINING (11): DSK-MAL-005 (needs AV-verdict fixture), DSK-SW-001 (needs EoL intel), ACC-CRYPT-001, ACC-PWD-002, ACC-LOCK-002, DSK-PS-001, NET-DNS-002, NET-VPN-001, APP-SDK-001, DEV-DEVOPT-001, DEV-BOOT-001 (in MalwareRulesTest/RulesTest).
 - [ ] **Sensor provider parse tests** for the 3 DYN rules whose source events have no provider test (DYN-CRED-001/HandleOpen, DYN-RANSOM-001/ShadowCopy+FileModify, DYN-AI-003/ContentIntake). **[partly HUMAN — the OS taps are hardware-gated; add stub parseLine tests.]**
 
 ## P3 — Docs & claims alignment
