@@ -45,7 +45,12 @@ import com.blanktick.core.model.ScreenLock
  * mean shipping an opaque binary inside a security app whose whole pitch is
  * auditability. Text you can read and re-run beats milliseconds.
  */
-internal class WindowsCollector : PlatformCollector {
+internal class WindowsCollector internal constructor(
+    private val probeOverride: Map<String, List<String>>?
+) : PlatformCollector {
+
+    /** Production constructor: the probe runs PowerShell for real. */
+    constructor() : this(null)
 
     override val os = DesktopOs.WINDOWS
 
@@ -53,10 +58,12 @@ internal class WindowsCollector : PlatformCollector {
      * Answers, collected once and reused.
      *
      * [PlatformCollector] exposes several accessors that the caller invokes
-     * separately; without this they would each re-run the probe.
+     * separately; without this they would each re-run the probe. A test may
+     * supply a canned map via [withProbe] so the key=value → [DesktopFacts]
+     * parsing can be exercised offline, with no PowerShell.
      */
     private val probe: Map<String, List<String>> by lazy {
-        Shell.powershellKeyValues(WindowsProbe.SCRIPT)
+        probeOverride ?: Shell.powershellKeyValues(WindowsProbe.SCRIPT)
     }
 
     /**

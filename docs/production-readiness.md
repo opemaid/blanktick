@@ -29,8 +29,8 @@ release, not construction.
 
 ## P2 — Test coverage (17 untested rules + a structural seam)
 
-- [ ] **Add a parse seam to `WindowsCollector`** — it runs PowerShell in a field initializer, so NO test exercises key=value→DesktopFacts parsing. Add an internal factory taking `Map<String,List<String>>`. Everything below depends on it.
-  - [ ] Parse tests for the 3 new facts: `driver.loaded`→vulnerableDriversLoaded, `office.macroWeak`→officeMacroSecurityWeak (null-vs-empty), `cred.savedRdp`→savedRemoteDesktopCredentials (null-vs-0).
+- [x] **Add a parse seam to `WindowsCollector`** — it ran PowerShell in a field initializer, so NO test exercised key=value→DesktopFacts parsing. Added an `internal constructor(Map<String,List<String>>?)` seam.
+  - [x] Parse tests for the 3 new facts (`WindowsCollectorParseTest`): `driver.loaded`→vulnerableDriversLoaded (sentinel/corpus/hex gating + de-dup), `office.macroWeak`→officeMacroSecurityWeak (null-vs-empty), `cred.savedRdp`→savedRemoteDesktopCredentials (null-vs-0). The seam now also enables the broader parse tests in item P2.
 - [ ] **Fail-path tests for 17 rules** with none today. HIGH/CRITICAL first: DSK-MAL-005, DSK-AV-001, DSK-USB-001, DSK-SW-001, ACC-CRYPT-001, DEV-BOOT-001. Then MEDIUM (DSK-BOOT-001, DSK-UPD-001, DSK-LOCK-001, ACC-PWD-002) and LOW/INFO batch.
 - [ ] **Sensor provider parse tests** for the 3 DYN rules whose source events have no provider test (DYN-CRED-001/HandleOpen, DYN-RANSOM-001/ShadowCopy+FileModify, DYN-AI-003/ContentIntake). **[partly HUMAN — the OS taps are hardware-gated; add stub parseLine tests.]**
 
