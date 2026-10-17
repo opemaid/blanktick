@@ -72,7 +72,7 @@ If that *passes*, the gate is dead and its silence means nothing.
 | `core/` — scoring engine, rules, filters, URL analysis, EXIF | **Builds. 305 tests, 0 failures.** |
 | `app/` — Android, Compose | **Builds. 26.6 MB APK produced. 30 tests, 0 failures.** |
 | `desktop/` — Compose Multiplatform | **Builds and runs. `Blanktick.exe` produced. 52 tests, 0 failures.** |
-| Windows collector | **Runs on real hardware.** 50 of 81 checks answered on the dev machine (2026-09-25); 31 reported as not checkable. |
+| Windows collector | **Runs on real hardware.** 50 of 81 checks answered on the dev machine (2026-09-25, against an earlier 81-check build; the set is now 88 — a re-measure is pending); 31 reported as not checkable. |
 | macOS collector | **Written, never executed.** No Mac available. |
 | Linux collector | **Written, exercised only under WSL.** Not a real desktop session. |
 | Intel bundle pipeline (Python → Kotlin ×2) | **Working. Cross-language parity proven.** |
@@ -109,10 +109,10 @@ rather than estimated:
 
 Those are fixture numbers — a device that answers every question it can. **A real
 machine answers fewer.** On the development laptop (Windows 11, standard user, no
-elevation) the desktop build runs **50 of 81** and reports **31 as not
+elevation) the desktop build ran **50 of 81** and reported **31 as not
 checkable**: 18 written for a phone, 13 that this computer declined to answer
-(measured 2026-09-25, before the two browser-extension checks were added on
-2026-09-27; a re-measure that includes them is pending).
+(measured 2026-09-25 against an earlier 81-check build — the set has since grown
+to 88, so a re-measure is pending).
 The dashboard states both numbers and separates the two causes, because
 "permanent" and "might change next scan" are not the same fact.
 
@@ -152,17 +152,17 @@ The asymmetry is real and every app says so on screen — listing what it could
 - **Programs that start themselves**, read from twelve places: the Run and
   RunOnce keys (per-user, machine, and the 32-bit views of both), the Startup
   folders, Winlogon's `Shell` and `Userinit`, Image File Execution Options
-  debugger hijacks, scheduled tasks, and auto-start services outside the system
-  directories. Reported as unsigned only when the platform positively says so —
+  debugger hijacks, scheduled tasks, auto-start services outside the system
+  directories, WMI event subscriptions, COM registrations, AppInit DLLs, and
+  Active Setup. Reported as unsigned only when the platform positively says so —
   an unverifiable signature is *not* an unsigned one, and a binary inside a
   Store package carries the package's signature rather than its own.
 
   Each source reports its own coverage. If one cannot be read — several Image
   File Execution Options subkeys are ACL'd against a normal user, which is
-  ordinary — the app names it rather than quietly returning a shorter list.
-  Still not everything: WMI event subscriptions and COM hijacks are not read,
-  and the finding says "starts automatically", never "this is everything that
-  does".
+  ordinary — the app names it rather than quietly returning a shorter list. And
+  the finding only ever says "starts automatically", never "this is everything
+  that does": persistence has more corners than any fixed list closes.
 - **Removable media.** Two things about a USB stick are answerable offline and
   Blanktick checks exactly those: whether the AutoRun policy has been *explicitly
   weakened* from the Windows default (absent means hardened — Microsoft turned
