@@ -227,6 +227,60 @@ class ShellHardeningTest {
         assertTrue(elapsed < 15_000, "the 3-second deadline took ${elapsed}ms to fire")
     }
 
+    /**
+     * ...unless the caller opts in. The probe is one batched command whose
+     * output is whole `key=value` lines; on a software-heavy machine it can
+     * overrun the ceiling, and dropping everything turned one slow section into
+     * a blank report (seen live: 2 of 88 checks, score withheld off nothing).
+     * With `allowPartialOnTimeout`, the lines read before the kill come back,
+     * flagged `timedOut`.
+     */
+    @Test
+    fun `with partial-on-timeout opted in, an overrun keeps the lines already emitted`() {
+        if (!onWindows) return
+
+        val result = Shell.run(
+            "powershell.exe", "-NoProfile", "-NonInteractive",
+            "-Command",
+            "[Console]::Out.WriteLine('early-1'); [Console]::Out.WriteLine('early-2'); " +
+                "[Console]::Out.Flush(); Start-Sleep -Seconds 30",
+            timeoutSeconds = 3,
+            allowPartialOnTimeout = true
+        )
+
+        assertNotNull(result, "opted-in partial output must not be dropped on timeout")
+        assertTrue(result.timedOut, "the result must be flagged as a timeout")
+        assertFalse(result.ok, "a timed-out result is never ok")
+        assertTrue(
+            result.stdout.contains("early-1") && result.stdout.contains("early-2"),
+            "the facts emitted before the kill were lost: '${result.stdout}'"
+        )
+    }
+
+    /**
+     * End to end: a probe that times out still yields the facts it collected,
+     * and — crucially — does NOT carry `probe.complete`, so the collection
+     * reads as unfinished and the score is withheld rather than fabricated.
+     */
+    @Test
+    fun `powershellKeyValues keeps the facts collected before a timeout`() {
+        if (!onWindows) return
+
+        val facts = Shell.powershellKeyValues(
+            "[Console]::Out.WriteLine('fw.enabled=True'); " +
+                "[Console]::Out.WriteLine('av.product=Defender'); " +
+                "[Console]::Out.Flush(); Start-Sleep -Seconds 30",
+            timeoutSeconds = 3
+        )
+
+        assertEquals(listOf("True"), facts["fw.enabled"], "a collected fact was dropped on timeout")
+        assertEquals(listOf("Defender"), facts["av.product"], "a collected fact was dropped on timeout")
+        assertFalse(
+            facts.containsKey("probe.complete"),
+            "a timed-out probe must not carry the completion sentinel"
+        )
+    }
+
     /** Output still has to survive the concurrent reader. */
     @Test
     fun `normal output is captured intact`() {
