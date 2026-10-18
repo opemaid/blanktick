@@ -37,13 +37,13 @@ extra certificate authorities — apply to both and were enrolled explicitly.
 
 **The safety property:** `BaseRule` defaults to `Platforms.MOBILE`. Adding the
 enum constant therefore enrolled *no* existing rule on desktop by accident;
-every one of the eleven had to be edited by name. `PlatformCoverageTest` asserts
-that the Android (29) and iOS (15) counts did not move, so a careless
-`Platforms.EVERYWHERE` on an Android-only rule fails the build rather than
-silently handing iOS a check it cannot perform.
+every one of the 59 desktop-only rules had to be edited by name.
+`PlatformCoverageTest` asserts that the Android (29) and iOS (15) counts did not
+move, so a careless `Platforms.EVERYWHERE` on an Android-only rule fails the
+build rather than silently handing iOS a check it cannot perform.
 
-Measured coverage: **45 rules total — 29 eligible on Android, 15 on iOS, 27 on
-desktop.** On a healthy Windows machine 26 of the 27 run; SIP is macOS-only.
+Measured coverage: **88 rules total — 29 eligible on Android, 15 on iOS, 70 on
+desktop.** On a healthy Windows machine 69 of the 70 run; SIP is macOS-only.
 
 ### Rejected: reuse `OS-EOL-001` on desktop
 

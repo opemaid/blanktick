@@ -412,4 +412,59 @@ class DesktopRulesTest {
             if (cap != null) assertTrue(category.deduction <= cap)
         }
     }
+
+    // ------------------------ single-fact rules: Fail / Pass / NotApplicable --
+    // Each reads one boolean fact. The null case is the product promise; the
+    // Pass case guards against a rule that fires on everything.
+
+    private fun failSeverity(o: RuleOutcome): Severity =
+        (o as RuleOutcome.Fail).findings.first().severity
+
+    @Test
+    fun `realtime protection off is high, on passes, null is not-checkable`() {
+        val r = DesktopRules.RealtimeProtectionOff
+        assertEquals(Severity.HIGH, failSeverity(outcome(r, with { copy(antivirusRealtimeEnabled = false) })))
+        assertIs<RuleOutcome.Pass>(outcome(r, with { copy(antivirusRealtimeEnabled = true) }))
+        assertIs<RuleOutcome.NotApplicable>(outcome(r, with { copy(antivirusRealtimeEnabled = null) }))
+    }
+
+    @Test
+    fun `autorun on removable media off is high, on passes, null is not-checkable`() {
+        val r = DesktopRules.AutoRunOnRemovable
+        assertEquals(Severity.HIGH, failSeverity(outcome(r, with { copy(autoRunBlockedForRemovable = false) })))
+        assertIs<RuleOutcome.Pass>(outcome(r, with { copy(autoRunBlockedForRemovable = true) }))
+        assertIs<RuleOutcome.NotApplicable>(outcome(r, with { copy(autoRunBlockedForRemovable = null) }))
+    }
+
+    @Test
+    fun `secure boot off is medium, on passes, null is not-checkable`() {
+        val r = DesktopRules.SecureBootOff
+        assertEquals(Severity.MEDIUM, failSeverity(outcome(r, with { copy(secureBootEnabled = false) })))
+        assertIs<RuleOutcome.Pass>(outcome(r, with { copy(secureBootEnabled = true) }))
+        assertIs<RuleOutcome.NotApplicable>(outcome(r, with { copy(secureBootEnabled = null) }))
+    }
+
+    @Test
+    fun `automatic updates off is medium, on passes, null is not-checkable`() {
+        val r = DesktopRules.AutomaticUpdatesOff
+        assertEquals(Severity.MEDIUM, failSeverity(outcome(r, with { copy(automaticUpdatesEnabled = false) })))
+        assertIs<RuleOutcome.Pass>(outcome(r, with { copy(automaticUpdatesEnabled = true) }))
+        assertIs<RuleOutcome.NotApplicable>(outcome(r, with { copy(automaticUpdatesEnabled = null) }))
+    }
+
+    @Test
+    fun `lock on wake off is medium, on passes, null is not-checkable`() {
+        val r = DesktopRules.LockOnWakeOff
+        assertEquals(Severity.MEDIUM, failSeverity(outcome(r, with { copy(lockOnWakeEnabled = false) })))
+        assertIs<RuleOutcome.Pass>(outcome(r, with { copy(lockOnWakeEnabled = true) }))
+        assertIs<RuleOutcome.NotApplicable>(outcome(r, with { copy(lockOnWakeEnabled = null) }))
+    }
+
+    @Test
+    fun `guest account enabled is low, disabled passes, null is not-checkable`() {
+        val r = DesktopRules.GuestAccountEnabled
+        assertEquals(Severity.LOW, failSeverity(outcome(r, with { copy(guestAccountEnabled = true) })))
+        assertIs<RuleOutcome.Pass>(outcome(r, with { copy(guestAccountEnabled = false) }))
+        assertIs<RuleOutcome.NotApplicable>(outcome(r, with { copy(guestAccountEnabled = null) }))
+    }
 }

@@ -44,6 +44,7 @@ class ProbeIntegrityTest {
             "cert.storeRead",           // user trust store
             "drive.enumerated",         // removable drives
             "program.enumerated",       // installed software
+            "driver.enumerated",        // loaded kernel drivers (BYOVD)
             "autorun.read"              // persistence, per source
         )
         val missing = required.filterNot { script.contains(it) }

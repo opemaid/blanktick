@@ -154,5 +154,12 @@ class DesktopCollector internal constructor(
 data class DesktopIntelSnapshot(
     val builtOn: String?,
     val stalenessDays: Int?,
-    val isKnownMalware: ((String) -> Boolean?)? = null
+    val isKnownMalware: ((String) -> Boolean?)? = null,
+    /**
+     * SHA-256 (lowercase hex) of a loaded driver to whether it is on the bundled
+     * known-vulnerable-driver list. Same contract as [isKnownMalware]: `null`
+     * from the function means no corpus is bundled and the check must report
+     * *not checked*, never "none found".
+     */
+    val isVulnerableDriver: ((String) -> Boolean?)? = null
 )

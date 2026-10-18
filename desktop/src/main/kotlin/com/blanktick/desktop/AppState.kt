@@ -264,35 +264,8 @@ class AppState(private val scope: CoroutineScope) {
      * mis-state the machine and give the user a number to feel bad about for
      * something that is not theirs to fix.
      */
-    private fun collectionCaveats(d: com.blanktick.core.model.DesktopFacts?): List<String> = buildList {
-        if (d == null) return@buildList
-        if (d.collectionCompleted == false) {
-            add(
-                "The system probe did not run to the end, so this report covers only what it " +
-                    "reached before stopping. Anything it never asked about is shown as not " +
-                    "checked rather than as a pass."
-            )
-        }
-        if (d.collectionTruncated == true) {
-            add(
-                "The probe produced more output than Blanktick reads in one pass and was cut short. " +
-                    "The checks asked last are the ones missing."
-            )
-        }
-        d.autoRunSourcesUnread?.takeIf { it.isNotEmpty() }?.let { unread ->
-            add(
-                "Programs that start themselves were read from every place except " +
-                    unread.joinToString(", ") + ". Those may hold entries not listed here."
-            )
-        }
-        if (d.probeLanguageMode != null && !d.probeLanguageMode.equals("FullLanguage", true)) {
-            add(
-                "PowerShell is restricted to " + d.probeLanguageMode + " on this computer, which " +
-                    "blocks some of the queries Blanktick uses. The affected checks report as not " +
-                    "checked."
-            )
-        }
-    }
+    private fun collectionCaveats(d: com.blanktick.core.model.DesktopFacts?): List<String> =
+        CollectionReport.caveats(d)
 
     /**
      * Gaps small and specific enough to name without withholding the score.
@@ -302,17 +275,8 @@ class AppState(private val scope: CoroutineScope) {
      * name, so nothing is silent. What would make them silent is folding them
      * into a pass — hence a note, not nothing.
      */
-    private fun collectionNotes(d: com.blanktick.core.model.DesktopFacts?): List<String> = buildList {
-        val keys = d?.autoRunKeysUnread?.takeIf { it.isNotEmpty() } ?: return@buildList
-        add(
-            "Windows would not let a normal user open " +
-                (if (keys.size == 1) "one registry key" else "${keys.size} registry keys") +
-                " where programs can be set to start: " + keys.joinToString(", ") + ". " +
-                "Everything else in those places was read. A hijack could hide in a key that " +
-                "cannot be opened, so it is named here rather than counted as clean; running " +
-                "Blanktick as administrator would read it."
-        )
-    }
+    private fun collectionNotes(d: com.blanktick.core.model.DesktopFacts?): List<String> =
+        CollectionReport.notes(d)
 
     // ----------------------------------------------------------------- scan
 

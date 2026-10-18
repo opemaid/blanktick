@@ -233,6 +233,11 @@ object Snapshots {
             ),
             processesWithUnreadablePath = 179,
             fileHashingWorks = true,
+            // Empty, not null: drivers were enumerated and none matched the
+            // bundled known-vulnerable list, so DSK-DRV-001's pass path is
+            // exercised. Null would make it report not-checkable. The fail path
+            // lives in MalwareRulesTest.
+            vulnerableDriversLoaded = emptyList(),
             // Empty, not null: a healthy machine's root store has no additions
             // Windows cannot account for. Null would make DSK-CA-001 report
             // not-checkable and leave its pass path untested.
@@ -285,7 +290,13 @@ object Snapshots {
                 lockoutThreshold = 10,
                 builtinAdministratorEnabled = false,
                 powerShellScriptBlockLogging = true,
-                unquotedServicePaths = emptyList()
+                unquotedServicePaths = emptyList(),
+                // Zero/empty rather than null so DSK-CRED-003 and DSK-OFF-001 are
+                // exercised on the pass path by the fixture that proves a healthy
+                // machine scores 100. No saved RDP password; Office present and
+                // macros not weakened. The fail paths live in HardeningRulesTest.
+                savedRemoteDesktopCredentials = 0,
+                officeMacroSecurityWeak = emptyList()
             ),
             antivirusPosture = AntivirusPosture(
                 tamperProtectionEnabled = true,
@@ -897,5 +908,65 @@ class IsoDateTest {
         assertEquals(-31L, IsoDate.daysBetween("2026-02-01", "2026-01-01"))
         assertEquals(0L, IsoDate.daysBetween("2026-02-01", "2026-02-01"))
         assertNull(IsoDate.daysBetween("bad", "2026-02-01"))
+    }
+
+    // -------------- account-security rules: Fail / Pass / NotApplicable -------
+
+    @Test
+    fun `disk encryption off is high, on passes, null is not-checkable`() {
+        val r = com.blanktick.core.rules.AccountSecurityRules.DiskEncryption
+        val fail = r.evaluate(Snapshots.healthyDesktop().copy(diskEncrypted = false))
+        assertEquals(Severity.HIGH, (fail as RuleOutcome.Fail).findings.first().severity)
+        assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(diskEncrypted = true)) is RuleOutcome.Pass)
+        assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(diskEncrypted = null)) is RuleOutcome.NotApplicable)
+    }
+
+    @Test
+    fun `reused passwords is medium, none passes, null is not-checkable`() {
+        val r = com.blanktick.core.rules.AccountSecurityRules.ReusedPasswords
+        val fail = r.evaluate(Snapshots.healthyDesktop().copy(passwordAudit = PasswordAudit(20, 0, 3, 0)))
+        assertEquals(Severity.MEDIUM, (fail as RuleOutcome.Fail).findings.first().severity)
+        assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(passwordAudit = PasswordAudit(20, 0, 0, 0))) is RuleOutcome.Pass)
+        assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(passwordAudit = null)) is RuleOutcome.NotApplicable)
+    }
+
+    @Test
+    fun `a slow screen-lock timeout is low, prompt passes, null is not-checkable`() {
+        val r = com.blanktick.core.rules.AccountSecurityRules.LockTimeout
+        val fail = r.evaluate(Snapshots.healthyDesktop().copy(screenLockTimeoutSeconds = 600))
+        assertEquals(Severity.LOW, (fail as RuleOutcome.Fail).findings.first().severity)
+        assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(screenLockTimeoutSeconds = 120)) is RuleOutcome.Pass)
+        assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(screenLockTimeoutSeconds = null)) is RuleOutcome.NotApplicable)
+    }
+
+    // --------------- mobile rules (low priority under Windows-only scope) -----
+
+    @Test
+    fun `an unlocked bootloader is high, locked passes, null is not-checkable`() {
+        val r = com.blanktick.core.rules.DeviceIntegrityRules.Bootloader
+        val fail = r.evaluate(Snapshots.healthyAndroid().copy(bootloaderUnlocked = true))
+        assertEquals(Severity.HIGH, (fail as RuleOutcome.Fail).findings.first().severity)
+        assertTrue(r.evaluate(Snapshots.healthyAndroid().copy(bootloaderUnlocked = false)) is RuleOutcome.Pass)
+        assertTrue(r.evaluate(Snapshots.healthyAndroid().copy(bootloaderUnlocked = null)) is RuleOutcome.NotApplicable)
+    }
+
+    @Test
+    fun `developer options enabled is low, off passes, null is not-checkable`() {
+        val r = com.blanktick.core.rules.DeviceIntegrityRules.DeveloperOptions
+        val fail = r.evaluate(Snapshots.healthyAndroid().copy(developerOptionsEnabled = true))
+        assertEquals(Severity.LOW, (fail as RuleOutcome.Fail).findings.first().severity)
+        assertTrue(r.evaluate(Snapshots.healthyAndroid().copy(developerOptionsEnabled = false)) is RuleOutcome.Pass)
+        assertTrue(r.evaluate(Snapshots.healthyAndroid().copy(developerOptionsEnabled = null)) is RuleOutcome.NotApplicable)
+    }
+
+    @Test
+    fun `an active vpn with a known owner is info, inactive passes, unknowns not-checkable`() {
+        val r = com.blanktick.core.rules.NetworkRules.VpnOwner
+        val fail = r.evaluate(Snapshots.healthyAndroid().copy(vpnActive = true, vpnOwnerPackage = "com.example.vpn"))
+        assertEquals(Severity.INFO, (fail as RuleOutcome.Fail).findings.first().severity)
+        assertTrue(r.evaluate(Snapshots.healthyAndroid().copy(vpnActive = false)) is RuleOutcome.Pass)
+        assertTrue(r.evaluate(Snapshots.healthyAndroid().copy(vpnActive = null)) is RuleOutcome.NotApplicable)
+        // Active but the owner cannot be named: not-checkable, not a finding.
+        assertTrue(r.evaluate(Snapshots.healthyAndroid().copy(vpnActive = true, vpnOwnerPackage = null)) is RuleOutcome.NotApplicable)
     }
 }

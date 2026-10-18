@@ -25,7 +25,8 @@ class DesktopIntel private constructor(
     private val breachedPasswords: BloomFilter?,
     private val blockedDomains: SortedHashSet64?,
     private val allowedDomains: SortedHashSet64?,
-    private val malwareHashes: SortedHashSet64?
+    private val malwareHashes: SortedHashSet64?,
+    private val vulnerableDriverHashes: SortedHashSet64?
 ) {
 
     data class Manifest(
@@ -46,7 +47,8 @@ class DesktopIntel private constructor(
         stalenessDays = manifest?.builtOn?.let {
             IsoDate.daysBetween(it, nowIsoDate)?.toInt()?.coerceAtLeast(0)
         },
-        isKnownMalware = malwareHashes?.let { table -> { hash -> table.contains(hash.trim().lowercase()) } }
+        isKnownMalware = malwareHashes?.let { table -> { hash -> table.contains(hash.trim().lowercase()) } },
+        isVulnerableDriver = vulnerableDriverHashes?.let { table -> { hash -> table.contains(hash.trim().lowercase()) } }
     )
 
     /**
@@ -73,18 +75,38 @@ class DesktopIntel private constructor(
 
         fun load(): DesktopIntel = DesktopIntel(
             manifest = readManifest(),
-            breachedPasswords = resource("$DIR/passwords.mub")
-                ?.let { runCatching { BloomFilter.parse(it) }.getOrNull() },
-            blockedDomains = resource("$DIR/blocklist.mus")
-                ?.let { runCatching { SortedHashSet64.parse(it) }.getOrNull() },
-            malwareHashes = resource("$DIR/malware.mus")
-                ?.let { runCatching { SortedHashSet64.parse(it) }.getOrNull() },
-            allowedDomains = resource("$DIR/allowlist.mus")
-                ?.let { runCatching { SortedHashSet64.parse(it) }.getOrNull() }
+            breachedPasswords = parseResource("passwords.mub") { BloomFilter.parse(it) },
+            blockedDomains = parseResource("blocklist.mus") { SortedHashSet64.parse(it) },
+            malwareHashes = parseResource("malware.mus") { SortedHashSet64.parse(it) },
+            allowedDomains = parseResource("allowlist.mus") { SortedHashSet64.parse(it) },
+            vulnerableDriverHashes = parseResource("drivers.mus") { SortedHashSet64.parse(it) }
         )
 
+        /**
+         * Parse a bundled corpus, distinguishing **absent** from **present but
+         * unparseable**.
+         *
+         * Degrading to `null` is the correct contract for a corpus that is not
+         * bundled (a dev build) — the dependent checks then report *not
+         * checkable*. But a corpus whose bytes ARE present and fail to parse is a
+         * packaging regression, and swallowing it silently (the old
+         * `getOrNull()`) let that ship invisibly, quietly disabling whole checks.
+         * So absent stays a quiet `null`; a parse failure still degrades to
+         * `null` (never a silent pass) but is announced on stderr.
+         */
+        private fun <T> parseResource(name: String, parse: (ByteArray) -> T): T? {
+            val bytes = resource("$DIR/$name") ?: return null
+            return runCatching { parse(bytes) }.getOrElse { e ->
+                System.err.println(
+                    "blanktick: intel corpus /$name is present but failed to parse " +
+                        "(${e.message}); checks that depend on it will report not-checkable"
+                )
+                null
+            }
+        }
+
         /** An empty bundle, for tests and for a build with no generated assets. */
-        fun empty(): DesktopIntel = DesktopIntel(null, null, null, null, null)
+        fun empty(): DesktopIntel = DesktopIntel(null, null, null, null, null, null)
 
         private fun resource(path: String): ByteArray? = try {
             DesktopIntel::class.java.getResourceAsStream(path)?.use { it.readBytes() }

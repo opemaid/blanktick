@@ -503,7 +503,12 @@ private fun printScan() {
     // it is meaningless — and it renders as 100/100 STRONG, which is the single
     // most reassuring thing this app could possibly say about a machine it
     // failed to examine. Seen for real when the probe overran its timeout.
-    if (snapshot.desktop?.collectionCompleted == false) {
+    //
+    // CollectionReport.scoreWithheld is the SAME threshold the GUI uses, so the
+    // CLI and the dashboard can no longer disagree about whether a score is
+    // trustworthy (the CLI used to check only collectionCompleted and would show
+    // a score the GUI withheld for truncation or an unread persistence source).
+    if (CollectionReport.scoreWithheld(snapshot.desktop)) {
         println("score            NOT SHOWN — the collection did not finish, so any number here")
         println("                 would describe how little was read, not this computer.")
     } else {

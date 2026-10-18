@@ -1,0 +1,152 @@
+# Release
+#
+# Builds the Windows MSI installer for a tagged version and publishes it as a
+# GitHub Release. Triggered by pushing a tag that matches `v*` (e.g. v0.1.0).
+#
+# ---------------------------------------------------------------------------
+# THE MSI THIS WORKFLOW PRODUCES IS UNSIGNED.
+# ---------------------------------------------------------------------------
+# jpackage (which Compose Desktop drives for `packageMsi`) emits an MSI with no
+# Authenticode signature. On a fresh Windows machine that means:
+#
+#   * SmartScreen shows "Windows protected your PC" with an "Unknown publisher"
+#     line, and the user has to click "More info" -> "Run anyway".
+#   * The installer's Properties dialog has no "Digital Signatures" tab.
+#
+# Real distribution to the non-technical users this product is written for needs
+# a code-signing certificate, which is a human/paid step this CI workflow
+# intentionally does NOT perform. A build server holding a signing key is a
+# liability, and the certificate decision has cost and identity-verification
+# implications that belong to a person, not a push trigger. See docs/release.md
+# and RELEASE-CHECKLIST.md item 2 for the current "ship unsigned + publish
+# SHA-256 checksums + explain the warning" decision.
+#
+# HOW TO ADD SIGNING LATER (pick one, then insert a signing step after the
+# "Build the MSI installer" step and before the release is created):
+#
+#   a) Azure Trusted Signing (no cert to store; signs via a cloud service):
+#        - uses: azure/trusted-signing-action@v0
+#          with:
+#            endpoint: ${{ secrets.AZURE_TS_ENDPOINT }}
+#            trusted-signing-account-name: ${{ secrets.AZURE_TS_ACCOUNT }}
+#            certificate-profile-name: ${{ secrets.AZURE_TS_PROFILE }}
+#            files-folder: desktop/build/compose/binaries/main/msi
+#            files-folder-filter: msi
+#      (authenticate first with azure/login@v2 using a federated/OIDC identity).
+#
+#   b) A purchased OV/EV code-signing certificate + SignTool. Store the PFX as a
+#      base64 secret, decode it to a temp file at runtime, then:
+#        signtool sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 \
+#          /f cert.pfx /p "$CERT_PASSWORD" path\to\Blanktick-*.msi
+#      EV certs typically live on an HSM/USB token, so SignTool there usually
+#      runs on a self-hosted/attended runner rather than a hosted one.
+#
+# After signing, verify with:  signtool verify /pa /v Blanktick-*.msi
+#
+# ---------------------------------------------------------------------------
+# Conventions mirror .github/workflows/ci.yml: windows-latest, bash as the
+# default shell, JDK 17 (temurin), and the SAME synthetic intel-build step.
+#
+# NOTE ON INTEL DATA: this draft bundles the SAME synthetic/test corpus CI uses
+# (--demo + the committed BYOVD test seed). That is enough to produce a working,
+# installable MSI, but a PRODUCTION release MUST bundle the real corpus built via
+# tools/fetch_loldrivers.py (drivers) and real password/domain lists — otherwise
+# manifest.txt stays synthetic=true and the app correctly reports its checks as
+# not meaningful (RELEASE-CHECKLIST.md item 4). Replace the "Build intel bundle"
+# step below before cutting a real public release.
+
+on:
+  push:
+    tags: ["v*"]
+
+# Needed so softprops/action-gh-release can create the release and upload assets.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    # windows-latest matches the Windows-only target: packageMsi runs jpackage,
+    # which only produces an MSI on Windows. Steps use bash (Git Bash is
+    # preinstalled on Windows runners) to match ci.yml.
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build intel bundle (synthetic + BYOVD test corpus)
+        # Same step as ci.yml. --demo gives a synthetic password/domain/malware
+        # bundle; --drivers builds drivers.mus from the committed test seed.
+        # The generated .mus are gitignored and rebuilt every run.
+        #
+        # PRODUCTION: swap this for the real corpus, e.g.
+        #   python tools/fetch_loldrivers.py --out tools/seeds/driver-hashes.txt
+        #   python tools/build_intel.py \
+        #     --passwords pwned-top2m.txt --domains hosts.txt \
+        #     --drivers tools/seeds/driver-hashes.txt \
+        #     --out desktop/src/main/resources/intel
+        run: |
+          python tools/build_intel.py --demo \
+            --drivers tools/seeds/driver-hashes-test.txt \
+            --out desktop/src/main/resources/intel
+
+      - name: Build the MSI installer
+        # :desktop:packageMsi is the Compose Desktop task that runs jpackage to
+        # produce the Windows MSI from the targetFormats(Msi, ...) config in
+        # desktop/build.gradle.kts. It is finalizedBy assertNoNetworkBytecode in
+        # that build file, so the offline guarantee is verified as part of
+        # packaging. (packageReleaseMsi is the ProGuard-minified variant; this
+        # draft uses the plain packageMsi to keep the release build simple.)
+        #
+        # jpackage requires the WiX Toolset v3 to build an MSI. It is preinstalled
+        # on GitHub's windows-latest image; if a future runner image drops it,
+        # add a step to install it (e.g. `choco install wixtoolset`).
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :desktop:packageMsi --console=plain --no-daemon
+
+      - name: Locate MSI and generate SHA-256 checksum
+        id: artifact
+        # Compose Desktop writes packageMsi output to
+        # desktop/build/compose/binaries/main/msi/. Publishing a checksum next to
+        # the installer is part of the "ship unsigned, publish SHA-256" decision
+        # (RELEASE-CHECKLIST.md item 2) so users can verify the download.
+        run: |
+          msi="$(ls desktop/build/compose/binaries/main/msi/*.msi | head -n 1)"
+          if [ -z "$msi" ]; then
+            echo "No MSI was produced under desktop/build/compose/binaries/main/msi/" >&2
+            exit 1
+          fi
+          echo "Found: $msi"
+          sha256sum "$msi" > "$msi.sha256"
+          echo "msi=$msi" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release and upload the MSI
+        uses: softprops/action-gh-release@v2
+        with:
+          # The release is created for the pushed tag (github.ref_name).
+          files: |
+            desktop/build/compose/binaries/main/msi/*.msi
+            desktop/build/compose/binaries/main/msi/*.msi.sha256
+          body: |
+            Blanktick ${{ github.ref_name }} — offline Windows security-posture check.
+
+            **This MSI is UNSIGNED.** On first run Windows SmartScreen will show
+            "Windows protected your PC" / "Unknown publisher". Click **More info**
+            then **Run anyway**. Verify your download with the published
+            `.sha256` checksum before installing.
+
+            Per-user install (no administrator rights required).

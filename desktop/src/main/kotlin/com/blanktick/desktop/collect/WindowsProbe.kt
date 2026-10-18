@@ -140,6 +140,31 @@ internal object WindowsProbe {
           } catch { return '' }
         }
 
+        # Like FileHash but without the "skip when a scanner is present" gate:
+        # the vulnerable-driver check is independent of the antivirus, because a
+        # driver with a known flaw is a problem whether or not the scanner flags
+        # it, and most will not be flagged at all (they are signed, legitimate
+        # software). Still read-only and never throws out.
+        #
+        # Capped at 16 MiB, far lower than FileHash's 200 MiB: a real kernel
+        # driver is tiny (RTCore64 is 14 KB; the LOLDrivers samples are all well
+        # under a megabyte), so anything larger is a GPU or AV blob that cannot
+        # be a match. Measured: two such outliers (one 108 MiB) turned a 2-second
+        # sweep into 42, for files that could never be on the list.
+        function DriverHash(${'$'}path) {
+          if (-not ${'$'}path) { return '' }
+          try {
+            ${'$'}f = Get-Item -LiteralPath ${'$'}path -ErrorAction Stop
+            if (${'$'}f.Length -gt 16777216) { return '' }
+            ${'$'}sha = [System.Security.Cryptography.SHA256]::Create()
+            try {
+              ${'$'}stream = [System.IO.File]::OpenRead(${'$'}f.FullName)
+              try { return [System.BitConverter]::ToString(${'$'}sha.ComputeHash(${'$'}stream)).Replace('-', '').ToLower() }
+              finally { ${'$'}stream.Dispose() }
+            } finally { ${'$'}sha.Dispose() }
+          } catch { return '' }
+        }
+
         # A file carries a Zone.Identifier stream when it was downloaded. On a
         # program that has been set to start automatically, that pairing --
         # arrived from the internet, and now runs every time you sign in -- is
@@ -224,7 +249,10 @@ internal object WindowsProbe {
         }
 
         # ---- accounts -------------------------------------------------------
-        Emit 'acct.sessionIsAdmin' (([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
+        # Kept in a script var too: the Defender-exclusion read below gates on
+        # the real elevation state rather than string-matching an English error.
+        ${'$'}script:isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        Emit 'acct.sessionIsAdmin' ${'$'}script:isAdmin
 
         # Resolved by SID, not by the name "Administrators", which is localised:
         # on a German install the group is "Administratoren" and a name lookup
@@ -1099,16 +1127,40 @@ internal object WindowsProbe {
           if (-not (Test-Path -LiteralPath ${'$'}path -PathType Leaf)) { return '' }
           try {
             ${'$'}out = & ${'$'}script:mpCmdRun -Scan -ScanType 3 -File ${'$'}path -DisableRemediation 2>&1 | Out-String
-            if (${'$'}out -match 'found\s+(\d+)\s+threat') {
-              if ([int]${'$'}Matches[1] -gt 0) { return 'threat' }
-            }
-            if (${'$'}out -match 'found no threats') { return 'clean' }
+            ${'$'}code = ${'$'}LASTEXITCODE
+            # Exit code is locale-independent; the text match only works on
+            # English Windows. With the file's existence already confirmed above,
+            # MpCmdRun exits 2 on a detection and 0 when clean. Trust the code
+            # first, fall back to the English text so this never regresses where
+            # it already worked.
+            if (${'$'}code -eq 2) { return 'threat' }
+            if (${'$'}out -match 'found\s+(\d+)\s+threat' -and [int]${'$'}Matches[1] -gt 0) { return 'threat' }
+            if (${'$'}code -eq 0 -or ${'$'}out -match 'found no threats') { return 'clean' }
             return ''
           } catch { return '' }
         }
 
+        # MpCmdRun -Scan costs seconds PER FILE, and scanTargets grows with every
+        # autorun exe and every userland (AppData) process -- dozens on an
+        # ordinary machine. Unbounded, this loop could run the whole probe past
+        # its time ceiling, at which point PowerShell is killed and the ENTIRE
+        # scan is discarded (score suppressed) -- the worst outcome. Bound it two
+        # ways: a count cap and a cumulative wall-clock budget, checked before
+        # each call. Autorun targets are appended before userland ones, so the
+        # cap keeps the higher-risk persistence entries. A target left unscanned
+        # simply gets no verdict downstream (not-asked), never a false "clean".
+        # (A single hung MpCmdRun can still overrun one budget check; the
+        # Shell-level timeout is the backstop. A per-call timeout is tracked in
+        # docs/production-readiness.md.)
+        ${'$'}avScanCap = 20
+        ${'$'}avBudgetMs = 45000
+        ${'$'}avSw = [System.Diagnostics.Stopwatch]::StartNew()
+        ${'$'}avDone = 0
         foreach (${'$'}t in (${'$'}script:scanTargets | Select-Object -Unique)) {
+          if (${'$'}avDone -ge ${'$'}avScanCap) { break }
+          if (${'$'}avSw.Elapsed.TotalMilliseconds -ge ${'$'}avBudgetMs) { break }
           ${'$'}verdict = AskDefender ${'$'}t
+          ${'$'}avDone++
           if (${'$'}verdict) { Emit 'avscan' ("{0}`t{1}" -f (San ${'$'}t), ${'$'}verdict) }
         }
         if (${'$'}script:defenderUsable) { Emit 'avscan.enumerated' 'True' }
@@ -1212,6 +1264,70 @@ internal object WindowsProbe {
           }
           Emit 'svc.unquotedRead' 'True'
         } catch { }
+        # Saved Remote Desktop credentials. cmdkey lists them without elevation;
+        # the passwords are never read, only that TERMSRV targets exist and how
+        # many. Generic saved credentials are not counted -- they are stock.
+        # Emitted even when zero, so the rule reads "none saved" as a pass
+        # rather than "not checkable".
+        try {
+          ${'$'}rdp = @(cmdkey /list 2>${'$'}null | Select-String -SimpleMatch 'TERMSRV/').Count
+          Emit 'cred.savedRdp' ${'$'}rdp
+        } catch { }
+        # Office macro policy. Absent keys are the modern safe default (macros
+        # carrying a mark-of-the-web are blocked, VBA is warned about), so an
+        # unset value emits nothing. Only an explicit weakening is listed:
+        # blockcontentexecutionfrominternet=0 (internet macros un-blocked) or
+        # vbawarnings=1 (enable all macros). Both the per-user hive and the
+        # policy hive are read. 'office.read' is emitted only when an Office app
+        # key was actually found, so the rule reports "not checkable" rather
+        # than passing on a machine with no Office at all.
+        try {
+          ${'$'}officeSeen = ${'$'}false
+          # Per-user settings and per-user policy (HKCU), plus machine-wide GPO
+          # policy (HKLM\Software\Policies): a GPO that weakens macros lands in
+          # the HKLM policy hive, which is world-readable without elevation. The
+          # Policies key is not WOW64-redirected, so one path covers 32- and
+          # 64-bit Office.
+          foreach (${'$'}root in @('HKCU:\Software\Microsoft\Office','HKCU:\Software\Policies\Microsoft\Office','HKLM:\Software\Policies\Microsoft\Office')) {
+            if (-not (Test-Path ${'$'}root)) { continue }
+            foreach (${'$'}ver in Get-ChildItem ${'$'}root -ErrorAction SilentlyContinue |
+                Where-Object { ${'$'}_.PSChildName -match '^\d+\.\d+${'$'}' }) {
+              foreach (${'$'}app in @('Word','Excel','PowerPoint','Outlook','Access','Publisher','Visio')) {
+                ${'$'}appKey = Join-Path ${'$'}ver.PSPath ${'$'}app
+                if (-not (Test-Path ${'$'}appKey)) { continue }
+                ${'$'}officeSeen = ${'$'}true
+                ${'$'}sec = Join-Path ${'$'}appKey 'Security'
+                if (-not (Test-Path ${'$'}sec)) { continue }
+                ${'$'}sp = Get-ItemProperty -LiteralPath ${'$'}sec -ErrorAction SilentlyContinue
+                if (${'$'}sp.blockcontentexecutionfrominternet -eq 0) { Emit 'office.macroWeak' (San ("${'$'}{app}: internet macros unblocked")) }
+                if (${'$'}sp.vbawarnings -eq 1) { Emit 'office.macroWeak' (San ("${'$'}{app}: all macros enabled")) }
+              }
+            }
+          }
+          if (${'$'}officeSeen) { Emit 'office.read' 'True' }
+        } catch { }
+        # Bring-your-own-vulnerable-driver (BYOVD). A legitimately signed driver
+        # with a known flaw lets a program on this machine reach the kernel --
+        # the usual way an endpoint protection product is switched off before
+        # ransomware runs. Every loaded driver up to DriverHash's 16 MiB cap is
+        # hashed and its hash emitted for the collector to confirm against the
+        # bundled LOLDrivers list. Matching by hash, not filename, is deliberate:
+        # a renamed copy of a vulnerable driver keeps its hash, and the public
+        # guidance is explicit that a name match is neither necessary nor
+        # sufficient. Measured ~2.3s for ~200 drivers. Read-only: nothing is
+        # loaded, unloaded, or changed.
+        try {
+          foreach (${'$'}d in Get-CimInstance Win32_SystemDriver -ErrorAction Stop |
+              Where-Object { ${'$'}_.State -eq 'Running' }) {
+            ${'$'}pn = "${'$'}(${'$'}d.PathName)".Trim()
+            if (-not ${'$'}pn) { continue }
+            ${'$'}pn = ${'$'}pn -replace '^\\\?\?\\', ''
+            ${'$'}leaf = ([System.IO.Path]::GetFileName(${'$'}pn)).ToLower()
+            ${'$'}dh = DriverHash ${'$'}pn
+            if (${'$'}dh) { Emit 'driver.loaded' ("{0}`t{1}" -f (San ${'$'}leaf), ${'$'}dh) }
+          }
+          Emit 'driver.enumerated' 'True'
+        } catch { }
         Emit 'hard.settingsRead' 'True'
 
         # ---- what the antivirus itself is doing -------------------------------
@@ -1256,10 +1372,16 @@ internal object WindowsProbe {
         # a known blind spot rather than as an empty list, because an empty list
         # would read as "no exclusions configured", which is a different and
         # much more reassuring claim than the truth.
-        ${'$'}excl = (Get-MpPreference).ExclusionPath
-        if (${'$'}excl -and "${'$'}excl" -notmatch 'must be an administrator') {
+        # Gate on the real elevation state, not Defender's English refusal
+        # string: on non-English Windows the localized "must be an administrator"
+        # message would not match, so the sentence itself was emitted as an
+        # exclusion path and invented as a finding. When elevated, the read is
+        # trustworthy (an empty result then genuinely means none configured);
+        # when not, it is an honest blind spot.
+        if (${'$'}script:isAdmin) {
           Emit 'av.exclusionsReadable' 'True'
-          foreach (${'$'}e in ${'$'}excl) { Emit 'av.exclusion' (San ${'$'}e) }
+          ${'$'}excl = (Get-MpPreference).ExclusionPath
+          if (${'$'}excl) { foreach (${'$'}e in ${'$'}excl) { Emit 'av.exclusion' (San ${'$'}e) } }
         } else {
           Emit 'av.exclusionsReadable' 'False'
         }
