@@ -895,9 +895,16 @@ internal object WindowsProbe {
         # One that also exists in HKLM is overriding something.
         Source 'COM registrations' {
           foreach (${'$'}k in Get-ChildItem 'HKCU:\Software\Classes\CLSID' -ErrorAction Stop) {
+            # The cheap shadow test runs FIRST. An HKCU CLSID matters only when
+            # it OVERRIDES an HKLM one; the vast majority are private per-user
+            # registrations. Reading InprocServer32 for every one of several
+            # thousand keys cost about 160 seconds of the probe's budget on a
+            # developer machine -- a Test-Path existence check per key, then the
+            # InprocServer32 read only for the handful that actually shadow,
+            # produces the identical result far faster.
+            if (-not (Test-Path "HKLM:\Software\Classes\CLSID\${'$'}(${'$'}k.PSChildName)\InprocServer32")) { continue }
             ${'$'}ip = Get-ItemProperty "${'$'}(${'$'}k.PSPath)\InprocServer32" -ErrorAction SilentlyContinue
             if (-not ${'$'}ip) { continue }
-            if (-not (Test-Path "HKLM:\Software\Classes\CLSID\${'$'}(${'$'}k.PSChildName)\InprocServer32")) { continue }
             EmitAuto ${'$'}k.PSChildName 'HKCU COM class' 'COM hijack' "${'$'}(${'$'}ip.'(default)')"
           }
         }
@@ -1017,6 +1024,13 @@ internal object WindowsProbe {
 
         ${'$'}procOk = ${'$'}true
         ${'$'}procNoPath = 0
+        # A signed binary can have a dozen live instances -- a browser and its
+        # renderers, an editor and its helpers all share one .exe on disk.
+        # Signature-verifying and hashing a 240 MB file once PER INSTANCE cost
+        # minutes (ten Code.exe instances at ~6 seconds each, measured). The
+        # verdict is a property of the file, not the instance, so each distinct
+        # path is examined once; the seen set makes that so.
+        ${'$'}procSeen = @{}
         try {
           foreach (${'$'}p in Get-Process -ErrorAction Stop) {
             # Per process, and this is the third time in this file that mattered.
@@ -1030,6 +1044,10 @@ internal object WindowsProbe {
             ${'$'}path = ${'$'}null
             try { ${'$'}path = ${'$'}p.Path } catch { ${'$'}path = ${'$'}null }
             if (-not ${'$'}path) { ${'$'}procNoPath++; continue }
+            # Same binary already examined this run: skip the expensive signature
+            # and hash. A duplicate instance tells us nothing new about the file.
+            if (${'$'}procSeen.ContainsKey(${'$'}path)) { continue }
+            ${'$'}procSeen[${'$'}path] = ${'$'}true
             ${'$'}n = ${'$'}p.ProcessName.ToLower()
             # Deliberately not named "home". That is a read-only automatic
             # variable in PowerShell, and assigning to it throws
