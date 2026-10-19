@@ -1,0 +1,78 @@
+# Signing self-test (manual, throwaway)
+#
+# Proves the SignTool code-signing mechanics that release.yml uses, end to end
+# on a hosted runner: decode the PFX secret -> locate signtool -> sign -> verify.
+# It signs a tiny generated DLL rather than building the full MSI, because the
+# thing under test is the SIGNING path, not the build (which already works).
+#
+# Needs the same secrets as release.yml's SignTool branch:
+#   WINDOWS_PFX_BASE64      base64 of a code-signing .pfx
+#   WINDOWS_PFX_PASSWORD    its password
+#
+# A SELF-SIGNED cert does not chain to a trusted root, so `signtool verify /pa`
+# would normally fail. This test imports the cert's PUBLIC half into the runner's
+# Root + TrustedPublisher stores first (the runner is disposable), so a green run
+# confirms sign+verify work. A real OV/EV cert needs no such import.
+#
+# This workflow is throwaway scaffolding — delete it once signing is confirmed.
+name: signing-selftest
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    runs-on: windows-latest
+    env:
+      HAS_PFX: ${{ secrets.WINDOWS_PFX_BASE64 != '' }}
+    steps:
+      - name: Guard — secret must be present
+        if: ${{ env.HAS_PFX != 'true' }}
+        shell: bash
+        run: |
+          echo "WINDOWS_PFX_BASE64 is not set — add the secrets first." >&2
+          exit 1
+
+      - name: Sign and verify a throwaway DLL with the cert
+        if: ${{ env.HAS_PFX == 'true' }}
+        shell: pwsh
+        env:
+          WINDOWS_PFX_BASE64: ${{ secrets.WINDOWS_PFX_BASE64 }}
+          WINDOWS_PFX_PASSWORD: ${{ secrets.WINDOWS_PFX_PASSWORD }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $pfx = Join-Path $env:RUNNER_TEMP 'codesign.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_PFX_BASE64))
+
+          # Locate signtool exactly as release.yml does.
+          $signtool = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe' |
+            Sort-Object FullName | Select-Object -Last 1
+          if (-not $signtool) { throw 'signtool.exe not found on the runner' }
+          "signtool: $($signtool.FullName)"
+
+          # A real PE to sign (self-contained, no build needed).
+          $dll = Join-Path $env:RUNNER_TEMP 'selftest.dll'
+          Add-Type -TypeDefinition 'public class BlanktickSignTest {}' -OutputAssembly $dll -OutputType Library
+
+          # Self-signed won't chain to a trusted root, so trust it on this
+          # disposable runner so /pa verification can succeed. (A real OV/EV
+          # cert skips this entirely.)
+          $sec  = ConvertTo-SecureString $env:WINDOWS_PFX_PASSWORD -AsPlainText -Force
+          $pcert = Get-PfxData -FilePath $pfx -Password $sec
+          $pub  = Join-Path $env:RUNNER_TEMP 'pub.cer'
+          [IO.File]::WriteAllBytes($pub, $pcert.EndEntityCertificates[0].RawData)
+          certutil -addstore -f Root $pub | Out-Null
+          certutil -addstore -f TrustedPublisher $pub | Out-Null
+
+          & $signtool.FullName sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 `
+            /f $pfx /p $env:WINDOWS_PFX_PASSWORD $dll
+          if ($LASTEXITCODE -ne 0) { throw "signtool sign failed ($LASTEXITCODE)" }
+
+          & $signtool.FullName verify /pa /v $dll
+          if ($LASTEXITCODE -ne 0) { throw "signtool verify failed ($LASTEXITCODE)" }
+
+          Remove-Item $pfx -Force -ErrorAction SilentlyContinue
+          Write-Output 'SIGNING SELF-TEST PASSED — sign + verify both succeeded.'
