@@ -25,14 +25,29 @@ Then add the standard notice to `README.md` and keep the per-file headers short.
 "source available" and not licensed open source.** Nobody has permission to use
 it, which is the default in the absence of a licence.
 
-## 2. Binaries are unsigned
+## 2. Binaries are unsigned — pipeline wired, cert still needed
 
-Decided: ship unsigned, publish SHA-256 checksums, and explain the SmartScreen
+Interim: ship unsigned, publish SHA-256 checksums, and explain the SmartScreen
 warning plainly on the download page rather than pretending it will not appear.
 
 A non-trivial number of non-technical users — the people this product is written
-for — will stop at "Windows protected your PC". That is a known, accepted cost of
-the current approach and should be revisited before any real launch.
+for — will stop at "Windows protected your PC". That is the accepted cost *only
+until a certificate exists*.
+
+`release.yml` now has the signing steps wired in (Azure Trusted Signing and
+OV/EV-cert-via-SignTool), each gated on repo secrets and skipped while those are
+absent — so nothing changes until a cert is chosen. **The remaining step is
+human/paid, not code:** obtain a certificate and add ONE path's secrets:
+
+* **Azure Trusted Signing** (recommended, ~$10/mo, no key to store):
+  `AZURE_TS_ENDPOINT`, `AZURE_TS_ACCOUNT`, `AZURE_TS_PROFILE`, plus an
+  `azure/login@v2` OIDC step before the ATS step.
+* **OV/EV certificate**: `WINDOWS_PFX_BASE64` (base64 of the .pfx) and
+  `WINDOWS_PFX_PASSWORD`. EV tokens usually need an attended/self-hosted runner.
+
+Once secrets are present, a `v*` tag produces a signed MSI and the release note
+flips from "UNSIGNED" to "signed" automatically. Not yet verified end-to-end —
+no certificate has been available to run it against.
 
 ## 3. No installer, only a portable build
 
