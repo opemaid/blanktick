@@ -4,44 +4,37 @@
 # GitHub Release. Triggered by pushing a tag that matches `v*` (e.g. v0.1.0).
 #
 # ---------------------------------------------------------------------------
-# THE MSI THIS WORKFLOW PRODUCES IS UNSIGNED.
+# SIGNING IS WIRED BUT OFF BY DEFAULT — THE MSI IS UNSIGNED UNTIL YOU ADD A CERT.
 # ---------------------------------------------------------------------------
 # jpackage (which Compose Desktop drives for `packageMsi`) emits an MSI with no
-# Authenticode signature. On a fresh Windows machine that means:
+# Authenticode signature. Two optional signing steps are wired in below; each
+# stays SKIPPED until its secrets exist, so with none set the MSI ships unsigned
+# and on a fresh Windows machine that means:
 #
 #   * SmartScreen shows "Windows protected your PC" with an "Unknown publisher"
 #     line, and the user has to click "More info" -> "Run anyway".
 #   * The installer's Properties dialog has no "Digital Signatures" tab.
 #
-# Real distribution to the non-technical users this product is written for needs
-# a code-signing certificate, which is a human/paid step this CI workflow
-# intentionally does NOT perform. A build server holding a signing key is a
-# liability, and the certificate decision has cost and identity-verification
-# implications that belong to a person, not a push trigger. See docs/release.md
-# and RELEASE-CHECKLIST.md item 2 for the current "ship unsigned + publish
-# SHA-256 checksums + explain the warning" decision.
+# A trusted signature needs a code-signing certificate — a human/paid step with
+# cost and identity-verification implications that belong to a person, not a
+# push trigger. The pipeline is ready; obtaining the cert and adding the secrets
+# is the remaining human step. See docs/release.md and RELEASE-CHECKLIST.md
+# item 2.
 #
-# HOW TO ADD SIGNING LATER (pick one, then insert a signing step after the
-# "Build the MSI installer" step and before the release is created):
+# TO TURN SIGNING ON, add the secrets for ONE path (no YAML change needed):
 #
-#   a) Azure Trusted Signing (no cert to store; signs via a cloud service):
-#        - uses: azure/trusted-signing-action@v0
-#          with:
-#            endpoint: ${{ secrets.AZURE_TS_ENDPOINT }}
-#            trusted-signing-account-name: ${{ secrets.AZURE_TS_ACCOUNT }}
-#            certificate-profile-name: ${{ secrets.AZURE_TS_PROFILE }}
-#            files-folder: desktop/build/compose/binaries/main/msi
-#            files-folder-filter: msi
-#      (authenticate first with azure/login@v2 using a federated/OIDC identity).
+#   a) Azure Trusted Signing (recommended; no key to store, signs via a cloud
+#      service). Secrets: AZURE_TS_ENDPOINT, AZURE_TS_ACCOUNT, AZURE_TS_PROFILE.
+#      Also add an `azure/login@v2` (OIDC) step just before the ATS step; it
+#      uses the id-token:write permission already declared below.
 #
-#   b) A purchased OV/EV code-signing certificate + SignTool. Store the PFX as a
-#      base64 secret, decode it to a temp file at runtime, then:
-#        signtool sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 \
-#          /f cert.pfx /p "$CERT_PASSWORD" path\to\Blanktick-*.msi
-#      EV certs typically live on an HSM/USB token, so SignTool there usually
-#      runs on a self-hosted/attended runner rather than a hosted one.
+#   b) A purchased OV/EV code-signing certificate + SignTool. Secrets:
+#      WINDOWS_PFX_BASE64 (the .pfx, base64-encoded) and WINDOWS_PFX_PASSWORD.
+#      EV certs typically live on an HSM/USB token, so that path usually needs a
+#      self-hosted/attended runner rather than this hosted one.
 #
-# After signing, verify with:  signtool verify /pa /v Blanktick-*.msi
+# The signing steps verify with `signtool verify /pa` (SignTool path) and the
+# release note below switches from "UNSIGNED" to "signed" automatically.
 #
 # ---------------------------------------------------------------------------
 # Conventions mirror .github/workflows/ci.yml: windows-latest, bash as the
@@ -60,8 +53,11 @@ on:
     tags: ["v*"]
 
 # Needed so softprops/action-gh-release can create the release and upload assets.
+# id-token:write is for Azure Trusted Signing's OIDC login — harmless and unused
+# unless the ATS secrets below are set.
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   release:
@@ -72,6 +68,13 @@ jobs:
     defaults:
       run:
         shell: bash
+    # A step's `if:` cannot read `secrets` directly, but a job-level `env` can.
+    # Both are empty on this repo today, so every signing step below is SKIPPED
+    # and the MSI ships unsigned exactly as documented above — until one cert
+    # path's secrets are added, at which point that step turns on by itself.
+    env:
+      HAS_ATS: ${{ secrets.AZURE_TS_ENDPOINT != '' }}
+      HAS_PFX: ${{ secrets.WINDOWS_PFX_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -118,6 +121,53 @@ jobs:
           chmod +x ./gradlew
           ./gradlew :desktop:packageMsi --console=plain --no-daemon
 
+      # ---- Code signing (optional) ----------------------------------------
+      # Both steps are skipped until the matching secrets exist, so by default
+      # the MSI ships UNSIGNED exactly as the header documents. Signing happens
+      # here — after the MSI is built, before the checksum — so the published
+      # SHA-256 covers the signed installer. Enable exactly ONE path.
+      #
+      # Azure Trusted Signing — set repo secrets AZURE_TS_ENDPOINT,
+      # AZURE_TS_ACCOUNT, AZURE_TS_PROFILE, and add an `azure/login@v2` (OIDC)
+      # step immediately before this one (it uses the id-token:write permission
+      # already declared above).
+      - name: Sign the MSI (Azure Trusted Signing)
+        if: ${{ env.HAS_ATS == 'true' }}
+        uses: azure/trusted-signing-action@v0
+        with:
+          endpoint: ${{ secrets.AZURE_TS_ENDPOINT }}
+          trusted-signing-account-name: ${{ secrets.AZURE_TS_ACCOUNT }}
+          certificate-profile-name: ${{ secrets.AZURE_TS_PROFILE }}
+          files-folder: desktop/build/compose/binaries/main/msi
+          files-folder-filter: msi
+
+      # Purchased OV/EV certificate — store the PFX as a base64 secret
+      # WINDOWS_PFX_BASE64 and its password as WINDOWS_PFX_PASSWORD. (EV certs
+      # usually live on an HSM/USB token and need a self-hosted/attended runner
+      # instead of this hosted one.)
+      - name: Sign the MSI (OV/EV certificate via SignTool)
+        if: ${{ env.HAS_PFX == 'true' }}
+        shell: pwsh
+        env:
+          WINDOWS_PFX_BASE64: ${{ secrets.WINDOWS_PFX_BASE64 }}
+          WINDOWS_PFX_PASSWORD: ${{ secrets.WINDOWS_PFX_PASSWORD }}
+        run: |
+          $pfx = Join-Path $env:RUNNER_TEMP 'codesign.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_PFX_BASE64))
+          try {
+            $signtool = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe' -ErrorAction Stop |
+              Sort-Object FullName | Select-Object -Last 1
+            if (-not $signtool) { throw 'signtool.exe not found on the runner' }
+            $msi = Get-ChildItem desktop/build/compose/binaries/main/msi/*.msi | Select-Object -First 1
+            & $signtool.FullName sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 `
+              /f $pfx /p $env:WINDOWS_PFX_PASSWORD $msi.FullName
+            if ($LASTEXITCODE -ne 0) { throw "signtool sign failed ($LASTEXITCODE)" }
+            & $signtool.FullName verify /pa /v $msi.FullName
+            if ($LASTEXITCODE -ne 0) { throw "signtool verify failed ($LASTEXITCODE)" }
+          } finally {
+            Remove-Item $pfx -Force -ErrorAction SilentlyContinue
+          }
+
       - name: Locate MSI and generate SHA-256 checksum
         id: artifact
         # Compose Desktop writes packageMsi output to
@@ -144,9 +194,6 @@ jobs:
           body: |
             Blanktick ${{ github.ref_name }} — offline Windows security-posture check.
 
-            **This MSI is UNSIGNED.** On first run Windows SmartScreen will show
-            "Windows protected your PC" / "Unknown publisher". Click **More info**
-            then **Run anyway**. Verify your download with the published
-            `.sha256` checksum before installing.
+            ${{ (env.HAS_ATS == 'true' || env.HAS_PFX == 'true') && 'This MSI is Authenticode-signed. Verify your download with the published `.sha256` checksum before installing.' || '**This MSI is UNSIGNED.** On first run Windows SmartScreen will show "Windows protected your PC" / "Unknown publisher". Click **More info** then **Run anyway**. Verify your download with the published `.sha256` checksum before installing.' }}
 
             Per-user install (no administrator rights required).
