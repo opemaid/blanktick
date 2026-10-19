@@ -61,8 +61,19 @@ internal object Shell {
     var lastRunTruncated: Boolean = false
         private set
 
-    data class Result(val exitCode: Int, val stdout: String, val stderr: String) {
-        val ok: Boolean get() = exitCode == 0
+    data class Result(
+        val exitCode: Int,
+        val stdout: String,
+        val stderr: String,
+        /**
+         * The process overran its ceiling and was killed; [stdout] holds only
+         * what had been read when that happened. Never `ok`. Only produced when
+         * a caller opts in via `allowPartialOnTimeout` — otherwise a timeout is
+         * reported as `null`, unchanged.
+         */
+        val timedOut: Boolean = false
+    ) {
+        val ok: Boolean get() = exitCode == 0 && !timedOut
     }
 
     // ------------------------------------------------------------- resolution
@@ -293,7 +304,15 @@ internal object Shell {
     fun run(
         vararg command: String,
         timeoutSeconds: Long = DEFAULT_TIMEOUT_SECONDS,
-        workingDir: File? = null
+        workingDir: File? = null,
+        // Opt-in, and only safe for a single batched command whose output is
+        // whole `key=value` lines (the probe). When it overruns, the lines
+        // read before the kill are returned as a `timedOut` Result instead of
+        // `null`, so the caller can still use the facts that did arrive. A
+        // general command killed mid-write has no such guarantee, so the
+        // default stays `null` — the behaviour every other caller and the
+        // hardening tests rely on.
+        allowPartialOnTimeout: Boolean = false
     ): Result? = try {
         // Resolution failure is not an error to report: a machine without
         // `ufw` is a normal machine. It is "cannot tell", same as any other
@@ -336,7 +355,23 @@ internal object Shell {
             if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
                 process.destroyForcibly()
                 process.waitFor(2, TimeUnit.SECONDS)
-                null
+                if (allowPartialOnTimeout) {
+                    // The child was killed for overrunning, but the drain
+                    // threads have been reading its output the whole time. For
+                    // the probe those lines are each a complete fact, still
+                    // true about this machine; throwing them away turns one
+                    // slow section into a total collection failure. Join the
+                    // readers (the closed streams make them hit EOF at once),
+                    // then hand back what arrived, flagged `timedOut` so it can
+                    // never be mistaken for a clean run. The missing
+                    // `probe.complete` sentinel still makes the score withhold.
+                    outThread.join(2_000)
+                    errThread.join(2_000)
+                    if (outBuf.length >= MAX_OUTPUT_CHARS) lastRunTruncated = true
+                    Result(-1, outBuf.toString(), errBuf.toString(), timedOut = true)
+                } else {
+                    null
+                }
             } else {
                 // The child is gone; the readers see EOF almost immediately.
                 // Bounded anyway, because "almost" is not a guarantee.
@@ -391,7 +426,11 @@ internal object Shell {
      * answers depend on someone's `Microsoft.PowerShell_profile.ps1` is not
      * measuring the machine.
      */
-    fun powershell(script: String, timeoutSeconds: Long = DEFAULT_TIMEOUT_SECONDS): String? {
+    fun powershell(
+        script: String,
+        timeoutSeconds: Long = DEFAULT_TIMEOUT_SECONDS,
+        acceptPartialOnTimeout: Boolean = false
+    ): String? {
         // Written into a fresh randomly-named DIRECTORY, not straight into the
         // shared temp folder.
         //
@@ -427,11 +466,21 @@ internal object Shell {
             // the middle of the output. Silenced in-band so no caller has to
             // strip it.
             file.writeText("\$ProgressPreference = 'SilentlyContinue'\r\n" + script, Charsets.UTF_8)
-            stdout(
+            val res = run(
                 "powershell.exe", "-NoProfile", "-NonInteractive",
                 "-ExecutionPolicy", "Bypass", "-File", file.absolutePath,
-                timeoutSeconds = timeoutSeconds
-            )?.trim()
+                timeoutSeconds = timeoutSeconds,
+                allowPartialOnTimeout = acceptPartialOnTimeout
+            )
+            when {
+                res == null -> null
+                res.ok -> res.stdout.trim()
+                // Partial facts from an overrun, but only when the caller asked
+                // for them. A non-zero exit that is NOT a timeout stays a
+                // failure (null), exactly as the old `stdout()`-filtered path.
+                res.timedOut && acceptPartialOnTimeout -> res.stdout.trim()
+                else -> null
+            }
         } catch (_: Exception) {
             null
         } finally {
@@ -467,19 +516,30 @@ internal object Shell {
         // Four minutes, not ninety seconds, and the number is measured rather
         // than guessed.
         //
-        // The probe grew to about 133 seconds of real work on the development
-        // machine -- most of it Get-AuthenticodeSignature, which costs roughly
-        // 410 milliseconds a file and is asked about sixty-six of them. At the
-        // old ceiling the run was killed, powershellKeyValues returned an empty
-        // map, every check reported not-checkable, and the app printed a
-        // confident 100/100 off two checks. A ceiling that truncates the entire
-        // collection is far worse than a scan that takes longer, and the score
-        // is now suppressed when the collection does not finish -- but the
-        // right fix is for it to finish.
+        // The probe is a lot of work -- Get-AuthenticodeSignature and file
+        // hashing over the processes and autorun entries, Defender scans, WMI
+        // and COM enumeration -- and on a software-heavy machine the total can
+        // still exceed this ceiling (measured: >248 seconds on a developer box
+        // with hundreds of processes). That used to be catastrophic: the run
+        // was killed, powershellKeyValues returned an empty map, every check
+        // reported not-checkable, and the app printed a confident 100/100 off
+        // two checks.
+        //
+        // No longer. `acceptPartialOnTimeout` below keeps the facts that were
+        // collected before the kill, so an overrun degrades to "most checks,
+        // score withheld" instead of "nothing". The ceiling now bounds how long
+        // the user waits, not whether the scan is usable. Finishing is still
+        // better -- the fewer sections cut off, the more complete the picture --
+        // but a slow machine is no longer a blank report.
         timeoutSeconds: Long = 240
     ): Map<String, List<String>> {
         lastRunTruncated = false
-        val raw = powershell(script, timeoutSeconds) ?: return emptyMap()
+        // Partial output on timeout is deliberately accepted here: the probe
+        // emits one complete `key=value` fact per line, so what arrived before
+        // the kill is usable, and the absent `probe.complete` sentinel keeps
+        // CollectionReport withholding the score. See powershell / run.
+        val raw = powershell(script, timeoutSeconds, acceptPartialOnTimeout = true)
+            ?: return emptyMap()
         val out = mutableMapOf<String, MutableList<String>>()
 
         raw.lineSequence().forEach { line ->
