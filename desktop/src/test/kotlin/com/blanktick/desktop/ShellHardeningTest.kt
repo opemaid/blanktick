@@ -244,7 +244,11 @@ class ShellHardeningTest {
             "-Command",
             "[Console]::Out.WriteLine('early-1'); [Console]::Out.WriteLine('early-2'); " +
                 "[Console]::Out.Flush(); Start-Sleep -Seconds 30",
-            timeoutSeconds = 3,
+            // Headroom for powershell.exe cold-start on a loaded CI runner: the
+            // lines are emitted instantly once it runs, but startup alone can eat
+            // a 3s window and leave stdout empty. 10s still kills the 30s sleep
+            // mid-run, so the "overrun -> partial facts" semantics are unchanged.
+            timeoutSeconds = 10,
             allowPartialOnTimeout = true
         )
 
@@ -270,7 +274,11 @@ class ShellHardeningTest {
             "[Console]::Out.WriteLine('fw.enabled=True'); " +
                 "[Console]::Out.WriteLine('av.product=Defender'); " +
                 "[Console]::Out.Flush(); Start-Sleep -Seconds 30",
-            timeoutSeconds = 3
+            // 10s (not 3s): headroom for powershell.exe cold-start on a loaded
+            // runner, still well under the 30s sleep so the probe is killed
+            // mid-run and never reaches the completion sentinel. See the
+            // sibling partial-on-timeout test for the full rationale.
+            timeoutSeconds = 10
         )
 
         assertEquals(listOf("True"), facts["fw.enabled"], "a collected fact was dropped on timeout")
