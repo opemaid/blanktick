@@ -1,5 +1,12 @@
 # Blanktick
 
+<p align="center">
+  <a href="https://blanktick.org"><img src="design/social/og-github-social-preview-1280x640.png" alt="Blanktick — a green tick can mean “we checked, it’s fine.” Or it can mean “we never looked.”" width="820"></a>
+</p>
+
+<p align="center"><b>The security scanner that tells you what it could not check.</b><br>
+<a href="https://blanktick.org">blanktick.org</a> · Free · Open source · Offline · Windows</p>
+
 A security checkup for your phone and your computer that runs entirely on the
 device it is checking.
 
