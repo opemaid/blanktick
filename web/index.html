@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Blanktick — a security scanner that tells you what it could not check</title>
 <meta name="description" content="A free, offline security scanner for Windows and Android. It reports what it found, and separately reports what it never managed to look at.">
 <!-- Link previews (X, LinkedIn, Facebook, Slack, WhatsApp...). Read by the
@@ -36,6 +36,12 @@
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#FBFAF6">
+<!-- "Add to Home Screen" opens the site full-screen, without the browser bar. -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Blanktick">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 
 <body>
@@ -99,7 +105,7 @@
         It tells you which one you are looking at.
       </p>
       <p class="actions">
-        <a class="cta" href="#download"><svg class="cta-tick" aria-hidden="true" focusable="false"><use href="#tick"/></svg>Download for Windows</a>
+        <a class="cta" href="#download"><svg class="cta-tick" aria-hidden="true" focusable="false"><use href="#tick"/></svg><span class="on-wide">Download for Windows</span><span class="on-phone">Get it for your PC</span></a>
         <a class="cta-quiet" href="#coverage">See the full coverage list <span aria-hidden="true">&darr;</span></a>
       </p>
     </div>
@@ -182,6 +188,9 @@
         configuration questions &mdash; and configuration is what an attacker
         changes once they are already in.
       </p>
+      <!-- details.more: collapsed on phones, always open on wider screens (see styles.css). -->
+      <details class="more">
+      <summary>How it works with Defender</summary>
       <p>
         <strong>It asks the scanner you already have.</strong> Blanktick shortlists
         roughly seventy files &mdash; the ones that start automatically, and the ones
@@ -195,6 +204,7 @@
         <div><dt>Submitted</dt><dd><span class="num">67</span> files</dd></div>
         <div><dt>Flagged</dt><dd><span class="num">0</span></dd></div>
       </dl>
+      </details>
       <div class="warn">
         <p class="warn-h"><strong>It is not an antivirus and does not replace one.</strong></p>
         <p>Blanktick has no file scanner, no signatures and no real-time protection, and
@@ -202,7 +212,7 @@
         this instead, you have made your computer worse. Run both. Blanktick reports;
         it never changes anything.</p>
       </div>
-      <p class="small">
+      <p class="small on-wide-block">
         Prefer text? <code>gradlew :desktop:run --args=&quot;--scan&quot;</code> prints
         the whole report &mdash; findings and the not-checked list &mdash; to your
         terminal. <!-- The packaged .exe cannot do this yet: jpackage builds a
@@ -243,12 +253,15 @@
         <div class="elig-row"><span class="elig-l">Android</span><span class="elig-bar" style="--v:29"></span><span class="elig-n">29</span></div>
         <div class="elig-row"><span class="elig-l">iPhone</span><span class="elig-bar" style="--v:15"></span><span class="elig-n">15</span></div>
       </div>
+      <details class="more">
+      <summary>An analogy</summary>
       <blockquote class="pull">
         <p>It is the difference between a mechanic who hands your keys back and says
         &ldquo;all fine&rdquo;, and one who says &ldquo;brakes and tyres are good,
         I could not get the gearbox up on the ramp.&rdquo; The second gives you
         worse news and a more useful day.</p>
       </blockquote>
+      </details>
     </div>
 
     <div class="tablewrap">
@@ -318,6 +331,8 @@
         like information and is not &mdash; and it is worse than no number, because
         you would act on it.
       </p>
+      <details class="more">
+      <summary>What you see instead</summary>
       <p>
         So an unfinished scan shows the findings it has, the checks it got through,
         and a blank where the score goes. This is the one place a security app is
@@ -329,6 +344,7 @@
         score is deductions subtracted from a hundred and almost nothing had been
         deducted. That build never shipped.
       </p>
+      </details>
     </div>
   </div>
 </section>
@@ -346,6 +362,7 @@
         makes changes, and where the usual tools do not look. Every check is
         read-only. None of them changes a setting.
       </p>
+      <p class="rail-hint" aria-hidden="true">6 areas &middot; swipe <span>&rarr;</span></p>
     </div>
     <ol class="areas">
       <li class="area">
@@ -488,6 +505,8 @@
           the StevenBlack host list and abuse.ch&rsquo;s URLhaus feed.</p>
         </div>
       </div>
+      <details class="more">
+      <summary>How current the lists are</summary>
       <p>
         Both lists are snapshots baked into the download. That makes them offline by
         construction and, like every other list here, exactly as current as the day
@@ -504,6 +523,7 @@
         you ask on purpose, one password at a time, not something scraped from your
         browser behind your back.
       </p>
+      </details>
     </div>
   </div>
 </section>
@@ -525,6 +545,8 @@
         Security tools that are honest about their own limits, so a
         tick on your screen always means somebody actually looked.
       </p>
+      <details class="more">
+      <summary>How it started</summary>
       <p>
         Blanktick started in August 2026 as a side project with a narrow complaint:
         security apps show the same reassuring green tick for &ldquo;checked and
@@ -532,6 +554,7 @@
         Mume. It was renamed Blanktick in September 2026, after the thing it
         refuses to print.
       </p>
+      </details>
       <p>
         The project has three rules that are not up for negotiation.
       </p>
@@ -567,6 +590,20 @@
       </dl>
     </header>
     <div class="sec-body">
+
+    <!-- Phones only. An .msi cannot run on a phone, so the useful action there is
+         getting the link onto the PC. Both are plain links: no script, no request. -->
+    <div class="phone-card">
+      <p class="phone-card-k">You&rsquo;re on a phone</p>
+      <p>Blanktick runs on Windows PCs. Send yourself the link and open it on your computer.</p>
+      <p class="phone-card-actions">
+        <a class="cta" href="mailto:?subject=Blanktick%20for%20Windows&amp;body=Download%20Blanktick%20(free)%20on%20your%20PC%3A%20https%3A%2F%2Fblanktick.org%2F%23download"><svg class="cta-tick" aria-hidden="true" focusable="false"><use href="#tick"/></svg>Email me the link</a>
+        <a class="cta cta-line" href="https://wa.me/?text=Download%20Blanktick%20(free)%20on%20your%20PC%3A%20https%3A%2F%2Fblanktick.org%2F%23download">Send it on WhatsApp</a>
+      </p>
+    </div>
+
+    <details class="more">
+    <summary>Download steps for your PC</summary>
 
     <!--
       The warning sits ABOVE the button on purpose. A scary dialog that arrives
@@ -646,6 +683,7 @@ gradlew :desktop:createDistributable</pre>
       almost everything as not checkable, which is safe and nearly useless. The
       Android build is not on Google Play; build it from source.
     </p>
+    </details>
     </div>
   </div>
 </section>
@@ -708,6 +746,16 @@ gradlew :desktop:createDistributable</pre>
     </div>
   </div>
 </footer>
+
+<!-- Phone tab bar: the app-style way round the page. Hidden on wider screens,
+     where the header nav carries the same links. -->
+<nav class="tabbar" aria-label="Sections">
+  <a href="#main"><svg viewBox="20 50 228 166" aria-hidden="true" focusable="false"><use href="#tick"/></svg>Home</a>
+  <a href="#coverage"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg>Coverage</a>
+  <a href="#looks"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h3M10 6h10M4 12h3M10 12h10M4 18h3M10 18h10"/></svg>Checks</a>
+  <a href="#about"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v6M12 7.5v1"/></svg>About</a>
+  <a class="tab-get" href="#download"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Get it</a>
+</nav>
 
 </body>
 </html>
