@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blanktick — a security scanner that tells you what it could not check</title>
+<meta name="description" content="A free, offline security scanner for Windows and Android. It reports what it found, and separately reports what it never managed to look at.">
+
+<!--
+  There is deliberately no <link> to a font service here.
+
+  A previous version of this page loaded typefaces from api.fontshare.com and
+  fonts.googleapis.com, while a paragraph further down invited the reader to
+  "open your network tab if you like — there is no request to make". Someone
+  was always going to open the network tab. The three typefaces this page uses
+  (Hanken Grotesk, IBM Plex Mono, Newsreader — all SIL OFL) are subset to Latin
+  and served from this same origin, from /fonts, with their licences beside
+  them. Total 74.5 KB. The CSP's font-src 'self' means the browser would refuse
+  any other source even if one were added by mistake.
+-->
+<link rel="preload" href="fonts/hanken-grotesk-var-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#FBFAF6">
+</head>
+
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- One symbol, reused everywhere: the severed tick from the ad (ad/blanktick-hero tickMark). -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="tick" viewBox="20 50 228 166">
+      <path d="M44 136 L104 192 L150 148" fill="none" stroke="currentColor" stroke-width="34" stroke-linecap="butt" stroke-linejoin="miter"/>
+      <path d="M172 126 L224 74" fill="none" stroke="currentColor" stroke-width="34" stroke-linecap="butt"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="site">
+  <div class="wrap nav">
+    <a class="brand" href="#main" aria-label="Blanktick, home">
+      <svg class="mark" viewBox="20 50 228 166" aria-hidden="true" focusable="false"><use href="#tick"/></svg>
+      <span class="word">blanktick</span>
+    </a>
+    <nav class="nav-wide" aria-label="Primary">
+      <ul>
+        <li><a href="#coverage"><span class="n" aria-hidden="true">02</span>Coverage</a></li>
+        <li><a href="#looks"><span class="n" aria-hidden="true">04</span>What it checks</a></li>
+        <li><a href="#offline"><span class="n" aria-hidden="true">05</span>Offline</a></li>
+        <li><a href="#about"><span class="n" aria-hidden="true">07</span>About</a></li>
+        <li><a class="nav-cta" href="#download">Download</a></li>
+      </ul>
+    </nav>
+    <!-- No script means no hamburger toggle; <details> is the native disclosure. -->
+    <details class="nav-narrow">
+      <summary>Contents</summary>
+      <nav aria-label="Primary">
+        <ol>
+          <li><a href="#notav"><span class="n" aria-hidden="true">01</span>Not an antivirus</a></li>
+          <li><a href="#coverage"><span class="n" aria-hidden="true">02</span>Coverage</a></li>
+          <li><a href="#noscore"><span class="n" aria-hidden="true">03</span>No score</a></li>
+          <li><a href="#looks"><span class="n" aria-hidden="true">04</span>What it checks</a></li>
+          <li><a href="#offline"><span class="n" aria-hidden="true">05</span>Offline</a></li>
+          <li><a href="#placeholder"><span class="n" aria-hidden="true">06</span>Hand checks</a></li>
+          <li><a href="#about"><span class="n" aria-hidden="true">07</span>About</a></li>
+          <li><a href="#download"><span class="n" aria-hidden="true">08</span>Download</a></li>
+        </ol>
+      </nav>
+    </details>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+
+<!-- =============================================================== hero -->
+<section id="hero" class="hero" aria-labelledby="hero-h">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="micro"><span class="dot" aria-hidden="true"></span>Offline by construction</p>
+      <h1 id="hero-h"><span class="l1">A green tick can mean</span> <q>we checked, it&rsquo;s fine.</q>
+        <span class="h1-2"><span class="l1">Or it can mean</span> <q>we never looked.</q><span class="blank-glyph" aria-hidden="true"></span></span></h1>
+      <p class="lede">
+        Blanktick is a free, open-source security scanner for Windows and Android.
+        It tells you which one you are looking at.
+      </p>
+      <p class="actions">
+        <a class="cta" href="#download"><svg class="cta-tick" aria-hidden="true" focusable="false"><use href="#tick"/></svg>Download for Windows</a>
+        <a class="cta-quiet" href="#coverage">See the full coverage list <span aria-hidden="true">&darr;</span></a>
+      </p>
+    </div>
+
+    <!--
+      The receipt. The score and the not-checked count at identical visual weight.
+      If the 81 were large and the 31 were a grey footnote, this page would be
+      the thing it is criticising, with an asterisk attached.
+
+      The matrix makes the name literal: 50 filled ticks for checks that ran,
+      31 blank ticks for checks that could not. The blank cells are drawn in INK
+      (16.9:1) — darker than the KELP of the ran cells (9.3:1) — so the thing a
+      normal scanner would leave out is, if anything, the louder of the two.
+      It is decorative (aria-hidden); the same numbers are in the <dl> below.
+    -->
+    <figure class="receipt" aria-labelledby="receipt-cap">
+      <div class="receipt-head">
+        <span>Scan receipt</span>
+        <span>Windows 11 &middot; unedited</span>
+      </div>
+      <div class="matrix" aria-hidden="true">
+        <i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i>
+        <i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i>
+        <i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i>
+        <i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i>
+        <i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i>
+        <i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i>
+        <i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i>
+        <i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b d"></i><i class="b d"></i><i class="b d"></i><i class="b d"></i>
+        <i class="b d"></i><i class="b d"></i><i class="b d"></i><i class="b d"></i><i class="b d"></i><i class="b d"></i><i class="b d"></i><i class="b d"></i><i class="b d"></i>
+      </div>
+      <dl class="tally">
+        <div class="t-ran">
+          <dt><span class="figure">50</span><span class="lbl"><span class="key key-r" aria-hidden="true"></span>Checks ran</span></dt>
+          <dd>Score 81 out of 100, from five findings. The 81 is computed over the
+            50 that ran &mdash; it is not a percentage of your security, it is a
+            percentage of what was looked at.</dd>
+        </div>
+        <div class="t-gap">
+          <dt><span class="figure">31</span><span class="lbl"><span class="key key-b" aria-hidden="true"></span>Could not be checked</span></dt>
+          <dd>18 are written for a phone and will never apply to a laptop. 13 are
+            questions this computer declined to answer. All 31 are named on screen,
+            each with its reason.</dd>
+        </div>
+      </dl>
+      <figcaption id="receipt-cap">
+        A real scan of the developer&rsquo;s own Windows 11 laptop, unedited:
+        50 answered, 31 reported not checkable.
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ============================================================ not an AV -->
+<!--
+  This section used to OPEN on the denial ("Blanktick is not an antivirus, and does
+  not replace one"). A denial-first section inherits the frame it is denying —
+  the reader arrives already thinking "antivirus", reads a paragraph about what
+  this is not, and leaves with the label reinforced. Even the developer refers
+  to it as "AV" in conversation, which is the proof that the label sticks
+  by default. So: assert the gap nothing else covers, show the mechanism, and
+  put the limit last, where it reads as integrity rather than as a disclaimer.
+  The limit itself is unchanged and non-negotiable.
+-->
+<section id="notav" class="sec" aria-labelledby="notav-h">
+  <div class="wrap sec-grid">
+    <header class="sec-head">
+      <p class="sec-no"><span aria-hidden="true">01</span> The gap</p>
+      <h2 id="notav-h">Your antivirus watches files. Nothing is watching your settings.</h2>
+    </header>
+    <div class="sec-body">
+      <p class="lede-2">
+        Defender is good at malware. It will not tell you that Remote Desktop is
+        on, that a root certificate was added after your laptop left the factory,
+        or that a program you uninstalled in 2023 still starts at boot.
+      </p>
+      <p>
+        That gap is the product. Most of Blanktick&rsquo;s <strong>70 desktop
+        checks</strong> have no counterpart in Windows Security, because they are
+        configuration questions &mdash; and configuration is what an attacker
+        changes once they are already in.
+      </p>
+      <p>
+        <strong>It asks the scanner you already have.</strong> Blanktick shortlists
+        roughly seventy files &mdash; the ones that start automatically, and the ones
+        running from your own folders &mdash; and hands that list to
+        Defender&rsquo;s own command-line scanner with
+        <code>-DisableRemediation</code> set, so it asks the question without
+        changing the answer.
+      </p>
+      <dl class="measure">
+        <div><dt>Measured</dt><dd>on the developer&rsquo;s laptop on 2026-09-07</dd></div>
+        <div><dt>Submitted</dt><dd><span class="num">67</span> files</dd></div>
+        <div><dt>Flagged</dt><dd><span class="num">0</span></dd></div>
+      </dl>
+      <div class="warn">
+        <p class="warn-h"><strong>It is not an antivirus and does not replace one.</strong></p>
+        <p>Blanktick has no file scanner, no signatures and no real-time protection, and
+        the offline design means it never will. If you turn Defender off to run
+        this instead, you have made your computer worse. Run both. Blanktick reports;
+        it never changes anything.</p>
+      </div>
+      <p class="small">
+        Prefer text? <code>gradlew :desktop:run --args=&quot;--scan&quot;</code> prints
+        the whole report &mdash; findings and the not-checked list &mdash; to your
+        terminal. <!-- The packaged .exe cannot do this yet: jpackage builds a
+        GUI-subsystem launcher with no console, so its stdout goes nowhere. Fix is
+        a console launcher in nativeDistributions; until then this page must not
+        claim `Blanktick --scan` prints anything. -->
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================== coverage -->
+<section id="coverage" class="sec sec-sunk" aria-labelledby="coverage-h">
+  <div class="wrap sec-grid">
+    <header class="sec-head">
+      <p class="sec-no"><span aria-hidden="true">02</span> Coverage</p>
+      <h2 id="coverage-h">Every scanner tells you what it found. Blanktick also tells you what it never saw.</h2>
+    </header>
+    <div class="sec-body">
+      <p class="lede-2">
+        A list of green ticks is only useful if the ticks all mean the same thing,
+        and usually they do not. Some mean &ldquo;we looked, it is fine.&rdquo;
+        Some mean &ldquo;this does not apply on your device.&rdquo; A few mean
+        &ldquo;we asked and got nothing back.&rdquo; All three print as a tick and
+        you cannot tell them apart.
+      </p>
+      <p>
+        Blanktick splits them. There are <strong>88 checks</strong>. Every one ends in a
+        result, or in the not-checked list with a reason attached to it. Not all 88
+        are eligible everywhere: <strong>29 can run on Android, 15 on an iPhone,
+        70 on a desktop.</strong> On any particular machine, fewer than that will
+        actually answer.
+      </p>
+      <!-- Eligibility as a ruled bar chart: real numbers from the paragraph above, nothing added. -->
+      <div class="elig" aria-hidden="true">
+        <div class="elig-row"><span class="elig-l">All checks</span><span class="elig-bar" style="--v:88"></span><span class="elig-n">88</span></div>
+        <div class="elig-row"><span class="elig-l">Desktop</span><span class="elig-bar" style="--v:70"></span><span class="elig-n">70</span></div>
+        <div class="elig-row"><span class="elig-l">Android</span><span class="elig-bar" style="--v:29"></span><span class="elig-n">29</span></div>
+        <div class="elig-row"><span class="elig-l">iPhone</span><span class="elig-bar" style="--v:15"></span><span class="elig-n">15</span></div>
+      </div>
+      <blockquote class="pull">
+        <p>It is the difference between a mechanic who hands your keys back and says
+        &ldquo;all fine&rdquo;, and one who says &ldquo;brakes and tyres are good,
+        I could not get the gearbox up on the ramp.&rdquo; The second gives you
+        worse news and a more useful day.</p>
+      </blockquote>
+    </div>
+
+    <div class="tablewrap">
+      <table aria-describedby="coverage-h">
+        <caption>
+          <span class="cap-k">Table 2.1</span>
+          Why 30 checks did not run on the developer&rsquo;s Windows 11 machine.
+          Grouped by reason, because eighteen rows saying the same thing is the
+          point: that is a platform boundary, not eighteen separate failures.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Check</th>
+            <th scope="col">Result</th>
+          </tr>
+        </thead>
+        <tbody id="phone">
+          <tr class="grp"><th scope="rowgroup" colspan="2"><span>Written for a phone</span> <span class="grp-n">18 checks</span></th></tr>
+          <tr><th scope="row">Root / jailbreak detection</th><td class="cannot"><span class="nc">Not checked</span> &mdash; a laptop cannot be rooted</td></tr>
+          <tr><th scope="row">USB debugging &amp; developer options</th><td class="cannot"><span class="nc">Not checked</span> &mdash; written for a phone</td></tr>
+          <tr><th scope="row">Cloned / repackaged app detection</th><td class="cannot"><span class="nc">Not checked</span> &mdash; there is no installed-app list in the Android sense</td></tr>
+          <tr><th scope="row">Android security-patch level</th><td class="cannot"><span class="nc">Not checked</span> &mdash; a desktop uses a different update model</td></tr>
+          <tr><th scope="row">Lock-screen notification previews</th><td class="cannot"><span class="nc">Not checked</span> &mdash; a phone concept</td></tr>
+        </tbody>
+        <tbody id="declined">
+          <tr class="grp"><th scope="rowgroup" colspan="2"><span>This computer would not answer</span> <span class="grp-n">12 checks</span></th></tr>
+          <tr><th scope="row">System Integrity Protection</th><td class="cannot"><span class="nc">Not checked</span> &mdash; macOS only; this machine is Windows</td></tr>
+          <tr><th scope="row">Password required when the screen wakes</th><td class="cannot"><span class="nc">Not checked</span> &mdash; Windows will not tell an unprivileged app</td></tr>
+          <tr><th scope="row">Downloaded programs are checked before they run</th><td class="cannot"><span class="nc">Not checked</span> &mdash; the setting is absent, which is both the default and what a failed read looks like</td></tr>
+          <tr><th scope="row">Attached removable drives are encrypted</th><td class="cannot"><span class="nc">Not checked</span> &mdash; nothing was plugged in, which is not the same as nothing being wrong</td></tr>
+          <tr><th scope="row">Saved passwords appear in known breaches</th><td class="cannot"><span class="nc">Not checked</span> &mdash; the scan never harvests saved passwords; paste one into the password tool and it is matched offline</td></tr>
+        </tbody>
+      </table>
+      <p class="small table-foot">
+        Ten of the thirty shown. The app lists all of them, by name, on screen.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== refusal -->
+<!-- The one dark section. The page goes quiet exactly where the product does: an empty score. -->
+<section id="noscore" class="sec sec-ink" aria-labelledby="noscore-h">
+  <div class="wrap sec-grid">
+    <header class="sec-head">
+      <p class="sec-no"><span aria-hidden="true">03</span> The refusal</p>
+      <h2 id="noscore-h">If the scan does not finish, there is no score.</h2>
+    </header>
+    <div class="sec-body">
+      <!-- Two printouts, both from the copy below: the build that lied, and the blank that replaced it. Decorative. -->
+      <div class="slips" aria-hidden="true">
+        <div class="slip slip-void">
+          <p class="slip-k"><span>Overran build</span><span>2 of 68 checks</span></p>
+          <p class="slip-v"><s>100</s><span class="slip-of">/ 100</span></p>
+          <p class="slip-stamp">Never shipped</p>
+        </div>
+        <div class="slip slip-now">
+          <p class="slip-k"><span>Unfinished scan</span><span>Findings kept</span></p>
+          <p class="slip-v"><span class="bs-v"></span><span class="slip-of">/ 100</span></p>
+          <p class="slip-stamp slip-stamp-ok">No score</p>
+        </div>
+      </div>
+      <p class="lede-2">
+        An interrupted scan still has real findings in it, and it would be easy to
+        average what we got and print a number anyway. Blanktick does not. A score
+        calculated over an unknown fraction of the checks is a number that looks
+        like information and is not &mdash; and it is worse than no number, because
+        you would act on it.
+      </p>
+      <p>
+        So an unfinished scan shows the findings it has, the checks it got through,
+        and a blank where the score goes. This is the one place a security app is
+        supposed to look unfinished, because it is.
+      </p>
+      <p class="small">
+        This is not hypothetical. It was found by a scan that overran its own time
+        limit and reported 100 out of 100 from two checks of sixty-eight, because a
+        score is deductions subtracted from a hundred and almost nothing had been
+        deducted. That build never shipped.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= what it -->
+<section id="looks" class="sec" aria-labelledby="looks-h">
+  <div class="wrap sec-grid">
+    <header class="sec-head">
+      <p class="sec-no"><span aria-hidden="true">04</span> What it checks</p>
+      <h2 id="looks-h">What it actually looks at</h2>
+    </header>
+    <div class="sec-body">
+      <p class="lede-2">
+        Six areas, chosen because they are where an attacker who is already in
+        makes changes, and where the usual tools do not look. Every check is
+        read-only. None of them changes a setting.
+      </p>
+    </div>
+    <ol class="areas">
+      <li class="area">
+        <span class="area-no" aria-hidden="true">4.1</span>
+        <h3>Programs that start themselves</h3>
+        <p>Twelve places, not the four most tools check: Run and RunOnce keys in
+          both registry views, Startup folders, Winlogon, Image File Execution
+          Options, scheduled tasks, services, WMI subscriptions, COM hijacks,
+          AppInit DLLs, Active Setup and three system DLL lists. On the
+          development machine that found <strong>47 entries</strong>. The four
+          usual locations found nine.</p>
+        <p class="area-stat" aria-hidden="true"><span class="num">47</span><span class="vs">vs</span><span class="num">9</span></p>
+      </li>
+      <li class="area">
+        <span class="area-no" aria-hidden="true">4.2</span>
+        <h3>The verdict of the antivirus you already have</h3>
+        <p>Blanktick hands the roughly seventy files it considers worth asking about
+          to the scanner already on your machine &mdash; read-only, with
+          remediation switched off, so nothing is quarantined or moved. Its
+          signatures are hours old. Anything Blanktick could bundle would be stale the
+          day it shipped.</p>
+      </li>
+      <li class="area">
+        <span class="area-no" aria-hidden="true">4.3</span>
+        <h3>The AI surface</h3>
+        <p>A local model server listening on every interface rather than just
+          your machine. The programs an AI tool-config file has been granted
+          permission to run &mdash; a grant that executes commands and appears in
+          no Run key, no scheduled task and no service, so every startup checker
+          ever written looks past it, including Blanktick&rsquo;s own. API keys
+          sitting in those files, counted and never read. And whether Windows Recall
+          has been switched off, and whether its snapshot store is on disk.</p>
+      </li>
+      <li class="area">
+        <span class="area-no" aria-hidden="true">4.4</span>
+        <h3>Certificate authorities your machine trusts</h3>
+        <p>Windows records which roots it delivered and when each one was
+          written. A root that appeared after the operating system was installed,
+          did not arrive through Microsoft&rsquo;s update channel and was not
+          deployed by workplace policy was put there by somebody.</p>
+      </li>
+      <li class="area">
+        <span class="area-no" aria-hidden="true">4.5</span>
+        <h3>What is reachable, asked of the firewall</h3>
+        <p>&ldquo;Twenty-five things are listening&rdquo; is true on a stock
+          Windows machine and tells you almost nothing, because Windows blocks
+          inbound by default. The firewall knows which programs it permits, so
+          Blanktick asks it. On the development machine: two, and both were the
+          developer&rsquo;s own web servers.</p>
+        <p class="area-stat" aria-hidden="true"><span class="num">25</span><span class="vs">&rarr;</span><span class="num">2</span></p>
+      </li>
+      <li class="area">
+        <span class="area-no" aria-hidden="true">4.6</span>
+        <h3>Machine hardening</h3>
+        <p>User Account Control, whether sign-in credentials are left readable in
+          memory, SMBv1, LLMNR, remote-administration services, and whether an
+          auto-logon password is sitting in the registry in cleartext. Blanktick never
+          reads that password &mdash; only whether one exists.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============================================================= offline -->
+<section id="offline" class="sec sec-sunk" aria-labelledby="offline-h">
+  <div class="wrap sec-grid">
+    <header class="sec-head">
+      <p class="sec-no"><span aria-hidden="true">05</span> Offline</p>
+      <h2 id="offline-h">Offline by construction, not by promise</h2>
+    </header>
+    <div class="sec-body">
+      <div class="proof">
+        <p class="proof-k"><span>Android</span><span>Permission absent</span></p>
+        <p>
+          The Android build never declares <code>android.permission.INTERNET</code>,
+          so the kernel refuses it a socket. You do not have to believe that:
+        </p>
+<pre class="term" tabindex="0"><span class="prompt">$</span> aapt dump permissions blanktick.apk | grep INTERNET
+<b>(no output)</b></pre>
+      </div>
+
+      <div class="proof">
+        <p class="proof-k"><span>Desktop</span><span>Build gate</span></p>
+        <p>
+          On desktop there is no permission to give up, so the guarantee is a build
+          gate instead. <code>assertNoNetworkBytecode</code> fails the build if any
+          Blanktick class references a networking API, and all 42 third-party jars on the
+          runtime classpath are pinned and contain none either. The gate is
+          positive-controlled: run it with <code>-PblanktickNetworkGateSelfTest</code> and
+          it must <em>fail</em>, or its silence means nothing.
+        </p>
+      </div>
+
+      <div class="warn">
+        <p class="warn-h"><strong>One thing we would rather say than have pointed out.</strong></p>
+        <p>
+          Blanktick opens no network connection. But &ldquo;nothing on your computer
+          touches the network because of Blanktick&rdquo; would be false. On Windows it
+          asks the Defender that is already running about roughly seventy files,
+          and Defender then does what Defender always does &mdash; which, depending
+          on the cloud-protection setting <em>you</em> chose, may include contacting
+          Microsoft. That is Defender&rsquo;s connection, made under your settings.
+          But it happens because Blanktick asked.
+        </p>
+      </div>
+
+      <p class="small">
+        This page makes no third-party request either. No third-party fonts, no
+        analytics, no embeds. Open your network tab.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================= placeholder -->
+<section id="placeholder" class="sec" aria-labelledby="placeholder-h">
+  <div class="wrap sec-grid">
+    <header class="sec-head">
+      <p class="sec-no"><span aria-hidden="true">06</span> By hand</p>
+      <h2 id="placeholder-h">Two checks you run by hand &mdash; and the data behind them</h2>
+    </header>
+    <div class="sec-body">
+      <p class="lede-2">
+        Alongside the scan, Blanktick has two tools you drive yourself: paste in a
+        password, or paste in a link.
+      </p>
+      <div class="tools">
+        <div class="tool">
+          <p class="tool-k">Password</p>
+          <p class="tool-n"><span class="num">1,000,000</span></p>
+          <p>The password is compared &mdash; on your
+          machine, never sent anywhere &mdash; against the one million most common and
+          breached passwords.</p>
+        </div>
+        <div class="tool">
+          <p class="tool-k">Link</p>
+          <p class="tool-n"><span class="num">~72,000</span></p>
+          <p>The link is checked against a bundled list of about
+          <strong>72,000 domains</strong> known for malware and phishing, built from
+          the StevenBlack host list and abuse.ch&rsquo;s URLhaus feed.</p>
+        </div>
+      </div>
+      <p>
+        Both lists are snapshots baked into the download. That makes them offline by
+        construction and, like every other list here, exactly as current as the day
+        you downloaded the file &mdash; a known trade for never phoning home. Earlier
+        builds shipped these two lists as synthetic placeholders and said so on
+        screen; <strong>this build carries the real data</strong> &mdash; the bundle
+        is flagged <code>synthetic=false</code>, so the app stops showing the
+        placeholder notice and the two tools return real verdicts.
+      </p>
+      <p class="small">
+        Neither tool reads anything you did not type in. The automatic scan never
+        harvests your saved passwords &mdash; which is why &ldquo;saved passwords in
+        known breaches&rdquo; stays on the not-checked list above: it is a question
+        you ask on purpose, one password at a time, not something scraped from your
+        browser behind your back.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== about -->
+<!--
+  Founding facts are taken from the repository, not written for effect: first
+  commit 2026-08-30, codename Mume until the rename on 2026-09-07, one author.
+-->
+<section id="about" class="sec sec-sunk" aria-labelledby="about-h">
+  <div class="wrap sec-grid">
+    <header class="sec-head">
+      <p class="sec-no"><span aria-hidden="true">07</span> About the project</p>
+      <h2 id="about-h">Why Blanktick exists</h2>
+    </header>
+    <div class="sec-body">
+      <p class="mission">
+        <span class="mission-k">Our mission</span>
+        Security tools that are honest about their own limits, so a
+        tick on your screen always means somebody actually looked.
+      </p>
+      <p>
+        Blanktick started in August 2026 as a side project with a narrow complaint:
+        security apps show the same reassuring green tick for &ldquo;checked and
+        fine&rdquo; and for &ldquo;never checked at all&rdquo;. Its working name was
+        Mume. It was renamed Blanktick in September 2026, after the thing it
+        refuses to print.
+      </p>
+      <p>
+        The project has three rules that are not up for negotiation.
+      </p>
+      <ol class="rules">
+        <li>It runs entirely on your device and never sends anything anywhere.</li>
+        <li>It reports and never changes your settings.</li>
+        <li>And it costs nothing: no ads, no account, no paid tier holding back the useful part.</li>
+      </ol>
+      <dl class="facts">
+        <div><dt>Founded</dt><dd>August 2026</dd></div>
+        <div><dt>Founder</dt><dd>Simphiwe Damoyi</dd></div>
+        <div><dt>Based in</dt><dd>South Africa</dd></div>
+        <div><dt>Licence</dt><dd>Open source, AGPL-3.0</dd></div>
+        <div><dt>Price</dt><dd>Free. No ads, no account</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ download -->
+<section id="download" class="sec" aria-labelledby="download-h">
+  <div class="wrap sec-grid">
+    <header class="sec-head">
+      <p class="sec-no"><span aria-hidden="true">08</span> Download</p>
+      <h2 id="download-h">Download it, then check what you downloaded</h2>
+      <dl class="spec" aria-label="Release summary">
+        <div><dt>Version</dt><dd>0.1.0</dd></div>
+        <div><dt>Platform</dt><dd>Windows &middot; x64</dd></div>
+        <div><dt>Formats</dt><dd>.msi installer &middot; portable .zip</dd></div>
+        <div><dt>Code-signed</dt><dd>No</dd></div>
+        <div><dt>Admin rights</dt><dd>Not needed</dd></div>
+        <div><dt>Price</dt><dd>Free</dd></div>
+      </dl>
+    </header>
+    <div class="sec-body">
+
+    <!--
+      The warning sits ABOVE the button on purpose. A scary dialog that arrives
+      after someone has committed reads as "this site hid something from me".
+      The same dialog, predicted in advance, reads as "they knew exactly what
+      would happen" — which is the same trust mechanism as the coverage table.
+    -->
+    <div class="warn">
+      <p class="warn-h"><strong>Windows will warn you. That is correct.</strong></p>
+      <p>
+        You will see <em>&ldquo;Windows protected your PC&rdquo;</em> and you will
+        need <em>More info &rarr; Run anyway</em>. That is SmartScreen, working.
+        This build is <strong>not code-signed</strong> &mdash; a certificate costs
+        a few hundred pounds a year and Blanktick, which is free and has no revenue,
+        has not bought one. Every unsigned program gets that warning, harmless or
+        not, which is also why the warning by itself does not tell you much in
+        either direction.
+      </p>
+    </div>
+
+    <p>
+      We are not going to tell you to click past a security warning &mdash; that
+      is the habit every piece of malware relies on. Here is what to do instead.
+    </p>
+
+    <ol class="steps">
+      <li class="step">
+        <h3><span class="step-no" aria-hidden="true">Step 1</span> Download</h3>
+        <p class="dl-row">
+          <a class="cta cta-big" href="https://dl.blanktick.org/Blanktick-0.1.0-win-x64.msi" download><svg class="cta-tick" aria-hidden="true" focusable="false"><use href="#tick"/></svg><span>Download Blanktick 0.1.0 for Windows <span class="cta-meta">x64 &middot; installer</span></span></a>
+        </p>
+        <p class="small">Installs for your account only, so it needs no administrator
+          rights. Adds Blanktick to the Start menu and to Installed apps, where it
+          uninstalls like anything else. No service is registered.</p>
+        <p class="small">Would rather not install anything?
+          <a href="https://dl.blanktick.org/Blanktick-0.1.0-win-x64.zip" download>Get the portable .zip</a>
+          &mdash; extract the whole folder first (right-click &rarr; Extract All), then
+          run <code>Blanktick\Blanktick.exe</code>. Running it from inside the zip will fail.</p>
+      </li>
+
+      <li class="step">
+        <h3><span class="step-no" aria-hidden="true">Step 2</span> Then check the hash</h3>
+<pre class="term" tabindex="0"><span class="prompt">PS&gt;</span> Get-FileHash .\Blanktick-0.1.0-win-x64.msi -Algorithm SHA256</pre>
+        <p class="hash-lead">It should print, exactly:</p>
+<pre class="hash">CE0BD08B427EBFB8A80840C3CC9D906CA76444F603F84945D5ABA615B7D39727</pre>
+        <p class="small">For the portable .zip:
+          <code class="hash-inline">12B771BBC94940848DF84593AEE14638CB07E55D549289A983D6F6AD94A701D5</code></p>
+        <div class="warn">
+          <p class="warn-h"><strong>This proves less than it looks like it does.</strong></p>
+          <p>
+            The file and the hash are served by the same website. Anyone who can
+            replace the download can replace the hash next to it, and you would find
+            them in perfect agreement. What the hash rules out is a corrupted or
+            intercepted download. It does not rule out this site being compromised
+            &mdash; for that, compare against the release tag in the repository,
+            which is a second host an attacker would also have to own.
+          </p>
+        </div>
+      </li>
+
+      <li class="step">
+        <h3><span class="step-no" aria-hidden="true">Or</span> Build it and trust none of this</h3>
+<pre class="term" tabindex="0">git clone https://github.com/opemaid/blanktick-download &amp;&amp; cd blanktick-download
+gradlew check                       <b># the full test suite, including both network gates</b>
+gradlew :desktop:createDistributable</pre>
+        <p class="small">
+          Needs JDK 17. This is the only option on this page that does not require
+          trusting us, and it is the one we would use.
+        </p>
+      </li>
+    </ol>
+
+    <h3 class="other-h">macOS, Linux and Android</h3>
+    <p>
+      Not offered yet, deliberately. The macOS collector has never been run on a
+      Mac and the Linux one has only run under WSL &mdash; both would report
+      almost everything as not checkable, which is safe and nearly useless. The
+      Android build is not on Google Play; build it from source.
+    </p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="brand" href="#main" aria-label="Blanktick, back to top">
+          <svg class="mark" viewBox="20 50 228 166" aria-hidden="true" focusable="false"><use href="#tick"/></svg>
+          <span class="word">blanktick</span>
+        </a>
+        <p>A free, offline security scanner that tells you what it could not check.</p>
+      </div>
+      <nav class="foot-col" aria-labelledby="f-product">
+        <h2 id="f-product">Product</h2>
+        <ul>
+          <li><a href="#coverage">Coverage</a></li>
+          <li><a href="#looks">What it checks</a></li>
+          <li><a href="#offline">Offline design</a></li>
+          <li><a href="#download">Download</a></li>
+        </ul>
+      </nav>
+      <nav class="foot-col" aria-labelledby="f-project">
+        <h2 id="f-project">Project</h2>
+        <ul>
+          <li><a href="#about">About &amp; mission</a></li>
+          <li><a href="mailto:hello@blanktick.org">Contact</a></li>
+          <li><a href="mailto:hello@blanktick.org?subject=Security%20report">Report a vulnerability</a></li>
+        </ul>
+      </nav>
+      <nav class="foot-col" aria-labelledby="f-legal">
+        <h2 id="f-legal">Legal</h2>
+        <ul>
+          <li><a href="privacy.html">Privacy policy</a></li>
+          <li><a href="terms.html">Terms &amp; licence</a></li>
+          <li><a href="privacy.html#cookies">Cookies: none</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <div class="foot-note">
+      <p>
+        Blanktick is free and open source under AGPL-3.0. It has had no third-party
+        security audit; it is one person&rsquo;s code, and the build gates exist so
+        you do not have to take our word for the part that matters.
+      </p>
+      <p>
+        Passing every check is not the same as being safe. It means the checks that
+        ran, ran clean &mdash; and the list of the ones that did not is on the same
+        screen, at the same size, on purpose.
+      </p>
+    </div>
+
+    <div class="foot-bar">
+      <p>&copy; 2026 Blanktick. Founded by Simphiwe Damoyi, South Africa.</p>
+      <p>No cookies &middot; No analytics &middot; No third-party requests</p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
