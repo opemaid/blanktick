@@ -1,10 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Blanktick app icon">
   <title>Blanktick app icon</title>
-  <!-- Brutalist: full-bleed near-black square, no radius, no shadow.
-       The accent broken tick is the only saturated thing, so it means something.
-       Tick sits inside a 44px safe margin, so it survives platform masking. -->
-  <rect width="256" height="256" fill="#0A0A0A"/>
-  <g fill="none" stroke="#D6FF3F" stroke-width="30" stroke-linecap="butt" stroke-linejoin="miter">
+  <!-- The ad / blanktick.org logo: the severed tick in kelp #0F4D3F on paper
+       #FBFAF6, scaled 0.8 about the centre so it survives platform masking.
+       Replaced the lime-on-black mark on 2026-10-23 so app, site and ads share
+       one logo. Butt caps, mitre joins, no radius, no shadow. -->
+  <rect width="256" height="256" fill="#FBFAF6"/>
+  <g transform="translate(128 128) scale(0.8) translate(-134 -133)" fill="none" stroke="#0F4D3F" stroke-width="34" stroke-linecap="butt" stroke-linejoin="miter">
     <path d="M44 136 L104 192 L150 148"/>
     <path d="M172 126 L224 74"/>
   </g>

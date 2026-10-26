@@ -73,7 +73,7 @@ private fun ui() = application {
         // outlive the window.
         onCloseRequest = { state.live.stop(); exitApplication() },
         title = "Blanktick",
-        // The designed mark (dark square + severed accent tick) as the window
+        // The ad / blanktick.org mark (kelp severed tick on paper) as the window
         // and taskbar icon. Loaded from a bundled resource, which the offline
         // guarantee is unaffected by: resources are not code and the network
         // gate scans only compiled classes.

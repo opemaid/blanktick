@@ -39,12 +39,12 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Dmg, TargetFormat.Deb)
             packageName = "Blanktick"
-            packageVersion = "0.1.0"
+            packageVersion = "0.1.1"
             description = "Offline security check for this computer"
             vendor = "Blanktick"
 
             // macOS installer versions must start at a major > 0, so the DMG
-            // carries 1.0.0 while the app itself is still 0.1.0. Keeping the
+            // carries 1.0.0 while the app itself is still 0.1.x. Keeping the
             // two in sync would mean lying about maturity in one place or the
             // other; this way the app's own About screen stays truthful.
             macOS { packageVersion = "1.0.0" }

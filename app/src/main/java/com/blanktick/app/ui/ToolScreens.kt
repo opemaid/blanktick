@@ -587,8 +587,12 @@ private fun BlanktickButton(label: String, enabled: Boolean = true, onClick: () 
         onClick = onClick,
         enabled = enabled,
         modifier = Modifier.heightIn(min = BlanktickTokens.MinTouchTarget),
-        shape = RoundedCornerShape(BlanktickTokens.Radius.pill),
-        colors = ButtonDefaults.buttonColors(containerColor = c.ink, contentColor = c.paper)
+        shape = RoundedCornerShape(BlanktickTokens.Radius.sm),
+        // blanktick.org CTA: brand kelp, paper text (9.34:1), both themes.
+        colors = ButtonDefaults.buttonColors(
+            containerColor = BlanktickTokens.Brand.kelp,
+            contentColor = BlanktickTokens.Light.paper
+        )
     ) {
         Text(label, style = MaterialTheme.typography.bodyLarge)
     }
@@ -601,7 +605,7 @@ private fun BlanktickOutlineButton(label: String, enabled: Boolean = true, onCli
         onClick = onClick,
         enabled = enabled,
         modifier = Modifier.heightIn(min = BlanktickTokens.MinTouchTarget),
-        shape = RoundedCornerShape(BlanktickTokens.Radius.pill)
+        shape = RoundedCornerShape(BlanktickTokens.Radius.sm)
     ) {
         Text(label, style = MaterialTheme.typography.bodyLarge, color = c.ink)
     }

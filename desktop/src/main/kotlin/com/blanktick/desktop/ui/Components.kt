@@ -280,17 +280,21 @@ fun Bezel(
 @Composable
 fun PrimaryButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
     val c = LocalBlanktickColors.current
-    val shape = RoundedCornerShape(BlanktickTokens.Radius.pill)
+    val shape = RoundedCornerShape(BlanktickTokens.Radius.sm)
     val (source, hovered) = rememberHoverState()
     val pressed by source.collectIsPressedAsState()
 
     // Disabled was drawn identically to enabled — a solid ink pill on an empty
     // form read as "press me" and then did nothing. Found by visual test.
+    //
+    // The site's CTA: brand kelp with paper text (9.34:1), deepening on hover,
+    // in BOTH themes. Not c.kelp, which on dark is the light mint pass colour
+    // and would put paper text at ~2:1.
     Surface(
         color = when {
             !enabled -> c.surfaceSunk
-            hovered -> c.kelp
-            else -> c.ink
+            hovered -> BlanktickTokens.Brand.kelpDeep
+            else -> BlanktickTokens.Brand.kelp
         },
         contentColor = c.paper,
         shape = shape,
@@ -308,8 +312,8 @@ fun PrimaryButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
                 style = MaterialTheme.typography.titleMedium,
                 color = when {
                     !enabled -> c.inkFaint
-                    pressed -> c.paper.copy(alpha = 0.85f)
-                    else -> c.paper
+                    pressed -> BlanktickTokens.Light.paper.copy(alpha = 0.85f)
+                    else -> BlanktickTokens.Light.paper
                 }
             )
         }
@@ -319,7 +323,7 @@ fun PrimaryButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
 @Composable
 fun SecondaryButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
     val c = LocalBlanktickColors.current
-    val shape = RoundedCornerShape(BlanktickTokens.Radius.pill)
+    val shape = RoundedCornerShape(BlanktickTokens.Radius.sm)
     val (source, hovered) = rememberHoverState()
 
     Surface(

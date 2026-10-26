@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Blanktick mark: a partial ring, open at the top. Not a shield (DD-02). -->
+<!-- Blanktick mark: the severed tick from the ads and blanktick.org, kelp on
+     paper. Same 256-grid geometry as web/favicon.svg (scaled 0.8 about the
+     centre), mapped onto the 108dp adaptive canvas so it sits inside the 66dp
+     safe zone. Replaced the open-ring mark on 2026-10-23 so app, site and ads
+     share one logo. Butt caps, mitre joins. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#0F4D3F"
-        android:pathData="M54,28 A26,26 0 1 1 35.6,35.6 L40.5,40.5 A19,19 0 1 0 54,35 Z" />
-    <path android:fillColor="#0F4D3F"
-        android:pathData="M50.5,46 h7 v22 h-7 Z" />
+    <path android:strokeColor="#0F4D3F" android:strokeWidth="11.48"
+        android:strokeLineCap="butt" android:strokeLineJoin="miter"
+        android:pathData="M23.62,55.01 L43.88,73.91 L59.40,59.06" />
+    <path android:strokeColor="#0F4D3F" android:strokeWidth="11.48"
+        android:strokeLineCap="butt" android:strokeLineJoin="miter"
+        android:pathData="M66.83,51.64 L84.38,34.09" />
 </vector>
