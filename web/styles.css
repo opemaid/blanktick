@@ -737,6 +737,9 @@ pre {
 .h-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: end; }
 .on-ink { color: var(--lime); font-weight: 600; }
 .on-ink:hover { color: var(--paper); }
+.h-video { margin-top: clamp(32px, 5vw, 56px); }
+.h-video video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 12px; background: #000; }
+.h-video figcaption { margin-top: 12px; font-size: .9rem; opacity: .8; }
 
 .h-steps { list-style: none; margin: 32px 0 44px; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
 .h-steps li { border-top: 1.5px solid var(--ink); padding-top: 20px; }
