@@ -92,6 +92,29 @@ stops.
 
 ## Setup
 
+### The easy way: install it as a Claude extension or plugin
+
+**Claude Desktop — one click.** Download `Blanktick-0.1.1.mcpb` and double-click it, or
+drag it onto *Settings → Extensions*. The bundle carries Blanktick itself, so there is
+no config file to edit and nothing else to install. Build it with
+`tools/build-mcpb.sh`; the manifest is `integrations/claude-desktop/manifest.json`.
+
+**Claude Code — a plugin.** This repository is also a plugin marketplace:
+
+```
+/plugin marketplace add opemaid/blanktick
+/plugin install blanktick@blanktick
+```
+
+The plugin (`plugins/blanktick/`) adds the MCP server, a `security-checkup` skill
+that carries the two reporting rules below into every answer, and a
+`/blanktick:checkup` command. It does not bundle Blanktick: install the app first.
+Its launcher looks in `%LOCALAPPDATA%\Blanktick`, `%LOCALAPPDATA%\Programs\Blanktick`
+and `%ProgramFiles%\Blanktick`; for the portable zip or a source build, set
+`BLANKTICK_EXE` to the full path of `Blanktick.exe`.
+
+### By hand
+
 Claude Desktop — `%APPDATA%\Claude\claude_desktop_config.json`:
 
 ```json

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "blanktick": {
+      "command": "cmd",
+      "args": ["/d", "/c", "${CLAUDE_PLUGIN_ROOT}/bin/blanktick-mcp.cmd"]
+    }
+  }
+}

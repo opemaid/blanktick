@@ -607,6 +607,13 @@ three that query the stored scan history, and one that reviews an exported
 network capture. `docs/mcp.md` has the full table, and there is a
 [one-minute video of the setup](ad/blanktick-claude-mcp/renders/video.mp4).
 
+Claude Desktop users can install the one-click extension (`tools/build-mcpb.sh`
+builds `Blanktick-0.1.1.mcpb`). In Claude Code:
+
+```
+/plugin install blanktick --marketplace opemaid/blanktick
+```
+
 Stdio, not HTTP: your client launches Blanktick and talks to it over standard input
 and output. No socket is opened and the bytecode gate that forbids networking
 code still passes. And **every tool is a question** — nothing there fixes,

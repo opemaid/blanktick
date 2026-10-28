@@ -1,0 +1,77 @@
+{
+  "manifest_version": "0.2",
+  "name": "blanktick",
+  "display_name": "Blanktick",
+  "version": "0.1.1",
+  "description": "Ask Claude how secure this PC is, and get answers read off the machine. Read-only and offline.",
+  "long_description": "Blanktick is an offline security-posture scanner for Windows. This extension runs it as a local MCP server over stdio: no socket is opened and nothing on the machine is changed. Every tool is a question; Claude recommends, you decide and act. Results report what could not be checked as well as what passed, so 'could not look' is never rounded to 'fine'. Scan history (history/search/changes) is off until you set keepHistory=true in %APPDATA%\\Blanktick\\settings.conf.",
+  "author": {
+    "name": "Blanktick",
+    "url": "https://blanktick.org"
+  },
+  "homepage": "https://blanktick.org",
+  "documentation": "https://github.com/opemaid/blanktick/blob/HEAD/docs/mcp.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/opemaid/blanktick"
+  },
+  "icon": "icon.png",
+  "server": {
+    "type": "binary",
+    "entry_point": "server/Blanktick.exe",
+    "mcp_config": {
+      "command": "${__dirname}/server/Blanktick.exe",
+      "args": [
+        "--mcp"
+      ],
+      "env": {}
+    }
+  },
+  "tools": [
+    {
+      "name": "blanktick_scan",
+      "description": "Full scan: score, every finding with its fix, and the checks that could not be performed (~100 s)."
+    },
+    {
+      "name": "blanktick_facts",
+      "description": "The raw facts read off the machine, including the nulls."
+    },
+    {
+      "name": "blanktick_probe_script",
+      "description": "The exact PowerShell Blanktick runs, so it can be read or re-run by hand."
+    },
+    {
+      "name": "blanktick_coverage",
+      "description": "What Blanktick can and cannot check here, and why."
+    },
+    {
+      "name": "blanktick_history",
+      "description": "Past scans from the local store: when, score, how many findings."
+    },
+    {
+      "name": "blanktick_search",
+      "description": "Findings across stored scans, filtered by severity, rule, category or date."
+    },
+    {
+      "name": "blanktick_changes",
+      "description": "What is new and what is gone between the two most recent scans."
+    },
+    {
+      "name": "blanktick_netlog",
+      "description": "Review a Wireshark capture the user exported (CSV). Captures nothing."
+    }
+  ],
+  "keywords": [
+    "security",
+    "posture",
+    "windows",
+    "offline",
+    "read-only"
+  ],
+  "license": "AGPL-3.0-only",
+  "compatibility": {
+    "platforms": [
+      "win32"
+    ]
+  }
+}
