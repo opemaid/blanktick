@@ -1,5 +1,7 @@
 # Connecting a language model to Blanktick
 
+Watch the one-minute walkthrough: [How Claude connects to Blanktick](../ad/blanktick-claude-mcp/renders/video.mp4) (also on [blanktick.org](https://blanktick.org)).
+
 Blanktick can act as an [MCP](https://modelcontextprotocol.io) server, so any model
 that speaks MCP — Claude Desktop, Claude Code, Cursor, Windsurf, a local model
 behind an MCP-capable client — can ask about this computer's security posture
