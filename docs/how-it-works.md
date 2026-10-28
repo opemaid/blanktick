@@ -309,7 +309,7 @@ For the portable .zip: `F2A35648D3E7B34B1A106EA7463EBE2769C2C7FC4EB89BC83383EDC0
 **Or — build it and trust none of this.**
 
 ```
-git clone https://github.com/opemaid/blanktick-download && cd blanktick-download
+git clone https://github.com/opemaid/blanktick && cd blanktick
 gradlew check                       # the full test suite, including both network gates
 gradlew :desktop:createDistributable
 ```
