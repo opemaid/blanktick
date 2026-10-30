@@ -17,8 +17,8 @@ cd "$(dirname "$0")/.."
 export MSYS_NO_PATHCONV=1
 
 VERSION=${MSIX_VERSION:-0.1.2.0}          # Store needs the 4th part to be 0
-NAME=${MSIX_NAME:-Blanktick.Blanktick}
-PUBLISHER=${MSIX_PUBLISHER:-CN=Blanktick}
+NAME=${MSIX_NAME:-Blanktick.Blanktick}               # Partner Center product identity, Store ID 9MW3G5H3RF3M
+PUBLISHER=${MSIX_PUBLISHER:-CN=F25B47F8-C5F9-48BF-96CC-BE514754A452}
 PUBLISHER_DISPLAY=${MSIX_PUBLISHER_DISPLAY:-Blanktick}
 SDK_BIN=${SDK_BIN:-$HOME/tools/winsdk-buildtools/pkg/bin/10.0.28000.0/x64}
 
