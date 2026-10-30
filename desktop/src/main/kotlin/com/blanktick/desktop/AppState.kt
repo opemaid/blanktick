@@ -25,6 +25,7 @@ import java.time.LocalDate
 /** Which screen the window is showing. */
 enum class Screen(val title: String) {
     SCAN("This computer"),
+    FULL_SCAN("Scan whole PC"),
     POLICY("Policy"),
     THREATS("Threats"),
     LINK("Check a link"),
@@ -129,6 +130,9 @@ data class PhotoScanState(
 class AppState(private val scope: CoroutineScope) {
 
     private val scanner = BlanktickScanner()
+
+    /** Every file on every local drive; see [FullScanController]. */
+    val fullScan = FullScanController(scope)
     val intel: DesktopIntel by lazy { DesktopIntel.load() }
 
     private val analyzer: UrlAnalyzer by lazy {

@@ -87,6 +87,7 @@ fun BlanktickApp(state: AppState) {
             Box(Modifier.weight(1f).fillMaxHeight()) {
                 when (screen) {
                     Screen.SCAN -> ScanScreen(state)
+                    Screen.FULL_SCAN -> FullScanScreen(state)
                     Screen.POLICY -> PolicyScreen(state)
                     Screen.THREATS -> ThreatsHost(state)
                     Screen.LINK -> LinkScreen(state)
@@ -134,7 +135,7 @@ private fun NavRail(current: Screen, onSelect: (Screen) -> Unit) {
             )
         }
         Text(
-            "Offline. Nothing leaves this computer.",
+            "Scans your whole PC. Nothing leaves it.",
             style = MaterialTheme.typography.labelSmall,
             color = c.inkFaint
         )
