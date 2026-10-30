@@ -1,6 +1,6 @@
 # Microsoft Store submission — Blanktick 0.1.2
 
-Package: `desktop/build/msix/Blanktick-0.1.1.0-x64.msix`, built by `tools/build-msix.sh`.
+Package: `desktop/build/msix/Blanktick-0.1.2.0-x64.msix`, built by `tools/build-msix.sh`.
 It is unsigned on purpose: the Store signs MSIX packages when they are certified.
 
 ## 1. One-time account setup (the owner does this)
@@ -35,13 +35,15 @@ The Store rejects any upload whose identity doesn't match these three values exa
 **Restricted capability justification (runFullTrust):**
 > Blanktick is a desktop (Win32/Java) app packaged as MSIX. It reads Windows security
 > settings with built-in tools (PowerShell, Get-MpComputerStatus, registry reads) to report
-> what is and is not protected. It runs as the signed-in user, never asks for elevation,
+> what is and is not protected, and runs Microsoft Defender's own command-line scanner
+> (MpCmdRun.exe, report-only) for the optional whole-PC scan. It runs as the signed-in user, never asks for elevation,
 > makes no network requests, and changes no system settings unless the user turns on
 > "Stop flagged processes" in Live protection.
 
 **Notes for certification:**
 > No account or sign-in is needed. Open the app and click "Run the first scan"; a full scan
-> takes about one minute. The app has no network code, so it works offline and has no
+> takes about one minute. "Scan whole PC" runs Microsoft Defender over every local drive and can
+> take 30 minutes or more; it can be stopped at any time. The app has no network code, so it works offline and has no
 > online features to test.
 
 ## 3. Listing (English)
@@ -54,12 +56,13 @@ Free security check-up for Windows that tells you what it could not check.
 **Description:**
 Most security apps show a green tick even when they never looked. Blanktick shows you both: what it checked, and what it couldn't check, each with a reason.
 
-Blanktick checks 70 settings that attackers change on Windows PCs, and watches for ransomware, password theft and hackers taking control while it is open. When it can't check something, it says so. If a scan doesn't finish, you get no score at all instead of a made-up one.
+Blanktick scans your whole PC: every file on every drive, including plugged-in USB sticks, read by the Microsoft Defender engine already on your PC. It also checks 70 settings that attackers change on Windows PCs, and watches for ransomware, password theft and hackers taking control while it is open. When it can't check something, it says so. If a scan doesn't finish, you get no score at all instead of a made-up one.
 
 What it does:
 • Full PC check-up: firewall, Windows Security, updates, BitLocker, remote access, risky startup items and more
 • Live protection (preview): flags ransomware-style file changes, credential theft, programs beaconing out and AI assistants being driven to run commands, while the app is open
-• Virus scan using Windows' own Microsoft Defender engine
+• Scan your whole PC: every file on every drive, using Windows' own Microsoft Defender engine. Nothing is moved or deleted; you get the list and decide
+• Connect your AI agent: a read-only MCP server lets Claude or another agent explain your results and help you secure your PC against malicious AI bots
 • Check a link before you open it: spots look-alike sites such as "paypa1"
 • Check a password against a built-in list of breached passwords; nothing is sent anywhere
 • Installed software: programs past security support and programs installed where anyone can change them
@@ -69,18 +72,19 @@ Private by design: Blanktick has no network code. Nothing is uploaded, there's n
 
 Blanktick works alongside Windows Security. Keep Windows Security switched on.
 
-**What's new in this version:** First Microsoft Store release.
+**What's new in this version:** First Microsoft Store release. New: "Scan whole PC" checks every file on every drive with Microsoft Defender's engine.
 
 **Features (up to 20, ≤ 200 chars each):**
 - Shows what it checked and what it couldn't check, each with a reason
 - 70 Windows security settings checked offline
 - Live protection preview for ransomware, credential theft and hacker remote control
-- Virus scan with Microsoft Defender's engine
+- Scans your whole PC: every file on every drive, with Microsoft Defender's engine
+- Read-only MCP server so your AI agent can explain your results
 - Link checker for look-alike and phishing addresses
 - Breached-password checker that never sends your password anywhere
 - No account, no ads, nothing uploaded
 
-**Search terms (max 7):** security scan, privacy, ransomware, phishing link checker, password checker, windows security check, offline security
+**Search terms (max 7):** full pc scan, security scan, ransomware, phishing link checker, password checker, windows security check, offline security
 
 **Copyright:** © 2026 Blanktick
 
