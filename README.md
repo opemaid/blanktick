@@ -7,6 +7,12 @@
 <p align="center"><b>The security scanner that tells you what it could not check.</b><br>
 <a href="https://blanktick.org">blanktick.org</a> · Free · Open source · Offline · Windows</p>
 
+<p align="center"><b>Install on Windows:</b>
+<a href="https://apps.microsoft.com/detail/9MW3G5H3RF3M">Microsoft Store</a> (signed by Microsoft) ·
+<a href="https://dl.blanktick.org/Blanktick-0.1.2-win-x64.msi">.msi installer</a> ·
+<a href="https://dl.blanktick.org/Blanktick-0.1.2-win-x64.zip">portable .zip</a> ·
+or <code>winget install 9MW3G5H3RF3M -s msstore</code></p>
+
 A security checkup for your phone and your computer that runs entirely on the
 device it is checking.
 
