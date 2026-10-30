@@ -732,6 +732,11 @@ pre {
 .f-ico { width: 34px; height: 34px; fill: none; stroke: var(--kelp); stroke-width: 1.8; stroke-linecap: square; margin-bottom: 14px; }
 .feature h3 { font-size: 20px; letter-spacing: -.015em; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .feature p { font-size: 15.5px; }
+.checks { margin-bottom: 22px; }
+.checks .feature { padding-bottom: 18px; }
+.check-list { list-style: none; margin: 0; padding: 0; }
+.check-list li { position: relative; padding: 5px 0 5px 26px; font-size: 15px; line-height: 1.4; color: var(--ink); }
+.check-list li::before { content: ""; position: absolute; left: 0; top: 10px; width: 15px; height: 11px; background: var(--tick-kelp) center / contain no-repeat; }
 .tag { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; color: var(--ink); background: var(--lime); padding: 3px 7px; border-radius: 2px; }
 
 .h-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: end; }

@@ -1,4 +1,4 @@
-# Microsoft Store submission — Blanktick 0.1.1
+# Microsoft Store submission — Blanktick 0.1.2
 
 Package: `desktop/build/msix/Blanktick-0.1.1.0-x64.msix`, built by `tools/build-msix.sh`.
 It is unsigned on purpose: the Store signs MSIX packages when they are certified.

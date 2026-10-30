@@ -262,7 +262,7 @@ The project has three rules that are not up for negotiation.
 
 | Version | Platform | Formats | Code-signed | Admin rights | Price |
 |---|---|---|---|---|---|
-| 0.1.1 | Windows · x64 | .msi installer · portable .zip | No | Not needed | Free |
+| 0.1.2 | Windows · x64 | .msi installer · portable .zip | No | Not needed | Free |
 
 > **Windows will warn you. That is correct.** You will see *"Windows protected
 > your PC"* and you will need *More info → Run anyway*. That is SmartScreen,
@@ -275,29 +275,29 @@ We are not going to tell you to click past a security warning — that is the
 habit every piece of malware relies on. Here is what to do instead.
 
 **Step 1 — Download.**
-[Blanktick 0.1.1 for Windows (x64 installer)](https://dl.blanktick.org/Blanktick-0.1.1-win-x64.msi).
+[Blanktick 0.1.2 for Windows (x64 installer)](https://dl.blanktick.org/Blanktick-0.1.2-win-x64.msi).
 Installs for your account only, so it needs no administrator rights. Adds
 Blanktick to the Start menu and to Installed apps, where it uninstalls like
 anything else. No service is registered.
 
 Would rather not install anything?
-[Get the portable .zip](https://dl.blanktick.org/Blanktick-0.1.1-win-x64.zip) —
+[Get the portable .zip](https://dl.blanktick.org/Blanktick-0.1.2-win-x64.zip) —
 extract the whole folder first (right-click → Extract All), then run
 `Blanktick\Blanktick.exe`. Running it from inside the zip will fail.
 
 **Step 2 — Then check the hash.**
 
 ```
-PS> Get-FileHash .\Blanktick-0.1.1-win-x64.msi -Algorithm SHA256
+PS> Get-FileHash .\Blanktick-0.1.2-win-x64.msi -Algorithm SHA256
 ```
 
 It should print, exactly:
 
 ```
-22644AA342DEC3ECE1318FEC32A23C0896710341F8C664381FE5132EDE618779
+C30CFFA64C61678DF5B70211878D80AD1BC182154FC4CAC229234A5923EB1023
 ```
 
-For the portable .zip: `F2A35648D3E7B34B1A106EA7463EBE2769C2C7FC4EB89BC83383EDC02202F494`
+For the portable .zip: `7DEAA7097BD4ACAC66D0E967359628AF6AD3D8E2BE7E84E72D34EFADC761DD23`
 
 > **This proves less than it looks like it does.** The file and the hash are
 > served by the same website. Anyone who can replace the download can replace

@@ -94,7 +94,7 @@ stops.
 
 ### The easy way: install it as a Claude extension or plugin
 
-**Claude Desktop — one click.** Download `Blanktick-0.1.1.mcpb` and double-click it, or
+**Claude Desktop — one click.** Download [`Blanktick-0.1.2.mcpb`](https://dl.blanktick.org/Blanktick-0.1.2.mcpb) and double-click it, or
 drag it onto *Settings → Extensions*. The bundle carries Blanktick itself, so there is
 no config file to edit and nothing else to install. Build it with
 `tools/build-mcpb.sh`; the manifest is `integrations/claude-desktop/manifest.json`.

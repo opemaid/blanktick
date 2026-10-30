@@ -16,7 +16,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 export MSYS_NO_PATHCONV=1
 
-VERSION=${MSIX_VERSION:-0.1.1.0}          # Store needs the 4th part to be 0
+VERSION=${MSIX_VERSION:-0.1.2.0}          # Store needs the 4th part to be 0
 NAME=${MSIX_NAME:-Blanktick.Blanktick}
 PUBLISHER=${MSIX_PUBLISHER:-CN=Blanktick}
 PUBLISHER_DISPLAY=${MSIX_PUBLISHER_DISPLAY:-Blanktick}

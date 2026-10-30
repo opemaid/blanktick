@@ -144,10 +144,11 @@
       </li>
       <li class="feature">
         <svg class="f-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/></svg>
-        <h3>Virus scan with Windows&rsquo; own engine</h3>
-        <p>Picks the files most worth checking and has Microsoft Defender scan
-          them, so you get up-to-date virus signatures without a second engine
-          slowing your PC down.</p>
+        <h3>Whole-PC virus scan <span class="tag">New</span></h3>
+        <p>Every file on every drive, USB sticks included, scanned by the
+          Microsoft Defender engine already on your PC. Up-to-date virus
+          signatures, no second engine slowing you down, and nothing is deleted
+          without you.</p>
       </li>
       <li class="feature">
         <svg class="f-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
@@ -163,9 +164,10 @@
       </li>
       <li class="feature">
         <svg class="f-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12h3M17 12h3M12 4v3M12 17v3"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
-        <h3>AI tool safety</h3>
-        <p>Spots AI assistants that have been given permission to run programs
-          on your PC, and AI servers open to your whole network.</p>
+        <h3>Your AI agent, on your side</h3>
+        <p>Connect Claude or any AI app to Blanktick and let it help secure
+          your PC against malicious AI bots. It can ask Blanktick anything, but
+          it can&rsquo;t change a single setting.</p>
       </li>
     </ul>
     <figure class="h-video">
@@ -177,11 +179,93 @@
   </div>
 </section>
 
+<!-- ======================================================= what it checks
+  Every line below is a real rule in core/src/main/kotlin/.../rules (desktop
+  eligible) or the whole-PC scan. Keep it that way: if a check is removed,
+  remove its line. -->
+<section id="checks" class="sec sec-sunk h-sec" aria-labelledby="checks-h">
+  <div class="wrap">
+    <p class="sec-no"><span aria-hidden="true">02</span> What it checks</p>
+    <h2 id="checks-h">Everything Blanktick looks at on your PC</h2>
+    <ul class="features checks">
+      <li class="feature">
+        <h3>Every file</h3>
+        <ul class="check-list">
+          <li>Every file on every drive, scanned by Microsoft Defender</li>
+          <li>USB sticks and other plugged-in drives</li>
+          <li>Programs that start with Windows, checked one by one</li>
+          <li>Programs running from your personal folders</li>
+          <li>Programs pretending to be Windows system files</li>
+          <li>Drivers with known security holes (2,300+ known bad ones)</li>
+        </ul>
+      </li>
+      <li class="feature">
+        <h3>Malicious AI bots</h3>
+        <ul class="check-list">
+          <li>AI assistants that outside content can steer into acting as you</li>
+          <li>Which tools an AI assistant is allowed to run on your PC</li>
+          <li>AI tools that download and run code from the internet</li>
+          <li>AI keys saved in plain text</li>
+          <li>AI model servers open to your whole network</li>
+          <li>Windows Recall keeping a picture record of your screen</li>
+        </ul>
+      </li>
+      <li class="feature">
+        <h3>Your protection</h3>
+        <ul class="check-list">
+          <li>Antivirus running, up to date, and fully switched on</li>
+          <li>Antivirus that other software can&rsquo;t switch off</li>
+          <li>Ransomware protection on your folders</li>
+          <li>Firewall on</li>
+          <li>Downloads checked before they run; Smart App Control</li>
+          <li>Office not running macros it should block</li>
+        </ul>
+      </li>
+      <li class="feature">
+        <h3>Passwords &amp; accounts</h3>
+        <ul class="check-list">
+          <li>Every account needs a password; guest account off</li>
+          <li>Your everyday account isn&rsquo;t an administrator</li>
+          <li>Screen locks quickly and asks for your password</li>
+          <li>Repeated password guessing locks the account</li>
+          <li>Sign-in passwords not left in memory or the registry</li>
+          <li>Drive encryption and Credential Guard</li>
+        </ul>
+      </li>
+      <li class="feature">
+        <h3>Hackers getting in</h3>
+        <ul class="check-list">
+          <li>Remote-control and remote-admin services</li>
+          <li>Anything listening to your whole network</li>
+          <li>File and printer sharing, obsolete network protocols</li>
+          <li>Fake security certificates your PC trusts</li>
+          <li>Proxy, DNS and VPN settings that reroute your traffic</li>
+          <li>Unencrypted or swapped Wi-Fi</li>
+        </ul>
+      </li>
+      <li class="feature">
+        <h3>Windows itself</h3>
+        <ul class="check-list">
+          <li>Security updates installed and switched on</li>
+          <li>Windows version still supported</li>
+          <li>Software past its security support</li>
+          <li>Secure Boot, security chip (TPM), memory integrity</li>
+          <li>Exploit protections not switched off</li>
+          <li>Browser extensions from official stores, and what they can read</li>
+        </ul>
+      </li>
+    </ul>
+    <p class="small">88 checks in all, 70 of them on Windows. Anything Blanktick can&rsquo;t check
+      on your PC is listed as <em>not checked</em>, never as a pass.
+      <a href="details">See every check &rarr;</a></p>
+  </div>
+</section>
+
 <!-- ======================================================= the honest tick -->
 <section class="sec sec-ink h-sec" aria-labelledby="tick-h">
   <div class="wrap h-split">
     <div>
-      <p class="sec-no"><span aria-hidden="true">02</span> Why Blanktick</p>
+      <p class="sec-no"><span aria-hidden="true">03</span> Why Blanktick</p>
       <h2 id="tick-h">Most security apps show a green tick even when they never looked.</h2>
     </div>
     <div>
@@ -202,7 +286,7 @@
 <!-- ============================================================ how -->
 <section id="how" class="sec h-sec" aria-labelledby="how-h">
   <div class="wrap">
-    <p class="sec-no"><span aria-hidden="true">03</span> How it works</p>
+    <p class="sec-no"><span aria-hidden="true">04</span> How it works</p>
     <h2 id="how-h">Protected in 3 easy steps</h2>
     <ol class="h-steps">
       <li><span class="h-step-n" aria-hidden="true">1</span><h3>Download</h3><p>Free, about a minute. No sign-up, no card.</p></li>
@@ -230,7 +314,7 @@
 <section id="faq" class="sec sec-sunk h-sec" aria-labelledby="faq-h">
   <div class="wrap h-faq-wrap">
     <div>
-      <p class="sec-no"><span aria-hidden="true">04</span> FAQ</p>
+      <p class="sec-no"><span aria-hidden="true">05</span> FAQ</p>
       <h2 id="faq-h">Questions</h2>
     </div>
     <div class="faq">
@@ -243,7 +327,8 @@
         <summary>Is it an antivirus? Do I still need Windows Security?</summary>
         <p>Blanktick is a free antivirus companion. Live protection catches
           attacks by what they do, and the check-up finds risky settings. To scan
-          files for viruses it uses the engine already built into Windows
+          files for viruses &mdash; including every file on your PC with
+          <em>Scan whole PC</em> &mdash; it uses the engine already built into Windows
           (Microsoft Defender), so keep Windows Security switched on.</p>
       </details>
       <details>
@@ -286,7 +371,7 @@
     <div class="h-dl-box">
       <svg class="h-dl-mark" viewBox="20 50 228 166" aria-hidden="true" focusable="false"><use href="#tick"/></svg>
       <h2 id="download-h">Download Blanktick free</h2>
-      <p class="h-dl-sub">Version 0.1.1 &middot; Windows, 64-bit &middot; Free</p>
+      <p class="h-dl-sub">Version 0.1.2 &middot; Windows, 64-bit &middot; Free</p>
 
       <div class="phone-card">
         <p class="phone-card-k">You&rsquo;re on a phone</p>
@@ -298,18 +383,21 @@
       </div>
 
       <p class="h-dl-btn">
-        <a class="cta cta-big" href="https://dl.blanktick.org/Blanktick-0.1.1-win-x64.msi" download><svg class="cta-tick" aria-hidden="true" focusable="false"><use href="#tick"/></svg><span>Download for Windows <span class="cta-meta">Installer &middot; .msi</span></span></a>
+        <a class="cta cta-big" href="https://dl.blanktick.org/Blanktick-0.1.2-win-x64.msi" download><svg class="cta-tick" aria-hidden="true" focusable="false"><use href="#tick"/></svg><span>Download for Windows <span class="cta-meta">Installer &middot; .msi</span></span></a>
       </p>
-      <p class="small">Prefer not to install? <a href="https://dl.blanktick.org/Blanktick-0.1.1-win-x64.zip" download>Get the portable .zip</a>
+      <p class="small">Prefer not to install? <a href="https://dl.blanktick.org/Blanktick-0.1.2-win-x64.zip" download>Get the portable .zip</a>
         (extract it first, then run <code>Blanktick.exe</code>).</p>
+      <p class="small">Use Claude Desktop? <a href="https://dl.blanktick.org/Blanktick-0.1.2.mcpb" download>Get the Claude Desktop extension</a>
+        (.mcpb) and double-click it to connect your AI agent to Blanktick. Read-only: it can ask, never change.</p>
       <p class="small">Windows will say &ldquo;Windows protected your PC&rdquo; because the app isn&rsquo;t
         code-signed yet. Choose <em>More info &rarr; Run anyway</em>.</p>
 
       <details class="h-verify">
         <summary>Check your download is genuine</summary>
-        <p class="small">In PowerShell, run <code>Get-FileHash .\Blanktick-0.1.1-win-x64.msi</code>. It should print:</p>
-        <pre class="hash">22644AA342DEC3ECE1318FEC32A23C0896710341F8C664381FE5132EDE618779</pre>
-        <p class="small">For the .zip: <code class="hash-inline">F2A35648D3E7B34B1A106EA7463EBE2769C2C7FC4EB89BC83383EDC02202F494</code></p>
+        <p class="small">In PowerShell, run <code>Get-FileHash .\Blanktick-0.1.2-win-x64.msi</code>. It should print:</p>
+        <pre class="hash">C30CFFA64C61678DF5B70211878D80AD1BC182154FC4CAC229234A5923EB1023</pre>
+        <p class="small">For the .zip: <code class="hash-inline">7DEAA7097BD4ACAC66D0E967359628AF6AD3D8E2BE7E84E72D34EFADC761DD23</code></p>
+        <p class="small">For the .mcpb: <code class="hash-inline">3E60F643D273BD6319617E197D346B9A1E5A807F643AEB46E0EB714F22177378</code></p>
       </details>
     </div>
   </div>

@@ -210,7 +210,8 @@
       <div class="warn">
         <p class="warn-h"><strong>It is not an antivirus and does not replace one.</strong></p>
         <p>Blanktick has no file scanner and no virus signatures of its own; for files
-        it asks Defender. Its Live protection watches what programs <em>do</em> &mdash;
+        it asks Defender &mdash; and with <em>Scan whole PC</em>, it asks Defender about
+        every file on every drive, reporting what it finds and removing nothing. Its Live protection watches what programs <em>do</em> &mdash;
         ransomware-style encryption, Office macros launching programs, password
         theft &mdash; and only stops a program if you switch that on. If you turn
         Defender off to run this instead, you have made your computer worse. Run both.</p>
@@ -584,7 +585,7 @@
       <p class="sec-no"><span aria-hidden="true">08</span> Download</p>
       <h2 id="download-h">Download it, then check what you downloaded</h2>
       <dl class="spec" aria-label="Release summary">
-        <div><dt>Version</dt><dd>0.1.1</dd></div>
+        <div><dt>Version</dt><dd>0.1.2</dd></div>
         <div><dt>Platform</dt><dd>Windows &middot; x64</dd></div>
         <div><dt>Formats</dt><dd>.msi installer &middot; portable .zip</dd></div>
         <div><dt>Code-signed</dt><dd>No</dd></div>
@@ -636,24 +637,24 @@
       <li class="step">
         <h3><span class="step-no" aria-hidden="true">Step 1</span> Download</h3>
         <p class="dl-row">
-          <a class="cta cta-big" href="https://dl.blanktick.org/Blanktick-0.1.1-win-x64.msi" download><svg class="cta-tick" aria-hidden="true" focusable="false"><use href="#tick"/></svg><span>Download Blanktick 0.1.1 for Windows <span class="cta-meta">x64 &middot; installer</span></span></a>
+          <a class="cta cta-big" href="https://dl.blanktick.org/Blanktick-0.1.2-win-x64.msi" download><svg class="cta-tick" aria-hidden="true" focusable="false"><use href="#tick"/></svg><span>Download Blanktick 0.1.2 for Windows <span class="cta-meta">x64 &middot; installer</span></span></a>
         </p>
         <p class="small">Installs for your account only, so it needs no administrator
           rights. Adds Blanktick to the Start menu and to Installed apps, where it
           uninstalls like anything else. No service is registered.</p>
         <p class="small">Would rather not install anything?
-          <a href="https://dl.blanktick.org/Blanktick-0.1.1-win-x64.zip" download>Get the portable .zip</a>
+          <a href="https://dl.blanktick.org/Blanktick-0.1.2-win-x64.zip" download>Get the portable .zip</a>
           &mdash; extract the whole folder first (right-click &rarr; Extract All), then
           run <code>Blanktick\Blanktick.exe</code>. Running it from inside the zip will fail.</p>
       </li>
 
       <li class="step">
         <h3><span class="step-no" aria-hidden="true">Step 2</span> Then check the hash</h3>
-<pre class="term" tabindex="0"><span class="prompt">PS&gt;</span> Get-FileHash .\Blanktick-0.1.1-win-x64.msi -Algorithm SHA256</pre>
+<pre class="term" tabindex="0"><span class="prompt">PS&gt;</span> Get-FileHash .\Blanktick-0.1.2-win-x64.msi -Algorithm SHA256</pre>
         <p class="hash-lead">It should print, exactly:</p>
-<pre class="hash">22644AA342DEC3ECE1318FEC32A23C0896710341F8C664381FE5132EDE618779</pre>
+<pre class="hash">C30CFFA64C61678DF5B70211878D80AD1BC182154FC4CAC229234A5923EB1023</pre>
         <p class="small">For the portable .zip:
-          <code class="hash-inline">F2A35648D3E7B34B1A106EA7463EBE2769C2C7FC4EB89BC83383EDC02202F494</code></p>
+          <code class="hash-inline">7DEAA7097BD4ACAC66D0E967359628AF6AD3D8E2BE7E84E72D34EFADC761DD23</code></p>
         <div class="warn">
           <p class="warn-h"><strong>This proves less than it looks like it does.</strong></p>
           <p>

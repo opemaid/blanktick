@@ -39,7 +39,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Dmg, TargetFormat.Deb)
             packageName = "Blanktick"
-            packageVersion = "0.1.1"
+            packageVersion = "0.1.2"
             description = "Offline security check for this computer"
             vendor = "Blanktick"
 

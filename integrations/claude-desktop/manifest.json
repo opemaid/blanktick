@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "blanktick",
   "display_name": "Blanktick",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Ask Claude how secure this PC is, and get answers read off the machine. Read-only and offline.",
   "long_description": "Blanktick is an offline security-posture scanner for Windows. This extension runs it as a local MCP server over stdio: no socket is opened and nothing on the machine is changed. Every tool is a question; Claude recommends, you decide and act. Results report what could not be checked as well as what passed, so 'could not look' is never rounded to 'fine'. Scan history (history/search/changes) is off until you set keepHistory=true in %APPDATA%\\Blanktick\\settings.conf.",
   "author": {

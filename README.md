@@ -105,6 +105,12 @@ rather than presenting meaningless password and link verdicts as findings.
 
 ## What it checks
 
+**Your whole PC.** *Scan whole PC* hands every fixed and removable drive, from
+its root, to Microsoft Defender's engine (`MpCmdRun -Scan -ScanType 3
+-DisableRemediation`): every file, reported, nothing quarantined. It is separate
+from the score because a full drive takes 30 minutes to hours. Without Defender
+it says nothing was scanned rather than calling the PC clean.
+
 **88 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
 rather than estimated:
 
@@ -187,9 +193,10 @@ The asymmetry is real and every app says so on screen — listing what it could
   because Explorer genuinely lives in `C:\Windows`.
 
   This is the one part of Blanktick that looks for malware, and it is worth being
-  precise about what it means. It does not scan your disk, hash your files or
-  carry signatures — that is the antivirus you already have, and it needs a
-  server Blanktick does not talk to. What it detects is a *technique*, which is a
+  precise about what it means. It carries no signatures of its own — that is
+  the antivirus you already have, and it needs a server Blanktick does not talk
+  to. (*Scan whole PC* is the exception that proves it: every file on every
+  drive is read by Defender's engine, not ours.) What it detects is a *technique*, which is a
   property of your machine rather than a fact someone else has to tell you
   about a file. A dormant installer sitting in a downloads folder will not be
   found here, and nothing in this section should be read as "your computer is
@@ -244,8 +251,8 @@ The asymmetry is real and every app says so on screen — listing what it could
 - **A bundled list of known-malicious files.** The closest thing here to
   conventional antivirus, and worth being exact about. Blanktick ships a table of
   SHA-256 hashes and compares it against the programs that start themselves and
-  the ones running from your personal folders — about sixty files, not your
-  whole disk.
+  the ones running from your personal folders — about sixty files. The whole
+  disk is *Scan whole PC*, which hands every drive to Defender instead.
 
   It is **stale the day it is built**, it will never approach a real scanner,
   and **it is defeated by recompiling the file**: one changed byte, different
@@ -559,9 +566,6 @@ Stated here because the app says the same thing on screen:
   this build. Deferred to a separate, separately-installable module.
 - **Any product analytics.** We do not know how many people use which feature,
   and cannot find out.
-- **Scan the contents of a USB stick.** Blanktick never opens files on a drive,
-  hashes them, or checks them against anything. That is an antivirus and it
-  needs a server.
 - **Tell you whether a program is malware.** The desktop lists what is installed
   and checks two offline properties of it. Hashing files and asking a reputation
   service is what an antivirus does, and it needs a server.
@@ -608,7 +612,7 @@ network capture. `docs/mcp.md` has the full table, and there is a
 [one-minute video of the setup](ad/blanktick-claude-mcp/renders/video.mp4).
 
 Claude Desktop users can install the one-click extension (`tools/build-mcpb.sh`
-builds `Blanktick-0.1.1.mcpb`). In Claude Code:
+builds `Blanktick-0.1.2.mcpb`). In Claude Code:
 
 ```
 /plugin install blanktick --marketplace opemaid/blanktick
