@@ -1,5 +1,53 @@
 # Blanktick
 
+<p align="center">
+  <a href="https://blanktick.org"><img src="design/social/og-github-social-preview-1280x640.png" alt="Blanktick — a green tick can mean “we checked, it’s fine.” Or it can mean “we never looked.”" width="820"></a>
+</p>
+
+<p align="center"><b>Blanktick, your antivirus built for AI.</b><br>
+It finds where bad AI can get into your PC, and lets your own AI agent help you shut the gaps.<br>
+<a href="https://blanktick.org">blanktick.org</a> · Free · Open source · Offline · Windows</p>
+
+<p align="center"><b>Install on Windows:</b>
+<a href="https://apps.microsoft.com/detail/9MW3G5H3RF3M">Microsoft Store</a> (signed by Microsoft) ·
+<a href="https://dl.blanktick.org/Blanktick-0.1.2-win-x64.msi">.msi installer</a> ·
+<a href="https://dl.blanktick.org/Blanktick-0.1.2-win-x64.zip">portable .zip</a> ·
+or <code>winget install 9MW3G5H3RF3M -s msstore</code></p>
+
+## Why: good AI against bad AI
+
+Antivirus looks for bad files. Bad AI usually isn't one. An AI assistant that a
+web page can talk into running commands, a model server anyone on your network can
+use, an API key in a plain-text settings file: none of these is a file to scan.
+Blanktick looks at how the AI on a PC is set up and what it is doing, and lets your
+own AI agent help you close the gaps.
+
+| What it looks for | Rule |
+|---|---|
+| An AI assistant that can both read outside content and act on the computer (prompt-injection reach) | `DSK-AI-006` |
+| AI model servers listening on the network | `DSK-AI-001` |
+| Which tools an AI assistant is allowed to run (MCP servers) | `DSK-AI-002` |
+| API keys stored in plain text in AI settings files | `DSK-AI-003` |
+| AI tools that download and run code | `DSK-AI-005` |
+| Windows Recall keeping a searchable record of the screen | `DSK-AI-004` |
+| **Live:** an AI assistant starting a shell (cmd, PowerShell, mshta) | `DYN-AI-001` |
+| **Live:** an AI agent acting right after reading outside content | `DYN-AI-003` |
+
+**Your AI on your side.** `Blanktick.exe --mcp` is a stdio MCP server with eight
+read-only tools ([docs/mcp.md](docs/mcp.md)). Connect Claude or another agent and it
+can explain what is exposed and how to fix it. It cannot change anything: there are
+no fix tools by design, and a test enforces that. The agent explains; you act.
+
+What it does not do: delete or quarantine anything, block every attack, or replace
+Windows Security. The live rules run while the app is open and flag by default; they
+stop a process only if you turn that on.
+
+The rest of this README covers the other half (the whole-PC scan, the 70 Windows
+settings checks) and the design rule behind all of it: **"not checked" is a result.**
+When Blanktick can't look at something, it says so instead of showing a green tick.
+
+---
+
 A security checkup for your phone and your computer that runs entirely on the
 device it is checking.
 
@@ -98,6 +146,12 @@ rather than presenting meaningless password and link verdicts as findings.
 
 ## What it checks
 
+**Your whole PC.** *Scan whole PC* hands every fixed and removable drive, from
+its root, to Microsoft Defender's engine (`MpCmdRun -Scan -ScanType 3
+-DisableRemediation`): every file, reported, nothing quarantined. It is separate
+from the score because a full drive takes 30 minutes to hours. Without Defender
+it says nothing was scanned rather than calling the PC clean.
+
 **88 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
 rather than estimated:
 
@@ -180,9 +234,10 @@ The asymmetry is real and every app says so on screen — listing what it could
   because Explorer genuinely lives in `C:\Windows`.
 
   This is the one part of Blanktick that looks for malware, and it is worth being
-  precise about what it means. It does not scan your disk, hash your files or
-  carry signatures — that is the antivirus you already have, and it needs a
-  server Blanktick does not talk to. What it detects is a *technique*, which is a
+  precise about what it means. It carries no signatures of its own — that is
+  the antivirus you already have, and it needs a server Blanktick does not talk
+  to. (*Scan whole PC* is the exception that proves it: every file on every
+  drive is read by Defender's engine, not ours.) What it detects is a *technique*, which is a
   property of your machine rather than a fact someone else has to tell you
   about a file. A dormant installer sitting in a downloads folder will not be
   found here, and nothing in this section should be read as "your computer is
@@ -237,8 +292,8 @@ The asymmetry is real and every app says so on screen — listing what it could
 - **A bundled list of known-malicious files.** The closest thing here to
   conventional antivirus, and worth being exact about. Blanktick ships a table of
   SHA-256 hashes and compares it against the programs that start themselves and
-  the ones running from your personal folders — about sixty files, not your
-  whole disk.
+  the ones running from your personal folders — about sixty files. The whole
+  disk is *Scan whole PC*, which hands every drive to Defender instead.
 
   It is **stale the day it is built**, it will never approach a real scanner,
   and **it is defeated by recompiling the file**: one changed byte, different
@@ -552,9 +607,6 @@ Stated here because the app says the same thing on screen:
   this build. Deferred to a separate, separately-installable module.
 - **Any product analytics.** We do not know how many people use which feature,
   and cannot find out.
-- **Scan the contents of a USB stick.** Blanktick never opens files on a drive,
-  hashes them, or checks them against anything. That is an antivirus and it
-  needs a server.
 - **Tell you whether a program is malware.** The desktop lists what is installed
   and checks two offline properties of it. Hashing files and asking a reputation
   service is what an antivirus does, and it needs a server.
@@ -597,7 +649,15 @@ an MCP client can ask about this computer and get real answers rather than
 guesses: `Blanktick.exe --mcp`. Eight tools, all read-only — a scan, the raw facts
 including the nulls, the exact script it runs, its coverage on this platform,
 three that query the stored scan history, and one that reviews an exported
-network capture. `docs/mcp.md` has the full table.
+network capture. `docs/mcp.md` has the full table, and there is a
+[one-minute video of the setup](ad/blanktick-claude-mcp/renders/video.mp4).
+
+Claude Desktop users can install the one-click extension (`tools/build-mcpb.sh`
+builds `Blanktick-0.1.2.mcpb`). In Claude Code:
+
+```
+/plugin install blanktick --marketplace opemaid/blanktick
+```
 
 Stdio, not HTTP: your client launches Blanktick and talks to it over standard input
 and output. No socket is opened and the bytecode gate that forbids networking

@@ -1,0 +1,5 @@
+Contact: mailto:hello@blanktick.org
+Expires: 2027-10-23T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://blanktick.org/.well-known/security.txt
+Policy: https://blanktick.org/terms.html

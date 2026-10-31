@@ -1,0 +1,15 @@
+# Cloudflare Pages headers for blanktick.org
+# The page makes zero third-party requests; the policy below says so in a way
+# a reader can verify in the network tab. Styles and the three OFL typefaces
+# (/fonts, 74.5 KB) are self-hosted, hence font-src 'self'. A handful of inline
+# style= attributes (bar-chart values, the SVG sprite) need 'unsafe-inline' for
+# style only. No scripts exist on this site at all.
+/*
+  Content-Security-Policy: default-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  X-Frame-Options: DENY
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin

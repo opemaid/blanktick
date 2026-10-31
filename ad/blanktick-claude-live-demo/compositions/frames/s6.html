@@ -1,0 +1,61 @@
+<template>
+  <div id="root" data-composition-id="s6" data-start="0" data-duration="7.0" data-width="1920" data-height="1080">
+    <style>
+@font-face{font-family:"bt-ui";src:local("Segoe UI"),local("SegoeUI");font-weight:400}
+@font-face{font-family:"bt-ui";src:local("Segoe UI Semibold"),local("SegoeUI-Semibold");font-weight:600}
+@font-face{font-family:"bt-mono";src:local("Cascadia Mono"),local("Consolas")}
+@font-face{font-family:"bt-ui";src:local("Segoe UI Bold"),local("SegoeUI-Bold");font-weight:700}
+#root{position:relative;width:1920px;height:1080px;overflow:hidden;background:#FAF9F6;container-type:size;font-family:"bt-ui","Segoe UI",sans-serif;color:#0B0D0C}
+.wrap{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:3.2cqw 7cqw}
+.mono{font-family:"bt-mono",monospace}
+.k{color:#0F4D3F}.c{color:#C2613F}
+.win{background:#141615;border-radius:16px;overflow:hidden;box-shadow:0 0 0 1.5px rgba(15,77,63,.25)}
+.bar{display:flex;align-items:center;gap:.6cqw;padding:.8cqw 1.2cqw;background:#1E211F;color:#9AA19E;font-size:.9cqw}
+.dot{width:.75cqw;height:.75cqw;border-radius:50%;background:#3A3F3C}
+.body{padding:1.4cqw 1.8cqw;color:#E8EAE9;font-size:1.15cqw;line-height:1.6}
+.ln{opacity:0;white-space:pre-wrap}
+.me{color:#FAF9F6}.me b{color:#7FD3B8}
+.bul{color:#E9A27F}
+.dim{color:#8C9390}
+.tool{color:#7FD3B8;font-weight:700}
+.cap{position:absolute;left:7cqw;bottom:2.2cqw;font-size:1cqw;color:#5A6260;opacity:0}
+.chip{display:inline-block;padding:.35cqw .9cqw;border-radius:100px;background:rgba(15,77,63,.08);border:1.5px solid rgba(15,77,63,.2);color:#0F4D3F;font-weight:600;font-size:.95cqw}
+.ch{opacity:0}
+
+.wrap{align-items:center;text-align:center}
+#stats{display:flex;gap:1.6cqw;opacity:0}
+.st{padding:1.2cqw 2cqw;background:rgba(15,77,63,.04);border:1.5px solid rgba(15,77,63,.2);border-radius:14px}
+.sv{font-size:3cqw;font-weight:700;color:#0F4D3F}
+.sl{font-size:1cqw;color:#5A6260;margin-top:.2cqw}
+#line{font-size:1.9cqw;font-weight:700;margin-top:2.4cqw;opacity:0}
+#url{font-size:1.5cqw;font-weight:700;color:#0F4D3F;margin-top:1.4cqw;opacity:0}
+</style>
+    <div class="wrap clip" id="s6-wrap" data-start="0" data-duration="7.0" data-track-index="0">
+
+      <div id="stats">
+        <div class="st"><div class="sv">1</div><div class="sl">skill loaded</div></div>
+        <div class="st"><div class="sv">1</div><div class="sl">Blanktick tool call</div></div>
+        <div class="st"><div class="sv">0</div><div class="sl">settings changed</div></div>
+        <div class="st"><div class="sv">3m 42s</div><div class="sl">whole session</div></div>
+      </div>
+      <div id="line"><span class="c">Claude</span> advised. <span class="k">You</span> decide what to fix.</div>
+      <div id="url">Blanktick &middot; free &amp; offline &middot; blanktick.org</div>
+
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function(){
+        window.__timelines = window.__timelines || {};
+        var tl = gsap.timeline({ paused: true });
+        function up(sel, t, d){ tl.fromTo(sel, {opacity:0, y:12}, {opacity:1, y:0, duration:d||0.4, ease:"power2.out"}, t); }
+        function pop(sel, t){ tl.fromTo(sel, {opacity:0, scale:0.94}, {opacity:1, scale:1, duration:0.32, ease:"back.out(2)"}, t); }
+        function lines(sel, t, step){ var ls = document.querySelectorAll(sel); for (var i = 0; i < ls.length; i++) tl.fromTo(ls[i], {opacity:0}, {opacity:1, duration:0.18}, t + i*step); }
+
+        pop("#stats", 0.2); up("#line", 1.6, 0.5); up("#url", 2.6);
+
+        tl.set({}, {}, 7.0);
+        window.__timelines["s6"] = tl;
+      })();
+    </script>
+  </div>
+</template>

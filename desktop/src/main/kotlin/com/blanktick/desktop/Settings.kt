@@ -35,7 +35,12 @@ data class Settings(
      * automatically and this switch is the only path to honouring it at all.
      */
     val reduceMotion: Boolean = false,
-    val theme: ThemeChoice = ThemeChoice.SYSTEM,
+    /**
+     * LIGHT by default, not SYSTEM: the warm paper theme is the brand (it is
+     * blanktick.org and the ads), so a new install opens on it even when Windows
+     * is in dark mode. Dark and "follow Windows" stay one click away in Settings.
+     */
+    val theme: ThemeChoice = ThemeChoice.LIGHT,
     /** 1.0 = platform default. Compose Desktop does not read the OS text-size slider. */
     val textScale: Float = 1.0f,
     /** Last folder chosen in the photo scanner. A path the user picked themselves. */
@@ -111,7 +116,7 @@ data class Settings(
                 reduceMotion = kv["reduceMotion"]?.toBooleanStrictOrNull() ?: false,
                 theme = kv["theme"]?.let { v ->
                     ThemeChoice.entries.firstOrNull { it.name.equals(v, ignoreCase = true) }
-                } ?: ThemeChoice.SYSTEM,
+                } ?: ThemeChoice.LIGHT,
                 // Clamped rather than trusted: a hand-edited 40.0 would render an
                 // unusable window with no way back to Settings to fix it.
                 textScale = kv["textScale"]?.toFloatOrNull()?.coerceIn(0.8f, 2.0f) ?: 1.0f,

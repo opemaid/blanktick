@@ -17,8 +17,8 @@
   --color-severity-info-on-dark: #9FB0BF;
   --color-severity-pass: #0F4D3F;
   --color-severity-pass-on-dark: #5FBFA3;
-  --color-severity-not-checked: #666D6B;
-  --color-severity-not-checked-on-dark: #7A827E;
+  --color-severity-not-checked: #3A3F3D;
+  --color-severity-not-checked-on-dark: #C9D2CE;
   --color-grade-strong: #0F4D3F;
   --color-grade-good: #2F6B4F;
   --color-grade-fair: #7A6410;
@@ -55,13 +55,13 @@
   --space-8: 4rem;
   --space-9: 6rem;
   --space-10: 8rem;
-  --radius-sm: 0.5rem;
-  --radius-md: 0.875rem;
-  --radius-lg: 1.25rem;
-  --radius-xl: 2rem;
-  --radius-shell: 2rem;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.125rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.5rem;
+  --radius-shell: 0.5rem;
   --radius-shell-pad: 0.375rem;
-  --radius-core: 1.625rem;
+  --radius-core: 0.125rem;
   --radius-pill: 999px;
   --elevation-rest: 0 1px 2px rgba(11,13,12,0.04), 0 8px 24px -12px rgba(11,13,12,0.10);
   --elevation-raised: 0 2px 4px rgba(11,13,12,0.05), 0 20px 48px -20px rgba(11,13,12,0.16);
@@ -78,15 +78,15 @@
   --target-android: 48dp;
 
   /* --- light theme (default) ---------------------------------- */
-  --c-paper: #FAF9F6;
+  --c-paper: #FBFAF6;
   --c-surface: #FFFFFF;
   --c-surface-sunk: #F1EFEA;
-  --c-ink: #0B0D0C;
-  --c-ink-muted: #5A6260;
-  --c-ink-faint: #666D6B;
-  --c-hairline: #E2DFD8;
+  --c-ink: #17191B;
+  --c-ink-muted: #3A3F3D;
+  --c-ink-faint: #5A6260;
+  --c-hairline: #DFDBD2;
   --c-focus: #0F4D3F;
-  --c-track-muted: #928E84;
+  --c-track-muted: #7D827F;
 
   /* --- semantic aliases resolved per theme -------------------- */
   --paper: var(--c-paper);
@@ -140,16 +140,16 @@
 }
 
 [data-theme="dark"] {
-  --c-paper: #0C0E0D;
-  --c-surface: #151817;
-  --c-surface-sunk: #101312;
-  --c-ink: #F2F1ED;
-  --c-ink-muted: #9AA19E;
-  --c-ink-faint: #7A827E;
-  --c-hairline: #262A29;
+  --c-paper: #17191B;
+  --c-surface: #202326;
+  --c-surface-sunk: #121416;
+  --c-ink: #FBFAF6;
+  --c-ink-muted: #B9C4BF;
+  --c-ink-faint: #939D99;
+  --c-hairline: #2E3234;
   --c-focus: #5FBFA3;
-  --c-track-muted: #5E6563;
-  --c-kelp-tint: #12241E;
+  --c-track-muted: #6E7573;
+  --c-kelp-tint: #153129;
   --sev-critical: var(--color-severity-critical-on-dark);
   --sev-high: var(--color-severity-high-on-dark);
   --sev-medium: var(--color-severity-medium-on-dark);

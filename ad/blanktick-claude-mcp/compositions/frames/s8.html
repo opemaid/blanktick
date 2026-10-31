@@ -1,0 +1,55 @@
+<template>
+  <div id="root" data-composition-id="s8" data-start="0" data-duration="4.6" data-width="1920" data-height="1080">
+    <style>
+@font-face{font-family:"bt-ui";src:local("Segoe UI"),local("SegoeUI");font-weight:400}
+@font-face{font-family:"bt-ui";src:local("Segoe UI Semibold"),local("SegoeUI-Semibold");font-weight:600}
+@font-face{font-family:"bt-mono";src:local("Cascadia Mono"),local("Consolas")}
+@font-face{font-family:"bt-ui";src:local("Segoe UI Bold"),local("SegoeUI-Bold");font-weight:700}
+#root{position:relative;width:1920px;height:1080px;overflow:hidden;background:#FAF9F6;container-type:size;font-family:"bt-ui","Segoe UI",sans-serif;color:#0B0D0C}
+.wrap{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:4cqw 9cqw}
+.eyebrow{font-size:.95cqw;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#0F4D3F;margin-bottom:1cqw;opacity:0}
+.h1{font-size:4.2cqw;font-weight:700;letter-spacing:-.02em;line-height:1.08;opacity:0}
+.h2{font-size:2.6cqw;font-weight:700;letter-spacing:-.02em;line-height:1.12;opacity:0}
+.k{color:#0F4D3F}
+.c{color:#C2613F}
+.sub{font-size:1.45cqw;color:#5A6260;line-height:1.5;margin-top:1.4cqw;opacity:0}
+.card{background:rgba(15,77,63,.04);border:1.5px solid rgba(15,77,63,.2);border-radius:14px}
+.pill{display:inline-flex;align-items:center;gap:.6cqw;padding:.55cqw 1.2cqw;border-radius:100px;background:rgba(15,77,63,.08);border:1.5px solid rgba(15,77,63,.2);color:#0F4D3F;font-weight:600;font-size:1.05cqw;opacity:0}
+.mono{font-family:"bt-mono",monospace}
+.term{background:#0B0D0C;color:#FAF9F6;border-radius:14px;padding:1.6cqw 2cqw}
+.tick{width:1.4cqw;height:1.4cqw;flex:none}
+.tick path{fill:none;stroke:#0F4D3F;stroke-width:16;stroke-linecap:round;stroke-linejoin:round}
+.step{font-size:1cqw;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#FAF9F6;background:#0F4D3F;border-radius:100px;padding:.35cqw 1cqw;display:inline-block}
+
+.wrap{align-items:center;text-align:center}
+#logo8{width:8cqw;height:8cqw;border-radius:50%;background:#0F4D3F;display:flex;align-items:center;justify-content:center;opacity:0}
+#logo8 svg{width:4.8cqw;height:4.8cqw}
+#logo8 path{fill:none;stroke:#FAF9F6;stroke-width:14;stroke-linecap:round;stroke-linejoin:round}
+#name{font-size:4.6cqw;font-weight:700;letter-spacing:-.02em;margin-top:1.6cqw;opacity:0}
+#tag{font-size:1.5cqw;color:#5A6260;margin-top:.6cqw;opacity:0}
+#url{font-size:1.6cqw;font-weight:700;color:#0F4D3F;margin-top:2cqw;opacity:0}
+</style>
+    <div class="wrap clip" id="s8-wrap" data-start="0" data-duration="4.6" data-track-index="0">
+
+      <div id="logo8"><svg viewBox="0 0 120 120"><path d="M 26 62 L 52 90 L 96 34"/></svg></div>
+      <div id="name">Blanktick</div>
+      <div id="tag">Free &middot; Offline &middot; Ready for <span class="c">Claude</span></div>
+      <div id="url">blanktick.org</div>
+
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function(){
+        window.__timelines = window.__timelines || {};
+        var tl = gsap.timeline({ paused: true });
+        function up(sel, t, d){ tl.fromTo(sel, {opacity:0, y:16}, {opacity:1, y:0, duration:d||0.45, ease:"power2.out"}, t); }
+        function pop(sel, t){ tl.fromTo(sel, {opacity:0, scale:0.92}, {opacity:1, scale:1, duration:0.35, ease:"back.out(2)"}, t); }
+
+        pop("#logo8", 0.1); up("#name", 0.4); up("#tag", 0.8); up("#url", 1.3);
+
+        tl.set({}, {}, 4.6);
+        window.__timelines["s8"] = tl;
+      })();
+    </script>
+  </div>
+</template>

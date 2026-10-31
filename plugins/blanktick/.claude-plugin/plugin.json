@@ -1,0 +1,10 @@
+{
+  "name": "blanktick",
+  "version": "0.1.2",
+  "description": "Read-only security posture of this Windows PC over MCP: scan, raw facts, coverage, scan history. Every tool is a question; nothing on the machine is changed.",
+  "author": { "name": "Blanktick" },
+  "homepage": "https://blanktick.org",
+  "repository": "https://github.com/opemaid/blanktick",
+  "license": "AGPL-3.0-only",
+  "keywords": ["security", "posture", "windows", "mcp", "offline"]
+}

@@ -11,7 +11,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.platform.asComposeFontFamily
+import androidx.compose.ui.text.platform.Font
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.sp
@@ -23,8 +23,11 @@ import com.blanktick.core.model.Severity
  * Kept as a copy rather than extracted into a shared module because :core must
  * stay free of any UI dependency -- it is the module the Swift mirror is
  * checked against, and adding Compose to it would make that comparison
- * meaningless. The two files differ only in their package declaration; if one
- * changes, change both. `DesktopThemeParityTest` fails if they drift.
+ * meaningless. The colour model is shared and comes from the same generated
+ * tokens; the type differs, because this file binds the bundled brand faces
+ * (desktop resources) and the Android one uses the system face. If the colour
+ * model changes in one, change both. (No `DesktopThemeParityTest` exists in
+ * the tree as of 2026-10-23, despite what this comment used to say.)
  */
 
 /**
@@ -146,53 +149,61 @@ val LocalBlanktickColors = staticCompositionLocalOf { LightColors }
  * reduced to fit more on screen (DD-09).
  */
 /**
- * The display face, resolved against fonts that are actually installed.
+ * The brand faces, bundled: Hanken Grotesk and IBM Plex Mono, the same two
+ * families blanktick.org self-hosts, so the app and the site read as one thing.
  *
- * ## What was proposed, and why it is not what shipped
+ * ## Why bundled, and why this replaced the installed-font probe
  *
- * The design panel recommended binding `Segoe UI Variable Display` — Windows'
- * large-optical-size cut — on the reasoning that an 82sp numeral was being drawn
- * in a face cut for 12sp. That reasoning is sound and the panel flagged it as
- * inferred from a screenshot rather than verified.
+ * The previous code probed `GraphicsEnvironment` for Segoe UI Variable / SF Pro
+ * / Inter and fell back to the platform default. That was honest, but it meant
+ * the app's type changed with the machine and never matched the brand. These
+ * are OFL fonts shipped as resources under `fonts/` (licences alongside).
+ * Resources are not code, so the offline build gate is unaffected, and nothing
+ * is fetched: a font that ships inside the download cannot phone home.
  *
- * It does not survive verification. `GraphicsEnvironment` on this machine lists
- * `Segoe UI Variable` but **not** `Segoe UI Variable Display` or
- * `…Text`: Windows exposes the optical sizes as named instances inside one
- * variable family, and AWT surfaces only the family. Asking for a family that
- * does not exist gets silently substituted, so hard-coding the name would have
- * produced a *different* font from the one intended, with nothing reporting it.
- *
- * So the list is probed at runtime and the first installed entry wins. If none
- * is present the platform default is used, which is the honest outcome rather
- * than a silent substitution.
+ * Hanken Grotesk is variable upstream; the weights used here are static
+ * instances cut from it with fontTools (`instancer`, wght 400/500/600/700/800),
+ * because named-weight lookup is the one path Compose desktop resolves
+ * reliably for a resource font.
  */
-private val DisplayFace: FontFamily = resolveFamily(
-    "Segoe UI Variable", "SF Pro Display", "Inter", "Segoe UI"
-)
-
-/** The ledger column. Falls back to Compose's generic monospace. */
-private val MonoFace: FontFamily = resolveFamily("Cascadia Mono", "Consolas", "JetBrains Mono")
-
-// asComposeFontFamily is the only name-based system-font lookup Compose
-// Multiplatform desktop exposes, and it is @ExperimentalTextApi. The runCatching
-// is the contingency if that changes: an unavailable API degrades to the
-// platform default rather than failing to start.
-@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
-@Suppress("SwallowedException")
-private fun resolveFamily(vararg preferred: String): FontFamily = runCatching {
-    val installed = java.awt.GraphicsEnvironment
-        .getLocalGraphicsEnvironment()
-        .availableFontFamilyNames
-        .toHashSet()
-
-    val name = preferred.firstOrNull { candidate ->
-        installed.any { it.equals(candidate, ignoreCase = true) }
-    } ?: return@runCatching FontFamily.Default
-
-    java.awt.Font(name, java.awt.Font.PLAIN, 12).asComposeFontFamily()
+private val BrandFace: FontFamily = runCatching {
+    FontFamily(
+        Font("fonts/HankenGrotesk-Regular.ttf", FontWeight.Normal),
+        Font("fonts/HankenGrotesk-Medium.ttf", FontWeight.Medium),
+        Font("fonts/HankenGrotesk-SemiBold.ttf", FontWeight.SemiBold),
+        Font("fonts/HankenGrotesk-Bold.ttf", FontWeight.Bold),
+        Font("fonts/HankenGrotesk-ExtraBold.ttf", FontWeight.ExtraBold)
+    )
 }.getOrDefault(FontFamily.Default)
 
-private val BlanktickTypography = Typography().run {
+/** The display face is the brand face; the site uses one sans for both. */
+private val DisplayFace: FontFamily = BrandFace
+
+/** The ledger column, and every mono label. Same face as the site's. */
+private val MonoFace: FontFamily = runCatching {
+    FontFamily(
+        Font("fonts/IBMPlexMono-Regular.ttf", FontWeight.Normal),
+        Font("fonts/IBMPlexMono-SemiBold.ttf", FontWeight.Medium),
+        Font("fonts/IBMPlexMono-SemiBold.ttf", FontWeight.SemiBold)
+    )
+}.getOrDefault(FontFamily.Monospace)
+
+private fun TextStyle.branded() = copy(fontFamily = BrandFace)
+
+private val BlanktickTypography = Typography().let { base ->
+    // Every style on the brand face first, so stock Material components (menus,
+    // switches, snackbars) do not fall back to the platform font mid-screen.
+    Typography(
+        displayLarge = base.displayLarge.branded(), displayMedium = base.displayMedium.branded(),
+        displaySmall = base.displaySmall.branded(), headlineLarge = base.headlineLarge.branded(),
+        headlineMedium = base.headlineMedium.branded(), headlineSmall = base.headlineSmall.branded(),
+        titleLarge = base.titleLarge.branded(), titleMedium = base.titleMedium.branded(),
+        titleSmall = base.titleSmall.branded(), bodyLarge = base.bodyLarge.branded(),
+        bodyMedium = base.bodyMedium.branded(), bodySmall = base.bodySmall.branded(),
+        labelLarge = base.labelLarge.branded(), labelMedium = base.labelMedium.branded(),
+        labelSmall = base.labelSmall.branded()
+    )
+}.run {
     val lineHeightStyle = LineHeightStyle(
         alignment = LineHeightStyle.Alignment.Center,
         trim = LineHeightStyle.Trim.None
@@ -231,7 +242,9 @@ private val BlanktickTypography = Typography().run {
         // bodyMedium is NOT the finding body -- FindingCard uses bodyLarge.
         // This stays at footnote for genuine secondary chrome only.
         bodyMedium = bodyMedium.copy(fontSize = BlanktickTokens.TypeScale.footnote, lineHeight = 20.sp),
+        // The site's micro-labels ("SCAN RECEIPT", "CHECKS RAN") are mono caps.
         labelSmall = labelSmall.copy(
+            fontFamily = MonoFace,
             fontSize = BlanktickTokens.TypeScale.caption,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.4.sp

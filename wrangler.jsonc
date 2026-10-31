@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "blanktick",
+  "compatibility_date": "2026-10-19",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "web"
+  },
+  "routes": [
+    { "pattern": "blanktick.org", "custom_domain": true },
+    { "pattern": "www.blanktick.org", "custom_domain": true }
+  ]
+}
