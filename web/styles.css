@@ -739,7 +739,7 @@ pre {
 .check-list li::before { content: ""; position: absolute; left: 0; top: 10px; width: 15px; height: 11px; background: var(--tick-kelp) center / contain no-repeat; }
 .tag { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; color: var(--ink); background: var(--lime); padding: 3px 7px; border-radius: 2px; }
 
-.h-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: end; }
+.h-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
 .on-ink { color: var(--lime); font-weight: 600; }
 .on-ink:hover { color: var(--paper); }
 .h-video { margin-top: clamp(32px, 5vw, 56px); }
@@ -750,7 +750,7 @@ pre {
 .h-steps li { border-top: 1.5px solid var(--ink); padding-top: 20px; }
 .h-step-n { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--kelp); color: var(--paper); font-weight: 800; font-size: 19px; margin-bottom: 14px; }
 .h-steps h3 { font-size: 21px; margin-bottom: 6px; }
-.h-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.h-pair { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
 .h-card { border: 1.5px solid var(--ink); background: var(--sunk); padding: 24px 24px 10px; }
 .h-card h3 { font-size: 20px; margin-bottom: 10px; }
 
