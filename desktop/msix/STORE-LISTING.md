@@ -50,31 +50,33 @@ The Store rejects any upload whose identity doesn't match these three values exa
 
 **Product name:** Blanktick
 
-**Short description (≤ 100 characters):**
-Free security check-up for Windows that tells you what it could not check.
+**Short description:**
+Your antivirus wasn't built for AI. Blanktick is. It finds where bad AI can get into your PC (hijacked agents, exposed AI models, leaked AI keys) and lets your own AI agent help you shut the gaps. Free, offline, no account.
 
 **Description:**
-Most security apps show a green tick even when they never looked. Blanktick shows you both: what it checked, and what it couldn't check, each with a reason.
+Your antivirus wasn't built for AI. Blanktick is.
 
-Blanktick scans your whole PC: every file on every drive, including plugged-in USB sticks, read by the Microsoft Defender engine already on your PC. It also checks 70 settings that attackers change on Windows PCs, and watches for ransomware, password theft and hackers taking control while it is open. When it can't check something, it says so. If a scan doesn't finish, you get no score at all instead of a made-up one.
+Bad AI can now get into your PC in ways normal antivirus never looks at: AI agents that outside content can hijack, AI model servers open to your whole network, AI keys saved in plain text, AI tools that download and run code. Blanktick finds these, watches for AI being driven to run commands while it is open, and lets your own AI agent help you shut the gaps.
 
 What it does:
-• Full PC check-up: firewall, Windows Security, updates, BitLocker, remote access, risky startup items and more
-• Live protection (preview): flags ransomware-style file changes, credential theft, programs beaconing out and AI assistants being driven to run commands, while the app is open
+• Bad AI: hijackable AI agents (prompt injection), exposed AI model servers, plaintext AI keys, which tools your AI assistant may run, AI tools that download code, Windows Recall
+• Your AI on your side: a read-only MCP server lets Claude or another agent explain your results and help you secure your PC. It can explain, never change anything
+• Live protection (preview): flags AI assistants being driven to run commands, ransomware-style file changes, credential theft and programs beaconing out, while the app is open
 • Scan your whole PC: every file on every drive, using Windows' own Microsoft Defender engine. Nothing is moved or deleted; you get the list and decide
-• Connect your AI agent: a read-only MCP server lets Claude or another agent explain your results and help you secure your PC against malicious AI bots
-• Check a link before you open it: spots look-alike sites such as "paypa1"
-• Check a password against a built-in list of breached passwords; nothing is sent anywhere
-• Installed software: programs past security support and programs installed where anyone can change them
-• USB & drives, AI tool safety, and a plain-English list of every rule it ran
+• 70 Windows settings attackers change: firewall, Windows Security, updates, BitLocker, remote access, risky startup items and more
+• Check a link before you open it, and check a password against a built-in list of breached passwords; nothing is sent anywhere
+
+When Blanktick can't check something, it says so, with a reason. If a scan doesn't finish, you get no score instead of a made-up one.
 
 Private by design: Blanktick has no network code. Nothing is uploaded, there's no account and there are no ads.
 
 Blanktick works alongside Windows Security. Keep Windows Security switched on.
 
-**What's new in this version:** First Microsoft Store release. New: "Scan whole PC" checks every file on every drive with Microsoft Defender's engine.
+**What's new in this version:** Clearer focus on AI threats: hijackable AI agents, exposed AI models and leaked AI keys come first. Includes "Scan whole PC", which checks every file on every drive with Microsoft Defender's engine.
 
 **Features (up to 20, ≤ 200 chars each):**
+- Finds where bad AI can get into your PC: hijackable agents, exposed AI models, leaked AI keys
+- Read-only MCP server so your own AI agent can explain your results
 - Shows what it checked and what it couldn't check, each with a reason
 - 70 Windows security settings checked offline
 - Live protection preview for ransomware, credential theft and hacker remote control

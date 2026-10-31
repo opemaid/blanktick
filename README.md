@@ -14,6 +14,40 @@ It finds where bad AI can get into your PC, and lets your own AI agent help you 
 <a href="https://dl.blanktick.org/Blanktick-0.1.2-win-x64.zip">portable .zip</a> ·
 or <code>winget install 9MW3G5H3RF3M -s msstore</code></p>
 
+## Why: good AI against bad AI
+
+Antivirus looks for bad files. Bad AI usually isn't one. An AI assistant that a
+web page can talk into running commands, a model server anyone on your network can
+use, an API key in a plain-text settings file: none of these is a file to scan.
+Blanktick looks at how the AI on a PC is set up and what it is doing, and lets your
+own AI agent help you close the gaps.
+
+| What it looks for | Rule |
+|---|---|
+| An AI assistant that can both read outside content and act on the computer (prompt-injection reach) | `DSK-AI-006` |
+| AI model servers listening on the network | `DSK-AI-001` |
+| Which tools an AI assistant is allowed to run (MCP servers) | `DSK-AI-002` |
+| API keys stored in plain text in AI settings files | `DSK-AI-003` |
+| AI tools that download and run code | `DSK-AI-005` |
+| Windows Recall keeping a searchable record of the screen | `DSK-AI-004` |
+| **Live:** an AI assistant starting a shell (cmd, PowerShell, mshta) | `DYN-AI-001` |
+| **Live:** an AI agent acting right after reading outside content | `DYN-AI-003` |
+
+**Your AI on your side.** `Blanktick.exe --mcp` is a stdio MCP server with eight
+read-only tools ([docs/mcp.md](docs/mcp.md)). Connect Claude or another agent and it
+can explain what is exposed and how to fix it. It cannot change anything: there are
+no fix tools by design, and a test enforces that. The agent explains; you act.
+
+What it does not do: delete or quarantine anything, block every attack, or replace
+Windows Security. The live rules run while the app is open and flag by default; they
+stop a process only if you turn that on.
+
+The rest of this README covers the other half (the whole-PC scan, the 70 Windows
+settings checks) and the design rule behind all of it: **"not checked" is a result.**
+When Blanktick can't look at something, it says so instead of showing a green tick.
+
+---
+
 A security checkup for your phone and your computer that runs entirely on the
 device it is checking.
 
