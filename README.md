@@ -4,7 +4,7 @@
   <a href="https://blanktick.org"><img src="design/social/og-github-social-preview-1280x640.png" alt="Blanktick — a green tick can mean “we checked, it’s fine.” Or it can mean “we never looked.”" width="820"></a>
 </p>
 
-<p align="center"><b>Your antivirus wasn't built for AI. Blanktick is.</b><br>
+<p align="center"><b>Blanktick, your antivirus built for AI.</b><br>
 It finds where bad AI can get into your PC, and lets your own AI agent help you shut the gaps.<br>
 <a href="https://blanktick.org">blanktick.org</a> · Free · Open source · Offline · Windows</p>
 

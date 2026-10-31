@@ -51,10 +51,10 @@ The Store rejects any upload whose identity doesn't match these three values exa
 **Product name:** Blanktick
 
 **Short description:**
-Your antivirus wasn't built for AI. Blanktick is. It finds where bad AI can get into your PC (hijacked agents, exposed AI models, leaked AI keys) and lets your own AI agent help you shut the gaps. Free, offline, no account.
+Blanktick, your antivirus built for AI. It finds where bad AI can get into your PC (hijacked agents, exposed AI models, leaked AI keys) and lets your own AI agent help you shut the gaps. Free, offline, no account.
 
 **Description:**
-Your antivirus wasn't built for AI. Blanktick is.
+Blanktick, your antivirus built for AI.
 
 Bad AI can now get into your PC in ways normal antivirus never looks at: AI agents that outside content can hijack, AI model servers open to your whole network, AI keys saved in plain text, AI tools that download and run code. Blanktick finds these, watches for AI being driven to run commands while it is open, and lets your own AI agent help you shut the gaps.
 
