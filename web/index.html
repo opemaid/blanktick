@@ -122,7 +122,7 @@
 <section id="protects" class="sec h-sec" aria-labelledby="protects-h">
   <div class="wrap">
     <p class="sec-no"><span aria-hidden="true">01</span> Protection</p>
-    <h2 id="protects-h">What Blanktick protects you from</h2>
+    <h2 id="protects-h">Good AI against bad AI &mdash; and everything else</h2>
     <ul class="threats" aria-label="Threats">
       <li>Hijacked AI agents</li><li>Leaked AI keys</li><li>Prompt injection</li>
       <li>Ransomware</li><li>Harmful Office macros</li><li>Password theft</li>
@@ -132,11 +132,20 @@
 
     <ul class="features">
       <li class="feature">
+        <svg class="f-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12h3M17 12h3M12 4v3M12 17v3"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+        <h3>Your AI, against bad AI</h3>
+        <p>Connect Claude or any AI app to Blanktick and let it find where bad
+          AI can get into your PC &mdash; hijackable agents, exposed AI models,
+          leaked AI keys &mdash; and explain how to shut each gap. It can ask
+          Blanktick anything, but it can&rsquo;t change a single setting.</p>
+      </li>
+      <li class="feature">
         <svg class="f-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
         <h3>Live protection <span class="tag">Preview</span></h3>
-        <p>Watches what programs <em>do</em> while Blanktick is open: files being
-          encrypted, a document launching a program, someone reading your
-          passwords. It warns you at once, and can stop the program if you turn that on.</p>
+        <p>Watches what programs <em>do</em> while Blanktick is open: an AI
+          assistant being driven to run commands, files being encrypted, a
+          document launching a program, someone reading your passwords. It warns
+          you at once, and can stop the program if you turn that on.</p>
       </li>
       <li class="feature">
         <svg class="f-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M8 21h8M12 17v4M7 9h6M7 12h10"/></svg>
@@ -164,13 +173,6 @@
         <h3>Password checker</h3>
         <p>Find out if a password is one of the million most common or leaked
           ones. It never leaves your computer.</p>
-      </li>
-      <li class="feature">
-        <svg class="f-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12h3M17 12h3M12 4v3M12 17v3"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
-        <h3>Your AI agent, on your side</h3>
-        <p>Connect Claude or any AI app to Blanktick and let it help secure
-          your PC against malicious AI bots. It can ask Blanktick anything, but
-          it can&rsquo;t change a single setting.</p>
       </li>
     </ul>
     <figure class="h-video">
@@ -269,12 +271,15 @@
   <div class="wrap h-split">
     <div>
       <p class="sec-no"><span aria-hidden="true">03</span> Why Blanktick</p>
-      <h2 id="tick-h">Most security apps show a green tick even when they never looked.</h2>
+      <h2 id="tick-h">Bad AI doesn&rsquo;t look like a virus.</h2>
     </div>
     <div>
-      <p class="lede-2">Blanktick shows you both: what it checked, and what it
-        couldn&rsquo;t check, each with a reason. And if a scan doesn&rsquo;t finish,
-        you get no score at all instead of a made-up one.</p>
+      <p class="lede-2">A hijacked AI agent runs real commands as you. An AI
+        model server open to your network, or an AI key saved in plain text,
+        isn&rsquo;t a file an antivirus can scan. Blanktick looks at how the AI on
+        your PC is set up and what it&rsquo;s doing.</p>
+      <p>And it&rsquo;s honest about it: you see what it checked and what it
+        couldn&rsquo;t, each with a reason. No fake green ticks.</p>
       <p><a class="on-ink" href="details.html">Read how it works in detail <span aria-hidden="true">&rarr;</span></a></p>
     </div>
   </div>
@@ -300,9 +305,10 @@
     <div class="h-pair">
       <div class="h-card">
         <h3>Works with Windows Security</h3>
-        <p>Windows Security is good at viruses. It won&rsquo;t tell you that Remote
-          Desktop is on or a program you removed still starts at boot. Blanktick
-          covers that gap. Keep Windows Security on and run both.</p>
+        <p>Windows Security is good at viruses. It won&rsquo;t tell you that an AI
+          agent can be steered by a web page, that your AI keys sit in plain
+          text, or that Remote Desktop is on. Blanktick covers that gap. Keep
+          Windows Security on and run both.</p>
       </div>
       <div class="h-card">
         <h3>Private by design</h3>
@@ -327,9 +333,19 @@
           the useful parts. It&rsquo;s open source.</p>
       </details>
       <details>
+        <summary>What do you mean by &ldquo;bad AI&rdquo;?</summary>
+        <p>AI that ends up working against you on your own PC: an AI assistant
+          that a web page or email can talk into running commands (prompt
+          injection), AI tools that download and run code, AI model servers
+          anyone on your network can use, and AI keys saved where any program can
+          read them. Blanktick finds these and explains each one. It flags; it
+          doesn&rsquo;t delete anything, and it can&rsquo;t catch every possible attack.</p>
+      </details>
+      <details>
         <summary>Is it an antivirus? Do I still need Windows Security?</summary>
-        <p>Blanktick is a free antivirus companion. Live protection catches
-          attacks by what they do, and the check-up finds risky settings. To scan
+        <p>Blanktick is the part your antivirus wasn&rsquo;t built for: the AI on
+          your PC. Live protection catches attacks by what they do, and the
+          check-up finds risky settings. To scan
           files for viruses &mdash; including every file on your PC with
           <em>Scan whole PC</em> &mdash; it uses the engine already built into Windows
           (Microsoft Defender), so keep Windows Security switched on.</p>
