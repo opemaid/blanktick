@@ -95,9 +95,11 @@ internal object WindowsProbe {
         # that start themselves and the ones running out of personal folders --
         # never on the disk at large. Roughly sixty files, not sixty thousand.
         #
-        # Capped at 200 MB. A hash of a 4 GB game costs seconds and buys nothing:
-        # commodity malware is small, and a scan the user cancels finds nothing
-        # at all.
+        # Capped at 2 GiB. The old 200 MB cap left ordinary Electron apps (VS
+        # Code, Obsidian, Dropbox: 201-228 MB) unhashed, so the report said files
+        # could not be scanned on a normal machine. These are startup programs
+        # and running processes only -- a few dozen files -- and SHA-256 runs at
+        # several hundred MB/s, so even the largest costs about a second.
         # ## Why .NET directly instead of Get-FileHash
         #
         # Get-FileHash lives in a module, and a module has to be found. When
@@ -122,15 +124,13 @@ internal object WindowsProbe {
         # one instance.
         function FileHash(${'$'}path) {
           if (-not ${'$'}path) { return '' }
-          # Skipped entirely when the installed scanner is available to
-          # answer instead. The bundled table exists as the fallback for
-          # a machine whose antivirus is absent or disabled, so computing
-          # it alongside a working scanner is work whose answer is
-          # already known and weaker.
-          if (${'$'}script:defenderUsable) { return '' }
+          # Always computed, even when the installed scanner also answers.
+          # Skipping it left DSK-MAL-004 reading "not performed" on every
+          # machine with working antivirus; it is ~70 small files, so the
+          # second, independent opinion is cheap and the check always runs.
           try {
             ${'$'}f = Get-Item -LiteralPath ${'$'}path -ErrorAction Stop
-            if (${'$'}f.Length -gt 209715200) { return '' }
+            if (${'$'}f.Length -gt 2147483648) { return '' }
             ${'$'}sha = [System.Security.Cryptography.SHA256]::Create()
             try {
               ${'$'}stream = [System.IO.File]::OpenRead(${'$'}f.FullName)
@@ -234,6 +234,10 @@ internal object WindowsProbe {
 
         Emit 'smartscreen.policy'   (Reg 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System' 'EnableSmartScreen')
         Emit 'smartscreen.explorer' (Reg 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer' 'SmartScreenEnabled')
+        # Proof the key itself was readable, so "value absent" (= the shipping
+        # default, on) can be told apart from "could not read the registry".
+        if (Test-Path -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer') { Emit 'smartscreen.keyRead' 'True' }
+        if (Test-Path -LiteralPath 'HKLM:\SOFTWARE\Policies\Microsoft\Windows') { Emit 'smartscreen.policyKeyRead' 'True' }
 
         # ---- boot integrity -------------------------------------------------
         # Read from the registry, not Confirm-SecureBootUEFI, which needs
@@ -294,6 +298,26 @@ internal object WindowsProbe {
         Emit 'lock.screenSaverActive'   (Reg 'HKCU:\Control Panel\Desktop' 'ScreenSaveActive')
         Emit 'lock.screenSaverIsSecure' (Reg 'HKCU:\Control Panel\Desktop' 'ScreenSaverIsSecure')
         Emit 'lock.screenSaverTimeout'  (Reg 'HKCU:\Control Panel\Desktop' 'ScreenSaveTimeOut')
+        Emit 'lock.inactivityPolicy'    (Reg 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' 'InactivityTimeoutSecs')
+
+        # Windows 11 keeps "require sign-in on wake" and the idle timeouts in
+        # the POWER PLAN, not the screen-saver keys above -- which is why lock
+        # on wake and the lock delay used to read as not checkable on a normal
+        # Windows 11 machine. powercfg /qh shows hidden settings and needs no
+        # elevation. The labels are localised, so the values are taken by
+        # position instead: the last two hex values are always AC then DC.
+        function PowerIdx(${'$'}sub, ${'$'}setting) {
+          ${'$'}out = powercfg /qh SCHEME_CURRENT ${'$'}sub ${'$'}setting 2>${'$'}null
+          if (${'$'}LASTEXITCODE -ne 0 -or -not ${'$'}out) { return }
+          ${'$'}hex = @(${'$'}out | ForEach-Object { if (${'$'}_ -match ':\s*0x([0-9a-fA-F]+)\s*${'$'}') { ${'$'}Matches[1] } })
+          if (${'$'}hex.Count -ge 2) {
+            Emit ("power.{0}.ac" -f ${'$'}setting) ([Convert]::ToInt64(${'$'}hex[${'$'}hex.Count - 2], 16))
+            Emit ("power.{0}.dc" -f ${'$'}setting) ([Convert]::ToInt64(${'$'}hex[${'$'}hex.Count - 1], 16))
+          }
+        }
+        PowerIdx 'SUB_NONE'  'CONSOLELOCK'
+        PowerIdx 'SUB_SLEEP' 'STANDBYIDLE'
+        try { Emit 'power.hasBattery' ([bool](Get-CimInstance Win32_Battery -ErrorAction Stop)) } catch { }
 
         # ---- disk encryption ------------------------------------------------
         # The shell property works without elevation; Get-BitLockerVolume does not.
@@ -459,6 +483,79 @@ internal object WindowsProbe {
         if (${'$'}dnsOk) { Emit 'dns.enumerated' 'True' }
         Emit 'proxy.enable' (Reg 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' 'ProxyEnable')
         Emit 'proxy.server' (Reg 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' 'ProxyServer')
+
+        # ---- wi-fi ----------------------------------------------------------
+        # Wi-Fi security IS readable without elevation: netsh wlan reports the
+        # connected network's authentication and cipher to a normal user,
+        # offline. Adapters are counted by media type (locale-independent) so a
+        # machine with no Wi-Fi, or not on Wi-Fi, is a known answer rather than
+        # an unread one. The netsh labels are localised; only the English ones
+        # are parsed and anything else stays unread. Windows 11 24H2+ refuses
+        # netsh wlan without Location permission; Wi-Fi then reads as not
+        # checkable (turn on Location for apps to let it answer).
+        try {
+          ${'$'}wa = @(Get-NetAdapter -Physical -ErrorAction Stop | Where-Object { ${'$'}_.NdisPhysicalMedium -eq 9 })
+          Emit 'wifi.adapters' ${'$'}wa.Count
+          Emit 'wifi.adaptersUp' @(${'$'}wa | Where-Object { ${'$'}_.Status -eq 'Up' }).Count
+        } catch { }
+        # ---- network anomalies (read-only, no connection) --------------------
+        # Everything below reads tables Windows already keeps; nothing is sent.
+        # Router + neighbour (ARP) cache on the interface that carries the
+        # default route: ARP spoofing shows up as the router's hardware address
+        # also belonging to another IP. Broadcast/multicast/unresolved entries
+        # are dropped at the source.
+        try {
+          ${'$'}gw = @(Get-NetRoute -DestinationPrefix '0.0.0.0/0' -ErrorAction Stop | Sort-Object RouteMetric)
+          if (${'$'}gw.Count -eq 0) { Emit 'net.noGateway' 'True' }
+          else {
+            Emit 'net.gateway' ${'$'}gw[0].NextHop
+            foreach (${'$'}n in Get-NetNeighbor -InterfaceIndex ${'$'}gw[0].InterfaceIndex -AddressFamily IPv4 -ErrorAction Stop) {
+              ${'$'}mac = "${'$'}(${'$'}n.LinkLayerAddress)"
+              if (-not ${'$'}mac -or ${'$'}mac -eq '00-00-00-00-00-00' -or ${'$'}mac -match '^(FF-FF-FF-FF-FF-FF|01-00-5E)') { continue }
+              if ("${'$'}(${'$'}n.State)" -eq 'Unreachable') { continue }
+              Emit 'net.neighbor' ("{0}`t{1}" -f (San ${'$'}n.IPAddress), (San ${'$'}mac))
+            }
+            Emit 'net.neighborsRead' 'True'
+          }
+        } catch { }
+        # hosts file: every active line, comments stripped.
+        try {
+          foreach (${'$'}line in [System.IO.File]::ReadAllLines((Join-Path ${'$'}env:SystemRoot 'System32\drivers\etc\hosts'))) {
+            ${'$'}h = (${'$'}line -replace '#.*${'$'}', '').Trim()
+            if (-not ${'$'}h) { continue }
+            ${'$'}f = ${'$'}h -split '\s+'
+            for (${'$'}i = 1; ${'$'}i -lt ${'$'}f.Count; ${'$'}i++) { Emit 'hosts.entry' ("{0}`t{1}" -f ${'$'}f[0], (San ${'$'}f[${'$'}i])) }
+          }
+          Emit 'hosts.read' 'True'
+        } catch { }
+        # Proxy auto-config script (PAC), per user and machine-wide.
+        if (Test-Path -LiteralPath 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings') { Emit 'proxy.settingsRead' 'True' }
+        Emit 'proxy.pac'        (Reg 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' 'AutoConfigURL')
+        Emit 'proxy.pacMachine' (Reg 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings' 'AutoConfigURL')
+        # Wi-Fi networks in range (for the evil-twin check). netsh groups by
+        # SSID + authentication, so a look-alike with weaker security appears as
+        # its own entry. English labels only, as for the interface above.
+        ${'$'}nets = netsh wlan show networks mode=bssid 2>${'$'}null
+        if (${'$'}LASTEXITCODE -eq 0) {
+          ${'$'}cur = ${'$'}null
+          foreach (${'$'}line in ${'$'}nets) {
+            if (${'$'}line -match '^SSID \d+\s*:\s*(.*)${'$'}') { ${'$'}cur = ${'$'}Matches[1].Trim() }
+            elseif (${'$'}null -ne ${'$'}cur -and ${'$'}line -match '^\s*Authentication\s*:\s*(.+)${'$'}') {
+              Emit 'wifi.nearby' ("{0}`t{1}" -f (San ${'$'}cur), ${'$'}Matches[1].Trim()); ${'$'}cur = ${'$'}null
+            }
+          }
+          Emit 'wifi.nearbyRead' 'True'
+        }
+
+        ${'$'}wl = netsh wlan show interfaces 2>&1
+        if (${'$'}LASTEXITCODE -eq 0) {
+          foreach (${'$'}line in ${'$'}wl) {
+            if (${'$'}line -match '^\s*State\s*:\s*(.+)${'$'}')          { Emit 'wifi.state'  ${'$'}Matches[1].Trim() }
+            if (${'$'}line -match '^\s*SSID\s*:\s*(.+)${'$'}')           { Emit 'wifi.ssid'   (San ${'$'}Matches[1].Trim()) }
+            if (${'$'}line -match '^\s*Authentication\s*:\s*(.+)${'$'}') { Emit 'wifi.auth'   ${'$'}Matches[1].Trim() }
+            if (${'$'}line -match '^\s*Cipher\s*:\s*(.+)${'$'}')         { Emit 'wifi.cipher' ${'$'}Matches[1].Trim() }
+          }
+        }
 
         # ---- trust store ----------------------------------------------------
         # Only certificates present in the CURRENT USER root store and absent
@@ -646,8 +743,10 @@ internal object WindowsProbe {
         # an unquoted path, and expands environment variables first so
         # %APPDATA%-style entries resolve at all.
         function ExePath(${'$'}cmd) {
-          ${'$'}c = [Environment]::ExpandEnvironmentVariables("${'$'}cmd").Trim()
-          if (${'$'}c.StartsWith('"')) { return ${'$'}c.Substring(1).Split('"')[0] }
+          # Trailing commas are list syntax, not part of the path: Winlogon's
+          # Userinit is `C:\Windows\system32\userinit.exe,` on every machine.
+          ${'$'}c = [Environment]::ExpandEnvironmentVariables("${'$'}cmd").Trim().TrimEnd(',').Trim()
+          if (${'$'}c.StartsWith('"')) { return (ResolveAlias ${'$'}c.Substring(1).Split('"')[0]) }
           ${'$'}parts = ${'$'}c.Split(' ')
           for (${'$'}i = ${'$'}parts.Count; ${'$'}i -ge 1; ${'$'}i--) {
             ${'$'}cand = (${'$'}parts[0..(${'$'}i - 1)] -join ' ')
@@ -657,10 +756,73 @@ internal object WindowsProbe {
             # resolving one entry must never be able to end the loop over the
             # others.
             try {
-              if (${'$'}cand -and (Test-Path -LiteralPath ${'$'}cand -PathType Leaf -ErrorAction Stop)) { return ${'$'}cand }
+              if (${'$'}cand -and (Test-Path -LiteralPath ${'$'}cand -PathType Leaf -ErrorAction Stop)) { return (ResolveAlias ${'$'}cand) }
+            } catch { }
+          }
+          # A bare program name (`explorer.exe`, `powershell.exe`, `pwsh.exe`) is
+          # what Winlogon's Shell and most scheduled tasks store. Windows finds
+          # it in the system folders and then PATH, so this does the same --
+          # otherwise the program that actually runs is never signature-checked
+          # or hashed. Only names with no folder part are searched.
+          ${'$'}first = ${'$'}parts[0]
+          if (${'$'}first -and ${'$'}first -notmatch '[\\/:]') {
+            ${'$'}leaf = if (${'$'}first -match '\.[a-zA-Z0-9]+${'$'}') { ${'$'}first } else { ${'$'}first + '.exe' }
+            foreach (${'$'}dir in @((Join-Path ${'$'}env:SystemRoot 'System32'), ${'$'}env:SystemRoot)) {
+              ${'$'}p = Join-Path ${'$'}dir ${'$'}leaf
+              try { if (Test-Path -LiteralPath ${'$'}p -PathType Leaf -ErrorAction Stop) { return ${'$'}p } } catch { }
+            }
+            try {
+              ${'$'}gc = Get-Command -Name ${'$'}leaf -CommandType Application -ErrorAction Stop | Select-Object -First 1
+              if (${'$'}gc -and ${'$'}gc.Source) { return (ResolveAlias ${'$'}gc.Source) }
             } catch { }
           }
           return ${'$'}null
+        }
+
+        # An "app execution alias" under ...\Microsoft\WindowsApps\<family>\x.exe
+        # is a 0-byte reparse point: it cannot be read, so it can be neither
+        # hashed nor signature-checked. The real binary is in the package's
+        # install folder, which a normal user can read. Anything else, or an
+        # alias whose package cannot be found, is returned unchanged.
+        function ResolveAlias(${'$'}p) {
+          if (-not ${'$'}p) { return ${'$'}p }
+          # A Startup-folder shortcut (.lnk) is not the program: hashing or
+          # signature-checking the shortcut file says nothing about what it
+          # launches (it read "UnknownError" and the target was never checked).
+          # Follow it to its target when that target exists.
+          # Read through the already-sanctioned Shell.Application handle (no
+          # new COM object): GetLink only READS the shortcut.
+          if (${'$'}p -match '\.lnk${'$'}') {
+            try {
+              ${'$'}item = ${'$'}script:shell.NameSpace((Split-Path ${'$'}p -Parent)).ParseName((Split-Path ${'$'}p -Leaf))
+              ${'$'}target = ${'$'}item.GetLink.Path
+              if (${'$'}target -and (Test-Path -LiteralPath ${'$'}target -PathType Leaf)) { return ${'$'}target }
+            } catch { }
+            return ${'$'}p
+          }
+          # A root-level alias (`...\WindowsApps\pwsh.exe`, what PATH finds
+          # first) names no package. The same alias also sits in its package's
+          # family folder next to it, so find that copy and resolve it instead.
+          if (${'$'}p -match '\\Microsoft\\WindowsApps\\([^\\]+)${'$'}') {
+            ${'$'}rootLeaf = ${'$'}Matches[1]
+            try {
+              foreach (${'$'}d in Get-ChildItem -LiteralPath (Split-Path ${'$'}p -Parent) -Directory -ErrorAction Stop) {
+                ${'$'}inFamily = Join-Path ${'$'}d.FullName ${'$'}rootLeaf
+                if (Test-Path -LiteralPath ${'$'}inFamily) { ${'$'}p = ${'$'}inFamily; break }
+              }
+            } catch { }
+          }
+          if (${'$'}p -match '\\Microsoft\\WindowsApps\\([^\\]+)\\([^\\]+)${'$'}') {
+            ${'$'}family = ${'$'}Matches[1]; ${'$'}leaf = ${'$'}Matches[2]
+            try {
+              ${'$'}pkg = Get-AppxPackage -ErrorAction Stop | Where-Object { ${'$'}_.PackageFamilyName -eq ${'$'}family } | Select-Object -First 1
+              if (${'$'}pkg -and ${'$'}pkg.InstallLocation) {
+                ${'$'}real = Join-Path ${'$'}pkg.InstallLocation ${'$'}leaf
+                if (Test-Path -LiteralPath ${'$'}real -PathType Leaf) { return ${'$'}real }
+              }
+            } catch { }
+          }
+          return ${'$'}p
         }
 
         # Windows' own signed binaries, abused to run someone else's code. An
@@ -1170,18 +1332,72 @@ internal object WindowsProbe {
         # (A single hung MpCmdRun can still overrun one budget check; the
         # Shell-level timeout is the backstop. A per-call timeout is tracked in
         # docs/production-readiness.md.)
-        ${'$'}avScanCap = 20
-        ${'$'}avBudgetMs = 45000
-        ${'$'}avSw = [System.Diagnostics.Stopwatch]::StartNew()
-        ${'$'}avDone = 0
-        foreach (${'$'}t in (${'$'}script:scanTargets | Select-Object -Unique)) {
-          if (${'$'}avDone -ge ${'$'}avScanCap) { break }
-          if (${'$'}avSw.Elapsed.TotalMilliseconds -ge ${'$'}avBudgetMs) { break }
-          ${'$'}verdict = AskDefender ${'$'}t
-          ${'$'}avDone++
-          if (${'$'}verdict) { Emit 'avscan' ("{0}`t{1}" -f (San ${'$'}t), ${'$'}verdict) }
+        #
+        # Run IN PARALLEL (up to six MpCmdRun at once). Sequentially, the old
+        # 20-file / 45 s cap reached 20 of 63 targets on a normal machine and the
+        # report said files had not been scanned. Each call is a separate
+        # process that mostly waits on Defender's engine, so six at once clears
+        # sixty-odd files well inside the budget. Same verdict rules as
+        # AskDefender (exit code first, English text as fallback). Anything the
+        # budget still leaves unscanned is COUNTED (avscan.unscanned) so the
+        # report can name the gap rather than hide it.
+        function DefenderVerdict(${'$'}code, ${'$'}out) {
+          if (${'$'}code -eq 2) { return 'threat' }
+          if (${'$'}out -match 'found\s+(\d+)\s+threat' -and [int]${'$'}Matches[1] -gt 0) { return 'threat' }
+          if (${'$'}code -eq 0 -or ${'$'}out -match 'found no threats') { return 'clean' }
+          return ''
         }
-        if (${'$'}script:defenderUsable) { Emit 'avscan.enumerated' 'True' }
+        ${'$'}avParallel = 6
+        ${'$'}avBudgetMs = 90000
+        ${'$'}avSw = [System.Diagnostics.Stopwatch]::StartNew()
+        ${'$'}avTodo = @()
+        if (${'$'}script:defenderUsable) {
+          foreach (${'$'}t in (${'$'}script:scanTargets | Select-Object -Unique)) {
+            # Confirmed to exist first: a missing file exits 2, exactly like a detection.
+            try { if (${'$'}t -and (Test-Path -LiteralPath ${'$'}t -PathType Leaf -ErrorAction Stop)) { ${'$'}avTodo += ${'$'}t } } catch { }
+          }
+        }
+        ${'$'}avNext = 0
+        ${'$'}avRunning = @()
+        while (${'$'}avNext -lt ${'$'}avTodo.Count -or ${'$'}avRunning.Count -gt 0) {
+          while (${'$'}avRunning.Count -lt ${'$'}avParallel -and ${'$'}avNext -lt ${'$'}avTodo.Count -and ${'$'}avSw.ElapsedMilliseconds -lt ${'$'}avBudgetMs) {
+            ${'$'}t = ${'$'}avTodo[${'$'}avNext]; ${'$'}avNext++
+            try {
+              # SANCTIONED (WindowsProbeTest): a ProcessStartInfo, only to run the
+              # same read-only `MpCmdRun -Scan ... -DisableRemediation` as
+              # AskDefender, without a console window and with its output captured.
+              ${'$'}psi = [System.Diagnostics.ProcessStartInfo]::new()
+              ${'$'}psi.FileName = ${'$'}script:mpCmdRun
+              ${'$'}psi.Arguments = '-Scan -ScanType 3 -File "' + ${'$'}t + '" -DisableRemediation'
+              ${'$'}psi.UseShellExecute = ${'$'}false
+              ${'$'}psi.CreateNoWindow = ${'$'}true
+              ${'$'}psi.RedirectStandardOutput = ${'$'}true
+              ${'$'}psi.RedirectStandardError = ${'$'}true
+              ${'$'}pr = [System.Diagnostics.Process]::Start(${'$'}psi)
+              # Drained asynchronously so a full pipe can never block the scan.
+              ${'$'}avRunning += [pscustomobject]@{ P = ${'$'}pr; T = ${'$'}t; O = ${'$'}pr.StandardOutput.ReadToEndAsync(); E = ${'$'}pr.StandardError.ReadToEndAsync() }
+            } catch { }
+          }
+          if (${'$'}avRunning.Count -eq 0) { break }
+          # Wait on the oldest scan itself (up to 100 ms) rather than sleeping.
+          ${'$'}null = ${'$'}avRunning[0].P.WaitForExit(100)
+          ${'$'}still = @()
+          foreach (${'$'}r in ${'$'}avRunning) {
+            if (${'$'}r.P.HasExited) {
+              ${'$'}v = DefenderVerdict ${'$'}r.P.ExitCode (${'$'}r.O.Result + ${'$'}r.E.Result)
+              if (${'$'}v) { Emit 'avscan' ("{0}`t{1}" -f (San ${'$'}r.T), ${'$'}v) }
+              ${'$'}r.P.Dispose()
+            } elseif (${'$'}avSw.ElapsedMilliseconds -ge (${'$'}avBudgetMs + 30000)) {
+              # A hung scan past budget + 30 s is abandoned (no verdict, never "clean").
+              try { ${'$'}r.P.Kill() } catch { }
+            } else { ${'$'}still += ${'$'}r }
+          }
+          ${'$'}avRunning = ${'$'}still
+        }
+        if (${'$'}script:defenderUsable) {
+          Emit 'avscan.enumerated' 'True'
+          Emit 'avscan.unscanned' (${'$'}avTodo.Count - ${'$'}avNext)
+        }
 
         # ---- hardening settings ----------------------------------------------
         # Individually small, jointly the difference between a machine that
@@ -1470,6 +1686,10 @@ internal object WindowsProbe {
           Emit 'ai.recallStorePresent' 'True'
           ${'$'}snaps = (Get-ChildItem ${'$'}recallStore -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count
           Emit 'ai.recallArtifacts' ${'$'}snaps
+        } else {
+          # The store folder is where Recall keeps every snapshot. Its absence
+          # is a real answer (nothing is being recorded), not an unread one.
+          Emit 'ai.recallStorePresent' 'False'
         }
         ${'$'}recallOffUser = Reg 'HKCU:\Software\Policies\Microsoft\Windows\WindowsAI' 'DisableAIDataAnalysis'
         ${'$'}recallOffMachine = Reg 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI' 'DisableAIDataAnalysis'

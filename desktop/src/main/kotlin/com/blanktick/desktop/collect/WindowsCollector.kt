@@ -17,6 +17,10 @@ import com.blanktick.core.model.ProcessImage
 import com.blanktick.core.model.RemoteAccessService
 import com.blanktick.core.model.RemovableDrive
 import com.blanktick.core.model.ScreenLock
+import com.blanktick.core.model.HostsEntry
+import com.blanktick.core.model.NearbyWifi
+import com.blanktick.core.model.WifiSecurity
+import com.blanktick.core.model.WifiSnapshot
 
 /**
  * Reads Windows 10/11 security posture.
@@ -152,6 +156,15 @@ internal class WindowsCollector internal constructor(
         return DesktopFacts(
             os = os,
             osBuild = osBuild(),
+            onWifi = onWifi(),
+            antivirusUnscanned = int("avscan.unscanned"),
+            networkConnected = networkConnected(),
+            routerMacSharedWith = routerMacSharedWith(),
+            gatewayFirstSeen = routerVerdict?.firstSeen,
+            hostsEntries = hostsEntries(),
+            nearbyWifi = nearbyWifi(),
+            autoProxyConfigUrl = one("proxy.pac") ?: one("proxy.pacMachine"),
+            proxySettingsRead = bool("proxy.settingsRead"),
 
             // Absent profile list means the query failed, not that there is no
             // firewall. Both fields stay null and DSK-FW-001 says so.
@@ -257,17 +270,19 @@ internal class WindowsCollector internal constructor(
      * SmartScreen for downloaded programs.
      *
      * Policy wins where present; the Explorer value is the per-user setting.
-     * Absent from both is the shipping default (on) *and* what a failed read
-     * looks like — indistinguishable, so this declines to answer rather than
-     * assert the default. On a stock Windows 11 machine, where neither value has
-     * ever been written, `DSK-REP-001` therefore reports not-checkable. That is
-     * the correct answer to "did you verify SmartScreen is on?", which is no.
+     * Absent from both is the shipping default (on). That used to be
+     * indistinguishable from a failed read, so a stock Windows 11 machine
+     * reported not-checkable. The probe now also records that the two keys
+     * were themselves readable (`smartscreen.keyRead` / `.policyKeyRead`): a
+     * readable key with no value is a verified default, not a guess. A key that
+     * could not be read still returns `null`.
      */
     private fun smartScreenEnabled(): Boolean? {
         one("smartscreen.policy")?.let { return it != "0" }
         return when (one("smartscreen.explorer")?.lowercase()) {
             "off" -> false
             "warn", "requireadmin", "prompt", "block" -> true
+            null -> if (bool("smartscreen.keyRead") == true && bool("smartscreen.policyKeyRead") == true) true else null
             else -> null
         }
     }
@@ -315,14 +330,21 @@ internal class WindowsCollector internal constructor(
     /**
      * Whether waking the screen asks for a password.
      *
-     * Only answerable via the screensaver settings. Windows 11's "require
-     * sign-in on wake" lives in a power setting that `powercfg` hides by default
-     * and does not expose to an unprivileged query, so on a machine with no
-     * screensaver configured this returns `null` and `DSK-LOCK-001` reports not
-     * checkable. Guessing "yes, it locks" from a machine that never said so
-     * would be the single most reassuring lie in the app.
+     * Windows 11's "require sign-in on wake" is the CONSOLELOCK power setting.
+     * It is hidden from `powercfg /q` but `powercfg /qh` reads it without
+     * elevation (verified 2026-10-30 on 26200) — the earlier belief that it was
+     * unreadable is why this used to report not checkable. Both power sources
+     * must require it: a laptop that skips the password on AC is unlocked
+     * exactly when it sits on a desk. Falls back to the screensaver settings.
+     * Still never guesses: no reading at all returns `null`.
      */
     private fun lockOnWakeEnabled(): Boolean? {
+        val ac = one("power.CONSOLELOCK.ac")?.toLongOrNull()
+        val dc = one("power.CONSOLELOCK.dc")?.toLongOrNull()
+        if (ac != null) {
+            val onBattery = bool("power.hasBattery") == true
+            return ac != 0L && (!onBattery || dc == null || dc != 0L)
+        }
         val active = one("lock.screenSaverActive")
         if (active == null || active == "0") return null
         val secure = one("lock.screenSaverIsSecure") ?: return null
@@ -482,6 +504,7 @@ internal class WindowsCollector internal constructor(
                 usesSystemBinary = parts.getOrNull(5)?.let { it.equals("True", ignoreCase = true) },
                 downloadedFromInternet = parts.getOrNull(6)?.let { it.equals("True", ignoreCase = true) },
                 sha256 = parts.getOrNull(7)?.trim()?.takeIf { it.length == 64 },
+                hasProgramFile = parts.getOrNull(8)?.isNotBlank() ?: false,
                 matchesKnownMalware = matchesKnownMalware(parts.getOrNull(7)),
                 // Keyed on the RESOLVED executable (field 8), not the command
                 // line: the command may carry arguments and quoting, and the
@@ -786,9 +809,47 @@ internal class WindowsCollector internal constructor(
         null -> null      // domain or Microsoft account: not a local user
     }
 
-    override fun screenLockTimeoutSeconds(): Int? = int("lock.screenSaverTimeout")
+    /**
+     * How long the machine stays unlocked when left alone, worst case.
+     *
+     * Windows locks an idle session through any of three paths: a secure
+     * screensaver, the `InactivityTimeoutSecs` policy, or going to sleep with
+     * "require sign-in on wake" set. The earliest of those is the delay for one
+     * power source; the answer is the WORSE of plugged-in and battery, because
+     * the machine is only as locked as its laziest setting. No path at all on a
+     * power source means it never locks itself there: [NEVER_LOCKS].
+     *
+     * `null` only when nothing was readable (no power plan, no screensaver
+     * keys) — never "assume it locks".
+     */
+    override fun screenLockTimeoutSeconds(): Int? {
+        val ssActive = one("lock.screenSaverActive") == "1"
+        val ssSecure = one("lock.screenSaverIsSecure") == "1"
+        val ssTimeout = int("lock.screenSaverTimeout")?.takeIf { it > 0 }
+        val policy = int("lock.inactivityPolicy")?.takeIf { it > 0 }
+        val common = listOfNotNull(if (ssActive && ssSecure) ssTimeout else null, policy)
+
+        fun source(sleepKey: String, lockKey: String): Int? {
+            val sleep = one(sleepKey)?.toLongOrNull()
+            val lock = one(lockKey)?.toLongOrNull()
+            if (sleep == null && lock == null && common.isEmpty()) return null
+            val viaSleep = if (sleep != null && sleep > 0 && lock != 0L) sleep.coerceAtMost(Int.MAX_VALUE.toLong()).toInt() else null
+            return (common + listOfNotNull(viaSleep)).minOrNull() ?: NEVER_LOCKS
+        }
+
+        val ac = source("power.STANDBYIDLE.ac", "power.CONSOLELOCK.ac")
+        val dc = if (bool("power.hasBattery") == true) source("power.STANDBYIDLE.dc", "power.CONSOLELOCK.dc") else null
+        if (ac == null && dc == null) {
+            // No power plan readable: fall back to the old screensaver-only answer.
+            return ssTimeout
+        }
+        return listOfNotNull(ac, dc).max()
+    }
 
     private companion object {
+        /** "Never locks itself on this power source" — see [screenLockTimeoutSeconds]. */
+        const val NEVER_LOCKS = Int.MAX_VALUE
+
         /** Store/MSIX install root. Binaries here are signed at package level. */
         const val WINDOWS_APPS = "\\Program Files\\WindowsApps\\"
     }
@@ -824,6 +885,102 @@ internal class WindowsCollector internal constructor(
     }
 
     override fun dnsServers(): List<String>? = all("dns")?.distinct()
+
+    /**
+     * `false` only when VERIFIED not on Wi-Fi: no Wi-Fi adapter at all, or none
+     * of them up. Counted by media type, so it does not depend on the language
+     * netsh speaks. `null` when the adapter list could not be read.
+     */
+    private fun onWifi(): Boolean? {
+        val adapters = int("wifi.adapters") ?: return null
+        if (adapters == 0) return false
+        val up = int("wifi.adaptersUp") ?: return null
+        return up > 0
+    }
+
+    /**
+     * The connected Wi-Fi network's security, from `netsh wlan show interfaces`
+     * (no elevation). `null` when not connected, when netsh was blocked (Windows
+     * 11 24H2+ without Location permission) or when its output was in a language
+     * whose labels this does not parse — never a guessed security type.
+     */
+    override fun wifi(): WifiSnapshot? {
+        if (onWifi() != true) return null
+        if (!one("wifi.state").equals("connected", ignoreCase = true)) return null
+        val auth = one("wifi.auth") ?: return null
+        return WifiSnapshot(
+            ssid = one("wifi.ssid"),
+            security = parseWifiSecurity(auth, one("wifi.cipher")),
+            gatewayMacChanged = routerVerdict?.changed
+        )
+    }
+
+    // ------------------------------------------------------ network anomalies
+
+    /** `false` only when the probe verified there is no default route at all. */
+    private fun networkConnected(): Boolean? = when {
+        bool("net.noGateway") == true -> false
+        one("net.gateway") != null -> true
+        else -> null
+    }
+
+    /** IP → MAC from the neighbour (ARP) cache on the default-route interface. */
+    private val neighbors: Map<String, String>? by lazy {
+        if (bool("net.neighborsRead") != true) return@lazy null
+        all("net.neighbor").orEmpty().mapNotNull { row ->
+            val f = row.split('\t')
+            if (f.size < 2 || f[0].isBlank() || f[1].isBlank()) null else f[0].trim() to f[1].trim().uppercase()
+        }.toMap()
+    }
+
+    private val routerMac: String? by lazy { one("net.gateway")?.let { neighbors?.get(it) } }
+
+    /**
+     * Other addresses claiming the router's MAC. `null` when the table was not
+     * read or the router itself is not in it (nothing to compare against).
+     */
+    private fun routerMacSharedWith(): List<String>? {
+        val table = neighbors ?: return null
+        val gw = one("net.gateway") ?: return null
+        val mac = table[gw] ?: return null
+        return table.filter { (ip, m) -> m == mac && ip != gw }.keys.sorted()
+    }
+
+    /** Compared once per scan and remembered — see [NetworkBaseline]. Wi-Fi only. */
+    private val routerVerdict: NetworkBaseline.Verdict? by lazy {
+        if (onWifi() != true) null else NetworkBaseline.compareAndRemember(one("wifi.ssid"), routerMac)
+    }
+
+    private fun hostsEntries(): List<HostsEntry>? {
+        if (bool("hosts.read") != true) return null
+        return all("hosts.entry").orEmpty().mapNotNull { row ->
+            val f = row.split('\t')
+            if (f.size < 2 || f[0].isBlank() || f[1].isBlank()) null else HostsEntry(ip = f[0].trim(), name = f[1].trim())
+        }
+    }
+
+    private fun nearbyWifi(): List<NearbyWifi>? {
+        if (bool("wifi.nearbyRead") != true) return null
+        return all("wifi.nearby").orEmpty().mapNotNull { row ->
+            val f = row.split('\t')
+            if (f.size < 2) null
+            else NearbyWifi(ssid = f[0].trim().ifEmpty { null }, security = parseWifiSecurity(f[1], null))
+        }
+    }
+
+    internal fun parseWifiSecurity(auth: String, cipher: String?): WifiSecurity {
+        val a = auth.trim().lowercase()
+        val c = cipher?.trim()?.lowercase().orEmpty()
+        return when {
+            a.startsWith("wpa3") -> WifiSecurity.WPA3
+            a.startsWith("wpa2") -> WifiSecurity.WPA2
+            a.startsWith("wpa") -> WifiSecurity.WPA
+            a == "owe" || a.contains("opportunistic") -> WifiSecurity.OWE
+            a == "shared" || a.startsWith("shared") || c.startsWith("wep") -> WifiSecurity.WEP
+            a == "open" && (c == "none" || c.isEmpty()) -> WifiSecurity.OPEN
+            else -> WifiSecurity.UNKNOWN
+        }
+    }
 
     override fun proxyHostPort(): Pair<String, Int>? {
         if (one("proxy.enable") != "1") return null

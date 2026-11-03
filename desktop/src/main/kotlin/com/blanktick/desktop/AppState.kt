@@ -302,9 +302,14 @@ class AppState(private val scope: CoroutineScope) {
                         // the score reflects the work the user actually did.
                         .copy(
                             passwordAudit = passwordAudit(),
-                            photosScanned = _photos.value.takeIf { it.done }?.scanned,
-                            photosWithPreciseLocation = _photos.value.takeIf { it.done }?.withLocation
                         )
+                        .let { s ->
+                            // A photo scan the user ran on the photo screen wins;
+                            // otherwise keep the automatic Pictures survey.
+                            val manual = _photos.value.takeIf { it.done }
+                            if (manual == null) s
+                            else s.copy(photosScanned = manual.scanned, photosWithPreciseLocation = manual.withLocation)
+                        }
                     _programs.value = snapshot.desktop?.installedPrograms
                     desktopFacts = snapshot.desktop
                     scanner.scan(snapshot)

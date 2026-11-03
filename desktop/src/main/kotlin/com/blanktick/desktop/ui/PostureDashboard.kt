@@ -94,8 +94,11 @@ fun PostureDashboard(
                 PipelineTile(Modifier.weight(1f), "Checks ran", "${r.checksRun}", "on this machine") {
                     onOpenPolicy(PolicyFilter(PolicyFilter.View.RAN))
                 }
-                PipelineTile(Modifier.weight(1f), "Not checkable", "${r.checksSkipped}",
-                    "$wrong wrong device · $unobs wouldn’t answer") {
+                // Only what the machine would not answer. Rules that do not apply
+                // here (wrong device type, or verified nothing to check) are a
+                // known answer, not a gap, so they are named but not counted.
+                PipelineTile(Modifier.weight(1f), "Not checkable", "$unobs",
+                    "wouldn’t answer · $wrong don’t apply here") {
                     onOpenPolicy(PolicyFilter(PolicyFilter.View.NOT_CHECKABLE))
                 }
                 PipelineTile(Modifier.weight(1f), "Findings", "${r.actionableFindings.size}", "need attention") {

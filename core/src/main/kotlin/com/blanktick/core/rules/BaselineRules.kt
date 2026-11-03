@@ -72,8 +72,16 @@ object BaselineRules {
     ) {
         override fun check(s: DeviceSnapshot) = facts(s) { d ->
             val h = d.hardening ?: return@facts RuleOutcome.NotApplicable
-            // Home editions do not have it; nothing to act on.
-            if (h.credentialGuardSupportedEdition != true) return@facts RuleOutcome.NotApplicable
+            // Home editions do not have it: a verified "does not apply", not an unknown.
+            // A null edition (not read) stays not checkable.
+            when (h.credentialGuardSupportedEdition) {
+                null -> return@facts RuleOutcome.NotApplicable
+                false -> return@facts RuleOutcome.DoesNotApply(
+                    "Credential Guard is not part of Windows Home editions, so there is nothing to " +
+                        "turn on here. It is available on Pro, Enterprise and Education."
+                )
+                true -> Unit
+            }
             val running = h.credentialGuardRunning ?: return@facts RuleOutcome.NotApplicable
             if (running) return@facts RuleOutcome.Pass
             RuleOutcome.Fail(

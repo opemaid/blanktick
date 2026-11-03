@@ -79,7 +79,14 @@ class BaselineRulesTest {
 
     @Test
     fun `credential guard is not applicable on Home and fires on Pro when off`() {
-        na(BaselineRules.CredentialGuardOff, with(h0.copy(credentialGuardRunning = false, credentialGuardSupportedEdition = false)))
+        // Home: a verified "does not apply" (with a reason), never a pass.
+        assertTrue(
+            BaselineRules.CredentialGuardOff.evaluate(
+                with(h0.copy(credentialGuardRunning = false, credentialGuardSupportedEdition = false))
+            ) is RuleOutcome.DoesNotApply
+        )
+        // Edition not read: still not checkable.
+        na(BaselineRules.CredentialGuardOff, with(h0.copy(credentialGuardSupportedEdition = null)))
         fail(BaselineRules.CredentialGuardOff, with(h0.copy(credentialGuardRunning = false)))
     }
 

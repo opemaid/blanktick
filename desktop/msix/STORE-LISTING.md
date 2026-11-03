@@ -1,6 +1,6 @@
-# Microsoft Store submission — Blanktick 0.1.2
+# Microsoft Store submission — Blanktick 0.1.3
 
-Package: `desktop/build/msix/Blanktick-0.1.2.0-x64.msix`, built by `tools/build-msix.sh`.
+Package: `desktop/build/msix/Blanktick-0.1.3.0-x64.msix`, built by `tools/build-msix.sh`.
 It is unsigned on purpose: the Store signs MSIX packages when they are certified.
 
 ## 1. One-time account setup (the owner does this)
@@ -63,7 +63,7 @@ What it does:
 • Your AI on your side: a read-only MCP server lets Claude or another agent explain your results and help you secure your PC. It can explain, never change anything
 • Live protection (preview): flags AI assistants being driven to run commands, ransomware-style file changes, credential theft and programs beaconing out, while the app is open
 • Scan your whole PC: every file on every drive, using Windows' own Microsoft Defender engine. Nothing is moved or deleted; you get the list and decide
-• 70 Windows settings attackers change: firewall, Windows Security, updates, BitLocker, remote access, risky startup items and more
+• 75 Windows settings attackers change: firewall, Windows Security, updates, BitLocker, remote access, risky startup items and more
 • Check a link before you open it, and check a password against a built-in list of breached passwords; nothing is sent anywhere
 
 When Blanktick can't check something, it says so, with a reason. If a scan doesn't finish, you get no score instead of a made-up one.
@@ -72,13 +72,13 @@ Private by design: Blanktick has no network code. Nothing is uploaded, there's n
 
 Blanktick works alongside Windows Security. Keep Windows Security switched on.
 
-**What's new in this version:** Clearer focus on AI threats: hijackable AI agents, exposed AI models and leaked AI keys come first. Includes "Scan whole PC", which checks every file on every drive with Microsoft Defender's engine.
+**What's new in this version:** Offline network checks: spots a fake router on your network, hosts-file redirects, look-alike Wi-Fi networks and proxy scripts, without sending anything online. The scan now answers every check it can on Windows 11 instead of leaving some as "not checkable".
 
 **Features (up to 20, ≤ 200 chars each):**
 - Finds where bad AI can get into your PC: hijackable agents, exposed AI models, leaked AI keys
 - Read-only MCP server so your own AI agent can explain your results
 - Shows what it checked and what it couldn't check, each with a reason
-- 70 Windows security settings checked offline
+- 75 Windows security settings checked offline
 - Live protection preview for ransomware, credential theft and hacker remote control
 - Scans your whole PC: every file on every drive, with Microsoft Defender's engine
 - Read-only MCP server so your AI agent can explain your results

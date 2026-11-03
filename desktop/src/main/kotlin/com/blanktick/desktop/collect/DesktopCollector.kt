@@ -43,6 +43,19 @@ internal interface PlatformCollector {
     fun userInstalledCaCerts(): List<CaCertificate>? = null
     fun dnsServers(): List<String>? = null
     fun proxyHostPort(): Pair<String, Int>? = null
+    fun wifi(): com.blanktick.core.model.WifiSnapshot? = null
+}
+
+/**
+ * The user's own Pictures folder: `~/Pictures`, or `~/OneDrive/Pictures` when
+ * OneDrive has moved it there. Cloud-only placeholders inside a synced folder are
+ * skipped by [PhotoSurvey], so this never causes a download. A folder that does
+ * not exist yields "not checkable".
+ */
+internal fun picturesFolder(): java.io.File? {
+    val home = System.getProperty("user.home") ?: return null
+    return listOf(java.io.File(home, "Pictures"), java.io.File(home, "OneDrive/Pictures"))
+        .firstOrNull { it.isDirectory }
 }
 
 /**
@@ -65,6 +78,7 @@ class DesktopCollector internal constructor(
 
     fun collect(intel: DesktopIntelSnapshot): DeviceSnapshot {
         val proxy = platform.proxyHostPort()
+        val photos = PhotoSurvey.survey(picturesFolder())
 
         return DeviceSnapshot(
             platform = Platform.DESKTOP,
@@ -88,10 +102,10 @@ class DesktopCollector internal constructor(
             screenLockTimeoutSeconds = platform.screenLockTimeoutSeconds(),
             lockscreenShowsNotificationContent = null,
 
-            // Wi-Fi security type is not readable without either elevation or a
-            // platform-specific native binding on any of the three desktops, so
-            // NET-WIFI-001 reports not-checkable here rather than guessing.
-            wifi = null,
+            // Wi-Fi security: Windows reads it via netsh without elevation (see
+            // WindowsCollector.wifi). Platforms that cannot read it return null
+            // and NET-WIFI-001 reports not-checkable rather than guessing.
+            wifi = platform.wifi(),
             userInstalledCaCerts = platform.userInstalledCaCerts(),
             proxy = proxy?.let { ProxyInfo(host = it.first, port = it.second) },
             vpnActive = null,
@@ -100,10 +114,13 @@ class DesktopCollector internal constructor(
 
             installedApps = null,       // the Android app auditor has no desktop analogue
 
-            // Filled in by the photo and password screens when the user runs
-            // them, exactly as on Android.
-            photosScanned = null,
-            photosWithPreciseLocation = null,
+            // Photos: the user's own Pictures folder is surveyed automatically
+            // (counts only, cloud-only placeholders skipped — see PhotoSurvey), so
+            // DATA-EXIF-001 is answered by a plain scan. The photo screen can still
+            // point at any other folder; its result replaces this one.
+            // Passwords: only ever what the user types into the Passwords screen.
+            photosScanned = photos?.scanned,
+            photosWithPreciseLocation = photos?.withLocation,
             passwordAudit = null,
 
             desktop = platform.collect(intel),

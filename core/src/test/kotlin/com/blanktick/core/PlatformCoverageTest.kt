@@ -22,10 +22,10 @@ class PlatformCoverageTest {
 
     @Test
     fun `rule counts match what we publish`() {
-        assertEquals(88, DefaultRules.COUNT, "total rule count changed — update README and web/")
+        assertEquals(92, DefaultRules.COUNT, "total rule count changed — update README and web/")
         assertEquals(29, DefaultRules.countFor(Platform.ANDROID))
         assertEquals(15, DefaultRules.countFor(Platform.IOS), "rules iOS is even allowed to attempt")
-        assertEquals(70, DefaultRules.countFor(Platform.DESKTOP))
+        assertEquals(75, DefaultRules.countFor(Platform.DESKTOP))
     }
 
     /**
@@ -53,21 +53,21 @@ class PlatformCoverageTest {
         val desktop = scanner.scan(Snapshots.healthyDesktop()).result
 
         assertEquals(29, android.checksRun)
-        assertEquals(59, android.checksSkipped, "the 59 rules that do not run on Android")
-        assertEquals(88, android.checksRun + android.checksSkipped)
+        assertEquals(63, android.checksSkipped, "the 63 rules that do not run on Android")
+        assertEquals(92, android.checksRun + android.checksSkipped)
 
         // Three of the fifteen iOS-eligible rules still skip, because iOS
         // cannot supply their inputs even though the rule is not gated by
         // platform: the patch-level table, the DNS list and the Wi-Fi gateway
         // history are all null there.
         assertEquals(12, ios.checksRun)
-        assertEquals(76, ios.checksSkipped)
-        assertEquals(88, ios.checksRun + ios.checksSkipped)
+        assertEquals(80, ios.checksSkipped)
+        assertEquals(92, ios.checksRun + ios.checksSkipped)
 
-        // 70 eligible, minus SIP which does not exist off macOS.
-        assertEquals(69, desktop.checksRun)
-        assertEquals(19, desktop.checksSkipped)
-        assertEquals(88, desktop.checksRun + desktop.checksSkipped)
+        // 75 eligible, minus SIP which does not exist off macOS.
+        assertEquals(74, desktop.checksRun)
+        assertEquals(18, desktop.checksSkipped)
+        assertEquals(92, desktop.checksRun + desktop.checksSkipped)
     }
 
     @Test
@@ -108,8 +108,9 @@ class PlatformCoverageTest {
                 "DEV-ADB-001", "DEV-ADB-002", "DEV-DEVOPT-001",
                 // Android patch-level table; a desktop uses DSK-UPD-*.
                 "OS-PATCH-001", "OS-EOL-001",
-                // Android-specific network settings.
-                "NET-WIFI-002", "NET-DNS-002", "NET-VPN-001",
+                // Android-specific network settings. (NET-WIFI-002 now runs on desktop
+                // too: the collector remembers each network's router between scans.)
+                "NET-DNS-002", "NET-VPN-001",
                 // The Android app auditor; a desktop uses DSK-AUTO-001/DSK-REP-001.
                 "APP-CLONE-001", "APP-CLUSTER-001", "APP-SOURCE-001",
                 "APP-BUILD-001", "APP-SDK-001", "APP-DORMANT-001",

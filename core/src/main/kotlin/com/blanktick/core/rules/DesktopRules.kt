@@ -364,6 +364,9 @@ object DesktopRules {
         platforms = Platforms.DESKTOP_ONLY
     ) {
         override fun check(s: DeviceSnapshot) = facts(s) { d ->
+            if (d.os != DesktopOs.MACOS) return@facts RuleOutcome.DoesNotApply(
+                "System Integrity Protection is a macOS feature. Windows and Linux do not have it."
+            )
             val on = d.systemIntegrityProtectionEnabled ?: return@facts RuleOutcome.NotApplicable
             if (on) return@facts RuleOutcome.Pass
 
@@ -798,7 +801,12 @@ object DesktopRules {
     ) {
         override fun check(s: DeviceSnapshot) = facts(s) { d ->
             val drives = d.removableDrives ?: return@facts RuleOutcome.NotApplicable
-            if (drives.isEmpty()) return@facts RuleOutcome.NotApplicable
+            // The list WAS read and is empty: a verified "nothing plugged in",
+            // which is neither a pass nor a machine that would not answer.
+            if (drives.isEmpty()) return@facts RuleOutcome.DoesNotApply(
+                "No removable drive was plugged in during the scan, so there was nothing to check. " +
+                    "Plug one in and scan again to check it."
+            )
 
             // A drive whose state could not be read is excluded, not accused.
             val unencrypted = drives.filter { it.encrypted == false }
