@@ -73,7 +73,7 @@ private fun ui() = application {
         // outlive the window.
         onCloseRequest = { state.live.stop(); exitApplication() },
         title = "Blanktick",
-        // The designed mark (dark square + severed accent tick) as the window
+        // The ad / blanktick.org mark (kelp severed tick on paper) as the window
         // and taskbar icon. Loaded from a bundled resource, which the offline
         // guarantee is unaffected by: resources are not code and the network
         // gate scans only compiled classes.
@@ -485,10 +485,15 @@ private fun printScan() {
     // bundled are different answers, and both are different from "nothing
     // found".
     snapshot.desktop?.let { d ->
-        val auto = d.autoRunEntries.orEmpty()
+        val all = d.autoRunEntries.orEmpty()
+        // An entry whose command names no program has nothing to hash: listed
+        // apart, never counted as a file that could not be scanned.
+        val noProgram = all.filter { it.hasProgramFile == false }
+        val auto = all - noProgram.toSet()
         val procs = d.runningProcesses.orEmpty()
         println("hash check       " +
-            auto.count { it.sha256 != null } + "/" + auto.size + " startup entries, " +
+            auto.count { it.sha256 != null } + "/" + auto.size + " startup entries" +
+            (if (noProgram.isEmpty()) "" else " (+${noProgram.size} with no program file)") + ", " +
             procs.count { it.sha256 != null } + "/" + procs.size + " processes hashed; " +
             (auto.count { it.matchesKnownMalware != null } +
                 procs.count { it.matchesKnownMalware != null }) + " compared against the corpus")
@@ -496,7 +501,8 @@ private fun printScan() {
         println("antivirus check  " + (if (asked == 0) "not available (no scanner Blanktick could ask)"
             else "$asked files submitted to the installed scanner, read-only; " +
                 (auto.count { it.antivirusVerdict == "threat" } +
-                    procs.count { it.antivirusVerdict == "threat" }) + " flagged"))
+                    procs.count { it.antivirusVerdict == "threat" }) + " flagged" +
+                (d.antivirusUnscanned?.takeIf { it > 0 }?.let { "; $it NOT reached (time budget)" } ?: "")))
     }
     // A score is a percentage of deductions from a hundred. With two checks out
     // of sixty-three actually performed it is not a low number or a high one,
@@ -515,9 +521,11 @@ private fun printScan() {
         println("score            ${result.score}/100   grade ${result.grade}")
     }
     println("checks run       ${result.checksRun}")
-    println("not checkable    ${result.checksSkipped}  " +
-        "(${report.skippedWrongPlatform.size} wrong platform, " +
-        "${report.skippedUnobservable.size} this machine would not say)")
+    // Two different things, kept apart: "does not apply" is a verified answer
+    // (wrong device type, Home edition, nothing plugged in); "not checkable" is
+    // only what this machine genuinely would not say.
+    println("not checkable    ${report.skippedUnobservable.size}  (this machine would not say)")
+    println("does not apply   ${report.skippedWrongPlatform.size}  (wrong device type, or verified nothing to check)")
     println("findings         ${result.actionableFindings.size}")
     println()
 
@@ -530,7 +538,17 @@ private fun printScan() {
 
     println()
     println("--- checks that could not be performed ---")
+    if (report.skippedUnobservable.isEmpty()) println("  (none)")
     report.skippedUnobservable.forEach { println("  ${it.ruleId}  ${it.description}") }
+
+    // Only the ones that said WHY (a verified does-not-apply); plain wrong-platform
+    // rules (Android/iPhone-only) are not worth listing on a desktop.
+    val explained = report.skippedWrongPlatform.filter { it.notApplicableReason != null }
+    if (explained.isNotEmpty()) {
+        println()
+        println("--- checks that do not apply to this computer ---")
+        explained.forEach { println("  ${it.ruleId}  ${it.description}\n      ${it.notApplicableReason}") }
+    }
 }
 
 private fun printScript() {

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "blanktick",
+  "description": "Blanktick for Claude: ask about this computer's security posture and get answers read off the machine.",
+  "owner": { "name": "Blanktick", "email": "tomadamoyi@gmail.com" },
+  "plugins": [
+    {
+      "name": "blanktick",
+      "description": "Read-only security posture of this Windows PC over MCP: scan, raw facts, coverage, scan history. Every tool is a question; nothing on the machine is changed.",
+      "category": "security",
+      "source": "./plugins/blanktick",
+      "homepage": "https://blanktick.org"
+    }
+  ]
+}

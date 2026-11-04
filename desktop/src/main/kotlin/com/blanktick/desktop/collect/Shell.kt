@@ -531,7 +531,17 @@ internal object Shell {
         // the user waits, not whether the scan is usable. Finishing is still
         // better -- the fewer sections cut off, the more complete the picture --
         // but a slow machine is no longer a blank report.
-        timeoutSeconds: Long = 240
+        //
+        // Raised to ten minutes (2026-10-30). The probe now hashes and
+        // Defender-scans EVERY startup program and running process (no 200 MB
+        // cap, no 20-file antivirus cap), so nothing is reported as "could not
+        // be scanned". On a cold run -- first scan after a reboot or update --
+        // Defender's real-time protection inspects each file as it is opened
+        // for hashing, and a measured cold run reached 240 s, exactly the old
+        // ceiling; the same probe warm took about a minute. A timeout withholds
+        // the score, which is the outcome the user explicitly does not want, so
+        // the ceiling now protects against a HUNG probe, not a slow one.
+        timeoutSeconds: Long = 600
     ): Map<String, List<String>> {
         lastRunTruncated = false
         // Partial output on timeout is deliberately accepted here: the probe

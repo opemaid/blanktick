@@ -51,11 +51,14 @@ class DesktopRulesTest {
         )
         val outcomes = DesktopRules.ALL.map { it.evaluate(blind) }
 
+        // The invariant: a null input never PASSES or FAILS. A rule may still say
+        // "does not apply" when that is knowable without the input (SIP on Windows).
+        val ok = { o: RuleOutcome -> o is RuleOutcome.NotApplicable || o is RuleOutcome.DoesNotApply }
         assertTrue(
-            outcomes.all { it is RuleOutcome.NotApplicable },
-            "every desktop rule must report not-checkable when its input is null, got: " +
+            outcomes.all(ok),
+            "every desktop rule must report not-checkable (or does-not-apply) when its input is null, got: " +
                 DesktopRules.ALL.zip(outcomes)
-                    .filter { it.second !is RuleOutcome.NotApplicable }
+                    .filter { !ok(it.second) }
                     .joinToString { it.first.id }
         )
     }
@@ -251,7 +254,8 @@ class DesktopRulesTest {
     /** SIP is not a Windows concept; asking about it must not produce a verdict. */
     @Test
     fun `SIP is not checkable off macOS`() {
-        assertIs<RuleOutcome.NotApplicable>(
+        // Off macOS it is a verified does-not-apply (filed with wrong-platform), not an unknown.
+        assertIs<RuleOutcome.DoesNotApply>(
             DesktopRules.SystemIntegrityProtectionOff.evaluate(Snapshots.healthyDesktop())
         )
 

@@ -14,6 +14,24 @@ import com.blanktick.core.model.Platform
  */
 sealed interface RuleOutcome {
     data object NotApplicable : RuleOutcome
+
+    /**
+     * The rule ran, looked, and found that it has nothing to judge on *this*
+     * machine: Credential Guard on a Home edition, a macOS-only setting on
+     * Windows, removable-drive encryption with no drive attached.
+     *
+     * Distinct from [NotApplicable] ("the machine would not say"): this is a
+     * real, verified answer, so it is reported alongside the wrong-platform
+     * skips with [reason] shown to the user. It is never a pass and never
+     * counted as a check run — it simply does not apply. Do NOT use it to
+     * hide an input that could not be read; that stays [NotApplicable].
+     */
+    data class DoesNotApply(val reason: String) : RuleOutcome {
+        init {
+            require(reason.isNotBlank()) { "DoesNotApply must say why" }
+        }
+    }
+
     data object Pass : RuleOutcome
     data class Fail(val findings: List<Finding>) : RuleOutcome {
         constructor(finding: Finding) : this(listOf(finding))

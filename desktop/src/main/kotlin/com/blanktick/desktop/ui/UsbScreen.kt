@@ -30,10 +30,10 @@ import com.blanktick.desktop.ScanUiState
  *
  * ## What this is not
  *
- * It is not a virus scan of your USB stick. Blanktick does not open files on the
- * drive, does not hash them, and could not check them against anything if it
- * did — that needs a server. Two things about removable media are answerable
- * offline, and those are the two it checks: whether Windows will let a drive
+ * It is not a virus scan of your USB stick — that is "Scan whole PC", which
+ * hands every file on every drive to Defender's engine. This page reads
+ * settings only, and two things about removable media are answerable from
+ * settings; those are the two it checks: whether Windows will let a drive
  * run a program the moment it is plugged in, and whether an attached drive is
  * encrypted.
  *
@@ -72,10 +72,9 @@ fun UsbScreen(state: AppState) {
         }
 
         Notice(
-            "Blanktick does not scan the contents of a drive. It does not open your files, hash " +
-                "them, or check them against anything — that would need a server, and this app " +
-                "has no way to reach one. It answers the two questions about removable media " +
-                "that can be answered offline."
+            "This page does not open the files on a drive. It answers the two questions about " +
+                "removable media that settings can answer. To check every file on a plugged-in " +
+                "drive, use \"Scan whole PC\" — it reads them with Microsoft Defender's engine."
         )
 
         // ---- attached now -------------------------------------------------

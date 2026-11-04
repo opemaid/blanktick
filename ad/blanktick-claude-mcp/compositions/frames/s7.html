@@ -1,0 +1,59 @@
+<template>
+  <div id="root" data-composition-id="s7" data-start="0" data-duration="8.4" data-width="1920" data-height="1080">
+    <style>
+@font-face{font-family:"bt-ui";src:local("Segoe UI"),local("SegoeUI");font-weight:400}
+@font-face{font-family:"bt-ui";src:local("Segoe UI Semibold"),local("SegoeUI-Semibold");font-weight:600}
+@font-face{font-family:"bt-mono";src:local("Cascadia Mono"),local("Consolas")}
+@font-face{font-family:"bt-ui";src:local("Segoe UI Bold"),local("SegoeUI-Bold");font-weight:700}
+#root{position:relative;width:1920px;height:1080px;overflow:hidden;background:#FAF9F6;container-type:size;font-family:"bt-ui","Segoe UI",sans-serif;color:#0B0D0C}
+.wrap{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:4cqw 9cqw}
+.eyebrow{font-size:.95cqw;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#0F4D3F;margin-bottom:1cqw;opacity:0}
+.h1{font-size:4.2cqw;font-weight:700;letter-spacing:-.02em;line-height:1.08;opacity:0}
+.h2{font-size:2.6cqw;font-weight:700;letter-spacing:-.02em;line-height:1.12;opacity:0}
+.k{color:#0F4D3F}
+.c{color:#C2613F}
+.sub{font-size:1.45cqw;color:#5A6260;line-height:1.5;margin-top:1.4cqw;opacity:0}
+.card{background:rgba(15,77,63,.04);border:1.5px solid rgba(15,77,63,.2);border-radius:14px}
+.pill{display:inline-flex;align-items:center;gap:.6cqw;padding:.55cqw 1.2cqw;border-radius:100px;background:rgba(15,77,63,.08);border:1.5px solid rgba(15,77,63,.2);color:#0F4D3F;font-weight:600;font-size:1.05cqw;opacity:0}
+.mono{font-family:"bt-mono",monospace}
+.term{background:#0B0D0C;color:#FAF9F6;border-radius:14px;padding:1.6cqw 2cqw}
+.tick{width:1.4cqw;height:1.4cqw;flex:none}
+.tick path{fill:none;stroke:#0F4D3F;stroke-width:16;stroke-linecap:round;stroke-linejoin:round}
+.step{font-size:1cqw;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#FAF9F6;background:#0F4D3F;border-radius:100px;padding:.35cqw 1cqw;display:inline-block}
+
+#list{display:flex;gap:1.4cqw;margin-top:2.4cqw;flex-wrap:wrap}
+.no{position:relative;font-size:1.6cqw;font-weight:600;color:#5A6260;padding:.8cqw 1.5cqw;opacity:0}
+.no .strike{position:absolute;left:1cqw;right:1cqw;top:50%;height:3px;background:#B4451F;transform:scaleX(0);transform-origin:left}
+#who{font-size:1.9cqw;font-weight:700;margin-top:2.6cqw;opacity:0}
+#test{font-size:1.1cqw;color:#5A6260;margin-top:1cqw;opacity:0}
+</style>
+    <div class="wrap clip" id="s7-wrap" data-start="0" data-duration="8.4" data-track-index="0">
+
+      <div class="eyebrow" id="e7">The promise</div>
+      <div class="h1" id="t7">Every tool is a <span class="k">question</span>.</div>
+      <div id="list"><div class="no card" id="no0">fix a finding<div class="strike"></div></div><div class="no card" id="no1">change a setting<div class="strike"></div></div><div class="no card" id="no2">delete a file<div class="strike"></div></div><div class="no card" id="no3">quarantine anything<div class="strike"></div></div></div>
+      <div id="who"><span class="c">Claude</span> advises. <span class="k">You</span> decide and act.</div>
+      <div id="test">A test fails the build if a tool is ever added whose name suggests otherwise.</div>
+
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function(){
+        window.__timelines = window.__timelines || {};
+        var tl = gsap.timeline({ paused: true });
+        function up(sel, t, d){ tl.fromTo(sel, {opacity:0, y:16}, {opacity:1, y:0, duration:d||0.45, ease:"power2.out"}, t); }
+        function pop(sel, t){ tl.fromTo(sel, {opacity:0, scale:0.92}, {opacity:1, scale:1, duration:0.35, ease:"back.out(2)"}, t); }
+
+        up("#e7", 0.1); up("#t7", 0.3, 0.6);
+        for (var i = 0; i < 4; i++) {
+          pop("#no"+i, 1.6 + i*0.6);
+          tl.to("#no"+i+" .strike", {scaleX:1, duration:0.3, ease:"power2.out"}, 1.9 + i*0.6);
+        }
+        up("#who", 4.9); up("#test", 5.9);
+
+        tl.set({}, {}, 8.4);
+        window.__timelines["s7"] = tl;
+      })();
+    </script>
+  </div>
+</template>

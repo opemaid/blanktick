@@ -1,0 +1,61 @@
+<template>
+  <div id="root" data-composition-id="s4" data-start="0" data-duration="17.0" data-width="1920" data-height="1080">
+    <style>
+@font-face{font-family:"bt-ui";src:local("Segoe UI"),local("SegoeUI");font-weight:400}
+@font-face{font-family:"bt-ui";src:local("Segoe UI Semibold"),local("SegoeUI-Semibold");font-weight:600}
+@font-face{font-family:"bt-mono";src:local("Cascadia Mono"),local("Consolas")}
+@font-face{font-family:"bt-ui";src:local("Segoe UI Bold"),local("SegoeUI-Bold");font-weight:700}
+#root{position:relative;width:1920px;height:1080px;overflow:hidden;background:#FAF9F6;container-type:size;font-family:"bt-ui","Segoe UI",sans-serif;color:#0B0D0C}
+.wrap{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:3.2cqw 7cqw}
+.mono{font-family:"bt-mono",monospace}
+.k{color:#0F4D3F}.c{color:#C2613F}
+.win{background:#141615;border-radius:16px;overflow:hidden;box-shadow:0 0 0 1.5px rgba(15,77,63,.25)}
+.bar{display:flex;align-items:center;gap:.6cqw;padding:.8cqw 1.2cqw;background:#1E211F;color:#9AA19E;font-size:.9cqw}
+.dot{width:.75cqw;height:.75cqw;border-radius:50%;background:#3A3F3C}
+.body{padding:1.4cqw 1.8cqw;color:#E8EAE9;font-size:1.15cqw;line-height:1.6}
+.ln{opacity:0;white-space:pre-wrap}
+.me{color:#FAF9F6}.me b{color:#7FD3B8}
+.bul{color:#E9A27F}
+.dim{color:#8C9390}
+.tool{color:#7FD3B8;font-weight:700}
+.cap{position:absolute;left:7cqw;bottom:2.2cqw;font-size:1cqw;color:#5A6260;opacity:0}
+.chip{display:inline-block;padding:.35cqw .9cqw;border-radius:100px;background:rgba(15,77,63,.08);border:1.5px solid rgba(15,77,63,.2);color:#0F4D3F;font-weight:600;font-size:.95cqw}
+.ch{opacity:0}
+
+.who{font-size:.95cqw;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#A8502F;opacity:0}
+#lead{font-size:1.6cqw;line-height:1.45;margin-top:.6cqw;max-width:80cqw;opacity:0}
+#lead b{color:#0F4D3F}
+#fxs{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2cqw;margin-top:1.8cqw}
+.card{background:rgba(15,77,63,.04);border:1.5px solid rgba(15,77,63,.2);border-radius:14px}
+.fx{display:flex;gap:1cqw;padding:1.3cqw;opacity:0}
+.num{flex:none;width:2.4cqw;height:2.4cqw;border-radius:50%;background:#0F4D3F;color:#FAF9F6;font-weight:700;font-size:1.2cqw;display:flex;align-items:center;justify-content:center}
+.fr{font-size:.85cqw;color:#666D6B;font-weight:600}
+.ft{font-size:1.25cqw;font-weight:700;margin-top:.3cqw;line-height:1.3}
+.ff{font-size:1cqw;color:#0B0D0C;margin-top:.7cqw;line-height:1.45}
+.fn{font-size:.95cqw;color:#5A6260;margin-top:.5cqw;line-height:1.45}
+</style>
+    <div class="wrap clip" id="s4-wrap" data-start="0" data-duration="17.0" data-track-index="0">
+
+      <div class="who" id="who">Claude&rsquo;s answer &mdash; shortened</div>
+      <div id="lead">The score is <b>67/100 (FAIR)</b>, but read it alongside the coverage. <b>57 checks ran and 31 did not.</b> Nothing came back Critical or High.</div>
+      <div id="fxs"><div class="fx card" id="fx0"><div class="num">1</div><div class="fb"><div class="fr mono">NET-DNS-001 &middot; Medium</div><div class="ft">DNS lookups go to a server Blanktick doesn’t recognise</div><div class="ff"><b>Blanktick&rsquo;s fix:</b> “Turn on Private DNS with a resolver you trust, or leave this network.”</div><div class="fn">Check first whether a VPN, antivirus or work tool set this on purpose.</div></div></div><div class="fx card" id="fx1"><div class="num">2</div><div class="fb"><div class="fr mono">DSK-EXT-001 &middot; Medium · 6 found</div><div class="ft">Browser extensions that didn’t come from the store</div><div class="ff"><b>Blanktick&rsquo;s fix:</b> “Confirm you deliberately added it, and remove it if you did not.”</div><div class="fn">Biggest: McAfee WebAdvisor in Brave (−9) and Chrome (−5).</div></div></div><div class="fx card" id="fx2"><div class="num">3</div><div class="fb"><div class="fr mono">DSK-NET-003 &middot; Low</div><div class="ft">Windows broadcasts name lookups to the local network</div><div class="ff"><b>Blanktick&rsquo;s fix:</b> Turn off LLMNR and NetBIOS over TCP/IP.</div><div class="fn">“This rarely breaks anything on a home network.”</div></div></div></div>
+
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function(){
+        window.__timelines = window.__timelines || {};
+        var tl = gsap.timeline({ paused: true });
+        function up(sel, t, d){ tl.fromTo(sel, {opacity:0, y:12}, {opacity:1, y:0, duration:d||0.4, ease:"power2.out"}, t); }
+        function pop(sel, t){ tl.fromTo(sel, {opacity:0, scale:0.94}, {opacity:1, scale:1, duration:0.32, ease:"back.out(2)"}, t); }
+        function lines(sel, t, step){ var ls = document.querySelectorAll(sel); for (var i = 0; i < ls.length; i++) tl.fromTo(ls[i], {opacity:0}, {opacity:1, duration:0.18}, t + i*step); }
+
+        up("#who", 0.1); up("#lead", 0.4, 0.5);
+        for (var i = 0; i < 3; i++) pop("#fx"+i, 2.6 + i*2.6);
+
+        tl.set({}, {}, 17.0);
+        window.__timelines["s4"] = tl;
+      })();
+    </script>
+  </div>
+</template>

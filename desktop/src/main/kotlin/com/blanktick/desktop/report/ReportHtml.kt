@@ -221,7 +221,7 @@ object ReportHtml {
       </div>
       <div class="tiles">
         <div class="tile"><b>{{RAN}}</b><span>checks ran</span></div>
-        <div class="tile"><b>{{SKIP}}</b><span>not checkable</span></div>
+        <div class="tile"><b>{{UNOBS}}</b><span>not checkable</span></div>
         <div class="tile"><b>{{NFIND}}</b><span>findings</span></div>
       </div>
       <div class="card cov">
@@ -231,9 +231,9 @@ object ReportHtml {
           <div class="covSkip" style="flex:{{SKIP}}"></div>
         </div>
         <div class="covKey"><span><span class="num">{{RAN}}</span> ran</span>
-          <span><span class="num">{{SKIP}}</span> not checkable</span></div>
+          <span><span class="num">{{UNOBS}}</span> not checkable</span></div>
         <div class="covKey" style="margin-top:4px;color:var(--faint)">
-          <span>{{WRONG}} wrong device</span><span>{{UNOBS}} wouldn&rsquo;t answer</span></div>
+          <span>{{WRONG}} don&rsquo;t apply here</span><span>{{UNOBS}} wouldn&rsquo;t answer</span></div>
       </div>
     </div>
     <div>
@@ -253,8 +253,8 @@ object ReportHtml {
   </div>
   <footer>
     <b>How to read this.</b> The score is deductions subtracted from 100, so it only means something
-    beside coverage: {{SKIP}} checks could not run, so the number partly reflects what wasn&rsquo;t
-    inspected. &ldquo;Not checkable&rdquo; is never a pass &mdash; Blanktick reports what it could not
+    beside coverage: {{UNOBS}} checks could not run, so the number partly reflects what wasn&rsquo;t
+    inspected ({{WRONG}} more do not apply to this computer and are not gaps). &ldquo;Not checkable&rdquo; is never a pass &mdash; Blanktick reports what it could not
     see rather than assuming it is fine. Nothing here left this computer, and the app opened no socket
     to produce it.
   </footer>

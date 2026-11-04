@@ -10,6 +10,7 @@ import com.blanktick.core.rules.AiSecurityRules
 import com.blanktick.core.rules.AppHygieneRules
 import com.blanktick.core.rules.BaselineRules
 import com.blanktick.core.rules.BrowserRules
+import com.blanktick.core.rules.NetworkAnomalyRules
 import com.blanktick.core.rules.DataExposureRules
 import com.blanktick.core.rules.HardeningRules
 import com.blanktick.core.rules.MalwareRules
@@ -49,7 +50,9 @@ data class RuleReport(
      * findings would silently drop exactly those. Copying it makes the grouping
      * total by construction.
      */
-    val category: Category = Category.DEVICE_INTEGRITY
+    val category: Category = Category.DEVICE_INTEGRITY,
+    /** Why the rule does not apply here, when it said so itself (see [RuleOutcome.DoesNotApply]). */
+    val notApplicableReason: String? = null
 ) {
     enum class Outcome { PASSED, FAILED, NOT_APPLICABLE }
 
@@ -114,6 +117,17 @@ class BlanktickScanner(
                     )
                 }
 
+                is RuleOutcome.DoesNotApply -> {
+                    // A verified "nothing to judge here": filed with the
+                    // wrong-platform skips, never with "the machine would not say".
+                    skipped++
+                    reports += RuleReport(
+                        rule.id, rule.description, RuleReport.Outcome.NOT_APPLICABLE,
+                        eligibleOnPlatform = false, category = rule.category,
+                        notApplicableReason = outcome.reason
+                    )
+                }
+
                 is RuleOutcome.Pass -> {
                     run++
                     reports += RuleReport(
@@ -168,6 +182,7 @@ object DefaultRules {
         DeviceIntegrityRules.ALL +
             OsCurrencyRules.ALL +
             NetworkRules.ALL +
+            NetworkAnomalyRules.ALL +
             AppHygieneRules.ALL +
             DataExposureRules.ALL +
             AccountSecurityRules.ALL +

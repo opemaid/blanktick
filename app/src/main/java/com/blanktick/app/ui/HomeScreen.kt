@@ -507,8 +507,12 @@ private fun PrimaryButton(label: String, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-        shape = RoundedCornerShape(BlanktickTokens.Radius.pill),
-        colors = ButtonDefaults.buttonColors(containerColor = c.ink, contentColor = c.paper)
+        shape = RoundedCornerShape(BlanktickTokens.Radius.sm),
+        // blanktick.org CTA: brand kelp, paper text (9.34:1), both themes.
+        colors = ButtonDefaults.buttonColors(
+            containerColor = BlanktickTokens.Brand.kelp,
+            contentColor = BlanktickTokens.Light.paper
+        )
     ) {
         Text(label, style = MaterialTheme.typography.titleMedium)
     }

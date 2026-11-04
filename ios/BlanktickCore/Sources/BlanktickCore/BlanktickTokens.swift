@@ -8,28 +8,28 @@ import SwiftUI
 public enum BlanktickTokens {
 
     public enum Light {
-        public static let paper = Color(red: 0.9804, green: 0.9765, blue: 0.9647)
+        public static let paper = Color(red: 0.9843, green: 0.9804, blue: 0.9647)
         public static let surface = Color(red: 1.0000, green: 1.0000, blue: 1.0000)
         public static let surfaceSunk = Color(red: 0.9451, green: 0.9373, blue: 0.9176)
-        public static let ink = Color(red: 0.0431, green: 0.0510, blue: 0.0471)
-        public static let inkMuted = Color(red: 0.3529, green: 0.3843, blue: 0.3765)
-        public static let inkFaint = Color(red: 0.4000, green: 0.4275, blue: 0.4196)
-        public static let hairline = Color(red: 0.8863, green: 0.8745, blue: 0.8471)
+        public static let ink = Color(red: 0.0902, green: 0.0980, blue: 0.1059)
+        public static let inkMuted = Color(red: 0.2275, green: 0.2471, blue: 0.2392)
+        public static let inkFaint = Color(red: 0.3529, green: 0.3843, blue: 0.3765)
+        public static let hairline = Color(red: 0.8745, green: 0.8588, blue: 0.8235)
         public static let focus = Color(red: 0.0588, green: 0.3020, blue: 0.2471)
-        public static let trackMuted = Color(red: 0.5725, green: 0.5569, blue: 0.5176)
+        public static let trackMuted = Color(red: 0.4902, green: 0.5098, blue: 0.4980)
     }
 
     public enum Dark {
-        public static let paper = Color(red: 0.0471, green: 0.0549, blue: 0.0510)
-        public static let surface = Color(red: 0.0824, green: 0.0941, blue: 0.0902)
-        public static let surfaceSunk = Color(red: 0.0627, green: 0.0745, blue: 0.0706)
-        public static let ink = Color(red: 0.9490, green: 0.9451, blue: 0.9294)
-        public static let inkMuted = Color(red: 0.6039, green: 0.6314, blue: 0.6196)
-        public static let inkFaint = Color(red: 0.4784, green: 0.5098, blue: 0.4941)
-        public static let hairline = Color(red: 0.1490, green: 0.1647, blue: 0.1608)
+        public static let paper = Color(red: 0.0902, green: 0.0980, blue: 0.1059)
+        public static let surface = Color(red: 0.1255, green: 0.1373, blue: 0.1490)
+        public static let surfaceSunk = Color(red: 0.0706, green: 0.0784, blue: 0.0863)
+        public static let ink = Color(red: 0.9843, green: 0.9804, blue: 0.9647)
+        public static let inkMuted = Color(red: 0.7255, green: 0.7686, blue: 0.7490)
+        public static let inkFaint = Color(red: 0.5765, green: 0.6157, blue: 0.6000)
+        public static let hairline = Color(red: 0.1804, green: 0.1961, blue: 0.2039)
         public static let focus = Color(red: 0.3725, green: 0.7490, blue: 0.6392)
-        public static let trackMuted = Color(red: 0.3686, green: 0.3961, blue: 0.3882)
-        public static let kelpTint = Color(red: 0.0706, green: 0.1412, blue: 0.1176)
+        public static let trackMuted = Color(red: 0.4314, green: 0.4588, blue: 0.4510)
+        public static let kelpTint = Color(red: 0.0824, green: 0.1922, blue: 0.1608)
     }
 
     public enum Severity {
@@ -51,8 +51,8 @@ public enum BlanktickTokens {
         public static let pass = Color(red: 0.0588, green: 0.3020, blue: 0.2471)
         public static let passOnDark = Color(red: 0.3725, green: 0.7490, blue: 0.6392)
         public static let passLabel = "PASSED"
-        public static let notChecked = Color(red: 0.4000, green: 0.4275, blue: 0.4196)
-        public static let notCheckedOnDark = Color(red: 0.4784, green: 0.5098, blue: 0.4941)
+        public static let notChecked = Color(red: 0.2275, green: 0.2471, blue: 0.2392)
+        public static let notCheckedOnDark = Color(red: 0.7882, green: 0.8235, blue: 0.8078)
         public static let notCheckedLabel = "NOT CHECKABLE"
     }
 
@@ -77,13 +77,13 @@ public enum BlanktickTokens {
     }
 
     public enum Radius {
-        public static let sm: CGFloat = 8
-        public static let md: CGFloat = 14
-        public static let lg: CGFloat = 20
-        public static let xl: CGFloat = 32
-        public static let shell: CGFloat = 32
+        public static let sm: CGFloat = 2
+        public static let md: CGFloat = 2
+        public static let lg: CGFloat = 8
+        public static let xl: CGFloat = 8
+        public static let shell: CGFloat = 8
         public static let shellPad: CGFloat = 6
-        public static let core: CGFloat = 26
+        public static let core: CGFloat = 2
         public static let pill: CGFloat = 999
     }
 

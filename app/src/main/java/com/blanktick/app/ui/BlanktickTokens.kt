@@ -14,28 +14,28 @@ import androidx.compose.ui.unit.sp
 object BlanktickTokens {
 
     object Light {
-        val paper = Color(0xFFFAF9F6)
+        val paper = Color(0xFFFBFAF6)
         val surface = Color(0xFFFFFFFF)
         val surfaceSunk = Color(0xFFF1EFEA)
-        val ink = Color(0xFF0B0D0C)
-        val inkMuted = Color(0xFF5A6260)
-        val inkFaint = Color(0xFF666D6B)
-        val hairline = Color(0xFFE2DFD8)
+        val ink = Color(0xFF17191B)
+        val inkMuted = Color(0xFF3A3F3D)
+        val inkFaint = Color(0xFF5A6260)
+        val hairline = Color(0xFFDFDBD2)
         val focus = Color(0xFF0F4D3F)
-        val trackMuted = Color(0xFF928E84)
+        val trackMuted = Color(0xFF7D827F)
     }
 
     object Dark {
-        val paper = Color(0xFF0C0E0D)
-        val surface = Color(0xFF151817)
-        val surfaceSunk = Color(0xFF101312)
-        val ink = Color(0xFFF2F1ED)
-        val inkMuted = Color(0xFF9AA19E)
-        val inkFaint = Color(0xFF7A827E)
-        val hairline = Color(0xFF262A29)
+        val paper = Color(0xFF17191B)
+        val surface = Color(0xFF202326)
+        val surfaceSunk = Color(0xFF121416)
+        val ink = Color(0xFFFBFAF6)
+        val inkMuted = Color(0xFFB9C4BF)
+        val inkFaint = Color(0xFF939D99)
+        val hairline = Color(0xFF2E3234)
         val focus = Color(0xFF5FBFA3)
-        val trackMuted = Color(0xFF5E6563)
-        val kelpTint = Color(0xFF12241E)
+        val trackMuted = Color(0xFF6E7573)
+        val kelpTint = Color(0xFF153129)
     }
 
     object Severity {
@@ -57,8 +57,8 @@ object BlanktickTokens {
         val pass = Color(0xFF0F4D3F)
         val passOnDark = Color(0xFF5FBFA3)
         const val PASS_LABEL = "PASSED"
-        val notChecked = Color(0xFF666D6B)
-        val notCheckedOnDark = Color(0xFF7A827E)
+        val notChecked = Color(0xFF3A3F3D)
+        val notCheckedOnDark = Color(0xFFC9D2CE)
         const val NOTCHECKED_LABEL = "NOT CHECKABLE"
     }
 
@@ -83,13 +83,13 @@ object BlanktickTokens {
     }
 
     object Radius {
-        val sm = 8.dp
-        val md = 14.dp
-        val lg = 20.dp
-        val xl = 32.dp
-        val shell = 32.dp
+        val sm = 2.dp
+        val md = 2.dp
+        val lg = 8.dp
+        val xl = 8.dp
+        val shell = 8.dp
         val shellPad = 6.dp
-        val core = 26.dp
+        val core = 2.dp
         val pill = 999.dp
     }
 

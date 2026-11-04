@@ -1,5 +1,53 @@
 # Blanktick
 
+<p align="center">
+  <a href="https://blanktick.org"><img src="design/social/og-github-social-preview-1280x640.png" alt="Blanktick — a green tick can mean “we checked, it’s fine.” Or it can mean “we never looked.”" width="820"></a>
+</p>
+
+<p align="center"><b>Blanktick, your antivirus built for AI.</b><br>
+It finds where bad AI can get into your PC, and lets your own AI agent help you shut the gaps.<br>
+<a href="https://blanktick.org">blanktick.org</a> · Free · Open source · Offline · Windows</p>
+
+<p align="center"><b>Install on Windows:</b>
+<a href="https://apps.microsoft.com/detail/9MW3G5H3RF3M">Microsoft Store</a> (signed by Microsoft) ·
+<a href="https://dl.blanktick.org/Blanktick-0.1.3-win-x64.msi">.msi installer</a> ·
+<a href="https://dl.blanktick.org/Blanktick-0.1.3-win-x64.zip">portable .zip</a> ·
+or <code>winget install 9MW3G5H3RF3M -s msstore</code></p>
+
+## Why: good AI against bad AI
+
+Antivirus looks for bad files. Bad AI usually isn't one. An AI assistant that a
+web page can talk into running commands, a model server anyone on your network can
+use, an API key in a plain-text settings file: none of these is a file to scan.
+Blanktick looks at how the AI on a PC is set up and what it is doing, and lets your
+own AI agent help you close the gaps.
+
+| What it looks for | Rule |
+|---|---|
+| An AI assistant that can both read outside content and act on the computer (prompt-injection reach) | `DSK-AI-006` |
+| AI model servers listening on the network | `DSK-AI-001` |
+| Which tools an AI assistant is allowed to run (MCP servers) | `DSK-AI-002` |
+| API keys stored in plain text in AI settings files | `DSK-AI-003` |
+| AI tools that download and run code | `DSK-AI-005` |
+| Windows Recall keeping a searchable record of the screen | `DSK-AI-004` |
+| **Live:** an AI assistant starting a shell (cmd, PowerShell, mshta) | `DYN-AI-001` |
+| **Live:** an AI agent acting right after reading outside content | `DYN-AI-003` |
+
+**Your AI on your side.** `Blanktick.exe --mcp` is a stdio MCP server with eight
+read-only tools ([docs/mcp.md](docs/mcp.md)). Connect Claude or another agent and it
+can explain what is exposed and how to fix it. It cannot change anything: there are
+no fix tools by design, and a test enforces that. The agent explains; you act.
+
+What it does not do: delete or quarantine anything, block every attack, or replace
+Windows Security. The live rules run while the app is open and flag by default; they
+stop a process only if you turn that on.
+
+The rest of this README covers the other half (the whole-PC scan, the 75 Windows
+settings checks) and the design rule behind all of it: **"not checked" is a result.**
+When Blanktick can't look at something, it says so instead of showing a green tick.
+
+---
+
 A security checkup for your phone and your computer that runs entirely on the
 device it is checking.
 
@@ -69,10 +117,10 @@ If that *passes*, the gate is dead and its silence means nothing.
 
 | Component | State |
 |---|---|
-| `core/` — scoring engine, rules, filters, URL analysis, EXIF | **Builds. 305 tests, 0 failures.** |
+| `core/` — scoring engine, rules, filters, URL analysis, EXIF | **Builds. 350 tests, 0 failures.** |
 | `app/` — Android, Compose | **Builds. 26.6 MB APK produced. 30 tests, 0 failures.** |
-| `desktop/` — Compose Multiplatform | **Builds and runs. `Blanktick.exe` produced. 52 tests, 0 failures.** |
-| Windows collector | **Runs on real hardware.** 50 of 81 checks answered on the dev machine (2026-09-25, against an earlier 81-check build; the set is now 88 — a re-measure is pending); 31 reported as not checkable. |
+| `desktop/` — Compose Multiplatform | **Builds and runs. `Blanktick.exe` produced. 77 tests, 0 failures.** |
+| Windows collector | **Runs on real hardware.** 70 of 92 checks answered on the dev machine, **0 not checkable**, 22 that do not apply to it (re-measured 2026-11-03 on the packaged 0.1.3 build). |
 | macOS collector | **Written, never executed.** No Mac available. |
 | Linux collector | **Written, exercised only under WSL.** Not a real desktop session. |
 | Intel bundle pipeline (Python → Kotlin ×2) | **Working. Cross-language parity proven.** |
@@ -80,7 +128,7 @@ If that *passes*, the gate is dead and its silence means nothing.
 | `design/` — tokens, interactive prototype | **Working.** |
 | `ios/BlanktickCore/` — Swift mirror | **Written, not compiled.** No Swift toolchain on Windows. |
 
-**387 tests across the three JVM modules, 0 failures** (all re-run with `gradlew check` on 2026-09-25). `gradlew check` is green, including both network gates and Android lint.
+**457 tests across the three JVM modules, 0 failures.** core (350) and desktop (77) re-run on 2026-11-03 for the 0.1.3 release; the Android app (30) was last run with `gradlew check` on 2026-09-25.
 
 **Honest caveats.** The Swift sources mirror the Kotlin line for line and pin the
 identical hash vectors, but have never been through a compiler — a reviewed
@@ -98,21 +146,28 @@ rather than presenting meaningless password and link verdicts as findings.
 
 ## What it checks
 
-**88 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
+**Your whole PC.** *Scan whole PC* hands every fixed and removable drive, from
+its root, to Microsoft Defender's engine (`MpCmdRun -Scan -ScanType 3
+-DisableRemediation`): every file, reported, nothing quarantined. It is separate
+from the score because a full drive takes 30 minutes to hours. Without Defender
+it says nothing was scanned rather than calling the PC clean.
+
+**92 checks in total.** Coverage per platform, measured by `PlatformCoverageTest`
 rather than estimated:
 
 | Platform | Eligible | Run on an *idealised* device | Not checkable |
 |---|---|---|---|
-| Android | 29 | 29 | 59 (rules with no Android equivalent) |
-| iPhone | 15 | 12 | 76 |
-| Desktop | 70 | 69 | 19 |
+| Android | 29 | 29 | 63 (rules with no Android equivalent) |
+| iPhone | 15 | 12 | 80 |
+| Desktop | 75 | 74 | 18 |
 
 Those are fixture numbers — a device that answers every question it can. **A real
-machine answers fewer.** On the development laptop (Windows 11, standard user, no
-elevation) the desktop build ran **50 of 81** and reported **31 as not
-checkable**: 18 written for a phone, 13 that this computer declined to answer
-(measured 2026-09-25 against an earlier 81-check build — the set has since grown
-to 88, so a re-measure is pending).
+machine answers fewer.** On the development laptop (Windows 11 Home, standard user,
+no elevation) the packaged 0.1.3 build ran **70 of 92**, with **0 not checkable** and 22
+that **do not apply** to that computer — 18 written for a phone, plus 4 verified with a
+reason (such as macOS-only SIP, Credential Guard on a Home edition, or no USB drive
+plugged in). Measured 2026-11-03. (The earlier measurement, 50 of 81 with 13
+unanswered, came from probes looking in the wrong place on Windows 11.)
 The dashboard states both numbers and separates the two causes, because
 "permanent" and "might change next scan" are not the same fact.
 
@@ -134,7 +189,12 @@ The asymmetry is real and every app says so on screen — listing what it could
   root CA. We enumerate every CA the OS did not ship — and say when it was an
   employer's MDM rather than an attacker.
 
-**Desktop only — 59 rules that have no phone equivalent:**
+**Desktop only — 63 rules that have no phone equivalent:**
+
+- **Offline network anomalies** (new in 0.1.3), read from this PC alone, nothing
+  sent anywhere: a second device answering for your router's address (ARP
+  impersonation), hosts-file entries that redirect real sites, a look-alike Wi-Fi
+  network with your network's name (evil twin), and a proxy auto-config script.
 
 - **Host firewall**, per profile. The common failure is not "firewall off", it is
   "Public profile off since that printer thing", which disarms it precisely when
@@ -180,9 +240,10 @@ The asymmetry is real and every app says so on screen — listing what it could
   because Explorer genuinely lives in `C:\Windows`.
 
   This is the one part of Blanktick that looks for malware, and it is worth being
-  precise about what it means. It does not scan your disk, hash your files or
-  carry signatures — that is the antivirus you already have, and it needs a
-  server Blanktick does not talk to. What it detects is a *technique*, which is a
+  precise about what it means. It carries no signatures of its own — that is
+  the antivirus you already have, and it needs a server Blanktick does not talk
+  to. (*Scan whole PC* is the exception that proves it: every file on every
+  drive is read by Defender's engine, not ours.) What it detects is a *technique*, which is a
   property of your machine rather than a fact someone else has to tell you
   about a file. A dormant installer sitting in a downloads folder will not be
   found here, and nothing in this section should be read as "your computer is
@@ -237,8 +298,8 @@ The asymmetry is real and every app says so on screen — listing what it could
 - **A bundled list of known-malicious files.** The closest thing here to
   conventional antivirus, and worth being exact about. Blanktick ships a table of
   SHA-256 hashes and compares it against the programs that start themselves and
-  the ones running from your personal folders — about sixty files, not your
-  whole disk.
+  the ones running from your personal folders — about sixty files. The whole
+  disk is *Scan whole PC*, which hands every drive to Defender instead.
 
   It is **stale the day it is built**, it will never approach a real scanner,
   and **it is defeated by recompiling the file**: one changed byte, different
@@ -318,7 +379,7 @@ offline phishing-link checker.
 core/                Pure Kotlin/JVM · no I/O · no Android · no network
   model/             DeviceSnapshot, DesktopFacts, Finding, Severity, Category
   scoring/           ScoringEngine + ScoringPolicy  (the normative one)
-  rules/             88 rules, stable IDs, platform-gated
+  rules/             92 rules, stable IDs, platform-gated
   filters/           BloomFilter, SortedHashSet64, Hashing
   analysis/          UrlAnalyzer, Punycode, Confusables, PublicSuffix, ExifGps
 app/                 Android · Compose · collectors only
@@ -552,9 +613,6 @@ Stated here because the app says the same thing on screen:
   this build. Deferred to a separate, separately-installable module.
 - **Any product analytics.** We do not know how many people use which feature,
   and cannot find out.
-- **Scan the contents of a USB stick.** Blanktick never opens files on a drive,
-  hashes them, or checks them against anything. That is an antivirus and it
-  needs a server.
 - **Tell you whether a program is malware.** The desktop lists what is installed
   and checks two offline properties of it. Hashing files and asking a reputation
   service is what an antivirus does, and it needs a server.
@@ -597,7 +655,15 @@ an MCP client can ask about this computer and get real answers rather than
 guesses: `Blanktick.exe --mcp`. Eight tools, all read-only — a scan, the raw facts
 including the nulls, the exact script it runs, its coverage on this platform,
 three that query the stored scan history, and one that reviews an exported
-network capture. `docs/mcp.md` has the full table.
+network capture. `docs/mcp.md` has the full table, and there is a
+[one-minute video of the setup](ad/blanktick-claude-mcp/renders/video.mp4).
+
+Claude Desktop users can install the one-click extension (`tools/build-mcpb.sh`
+builds `Blanktick-0.1.3.mcpb`). In Claude Code:
+
+```
+/plugin install blanktick --marketplace opemaid/blanktick
+```
 
 Stdio, not HTTP: your client launches Blanktick and talks to it over standard input
 and output. No socket is opened and the bytecode gate that forbids networking

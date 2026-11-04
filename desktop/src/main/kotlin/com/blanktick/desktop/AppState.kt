@@ -25,6 +25,7 @@ import java.time.LocalDate
 /** Which screen the window is showing. */
 enum class Screen(val title: String) {
     SCAN("This computer"),
+    FULL_SCAN("Scan whole PC"),
     POLICY("Policy"),
     THREATS("Threats"),
     LINK("Check a link"),
@@ -129,6 +130,9 @@ data class PhotoScanState(
 class AppState(private val scope: CoroutineScope) {
 
     private val scanner = BlanktickScanner()
+
+    /** Every file on every local drive; see [FullScanController]. */
+    val fullScan = FullScanController(scope)
     val intel: DesktopIntel by lazy { DesktopIntel.load() }
 
     private val analyzer: UrlAnalyzer by lazy {
@@ -298,9 +302,14 @@ class AppState(private val scope: CoroutineScope) {
                         // the score reflects the work the user actually did.
                         .copy(
                             passwordAudit = passwordAudit(),
-                            photosScanned = _photos.value.takeIf { it.done }?.scanned,
-                            photosWithPreciseLocation = _photos.value.takeIf { it.done }?.withLocation
                         )
+                        .let { s ->
+                            // A photo scan the user ran on the photo screen wins;
+                            // otherwise keep the automatic Pictures survey.
+                            val manual = _photos.value.takeIf { it.done }
+                            if (manual == null) s
+                            else s.copy(photosScanned = manual.scanned, photosWithPreciseLocation = manual.withLocation)
+                        }
                     _programs.value = snapshot.desktop?.installedPrograms
                     desktopFacts = snapshot.desktop
                     scanner.scan(snapshot)

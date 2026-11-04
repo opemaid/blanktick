@@ -87,6 +87,7 @@ fun BlanktickApp(state: AppState) {
             Box(Modifier.weight(1f).fillMaxHeight()) {
                 when (screen) {
                     Screen.SCAN -> ScanScreen(state)
+                    Screen.FULL_SCAN -> FullScanScreen(state)
                     Screen.POLICY -> PolicyScreen(state)
                     Screen.THREATS -> ThreatsHost(state)
                     Screen.LINK -> LinkScreen(state)
@@ -126,10 +127,15 @@ private fun NavRail(current: Screen, onSelect: (Screen) -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             BrandMark(Modifier.size(32.dp))
-            Text("Blanktick", style = MaterialTheme.typography.titleLarge, color = c.ink)
+            // The ad end-card wordmark: lower-case, one colour, weight 800.
+            Text(
+                "blanktick",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                color = c.ink
+            )
         }
         Text(
-            "Offline. Nothing leaves this computer.",
+            "Scans your whole PC. Nothing leaves it.",
             style = MaterialTheme.typography.labelSmall,
             color = c.inkFaint
         )
@@ -181,34 +187,38 @@ private fun NavRail(current: Screen, onSelect: (Screen) -> Unit) {
  *
  * A checkmark that passes the check with its long arm deliberately severed —
  * the gap is the air gap, the one promise (no network) drawn into the logo.
- * Authored as exact vector geometry (`design/logo/blanktick-icon.svg`), so it
- * is reproduced here as the same coordinates on a 256-unit grid rather than as
- * a rasterised asset: sharp at any size and any DPI, and no image to decode.
+ * Authored as exact vector geometry, so it is reproduced here as the same
+ * coordinates on a 256-unit grid rather than as a rasterised asset: sharp at
+ * any size and any DPI, and no image to decode.
  *
- * The accent (`#D6FF3F`) sits on a near-black square in both themes, honouring
- * the brand rule that the acid accent appears only on the verified mark and
- * never loses contrast against the surface behind it. Brutalist: butt caps,
- * mitre joins, no radius, no shadow.
+ * This is the ad logo (ad/blanktick-hero, -defend, -hack) and the one on
+ * blanktick.org: kelp `#0F4D3F` on paper `#FBFAF6`, stroke 34, the tick scaled
+ * to 0.8 about the centre. It replaced the earlier lime-on-black mark so the
+ * app, the site and the ads carry one logo. The paper tile is kept in both
+ * themes: kelp straight on the dark paper is ~2:1 and would vanish.
  */
 @Composable
 private fun BrandMark(modifier: Modifier = Modifier) {
-    val accent = Color(0xFFD6FF3F)
-    val square = Color(0xFF0A0A0A)
+    val kelp = BlanktickTokens.Brand.kelp
+    val paper = BlanktickTokens.Light.paper
     Canvas(modifier.clearAndSetSemantics { }) {
         val s = size.minDimension / 256f
-        drawRect(color = square, size = size)
-        val stroke = Stroke(width = 30f * s, cap = StrokeCap.Butt, join = StrokeJoin.Miter)
+        // translate(128 128) scale(0.8) translate(-134 -133), as in the SVG.
+        fun x(v: Float) = (128f + 0.8f * (v - 134f)) * s
+        fun y(v: Float) = (128f + 0.8f * (v - 133f)) * s
+        drawRect(color = paper, size = size)
+        val stroke = Stroke(width = 34f * 0.8f * s, cap = StrokeCap.Butt, join = StrokeJoin.Miter)
         val tick = Path().apply {
-            moveTo(44f * s, 136f * s)
-            lineTo(104f * s, 192f * s)
-            lineTo(150f * s, 148f * s)
+            moveTo(x(44f), y(136f))
+            lineTo(x(104f), y(192f))
+            lineTo(x(150f), y(148f))
         }
         val severed = Path().apply {
-            moveTo(172f * s, 126f * s)
-            lineTo(224f * s, 74f * s)
+            moveTo(x(172f), y(126f))
+            lineTo(x(224f), y(74f))
         }
-        drawPath(tick, accent, style = stroke)
-        drawPath(severed, accent, style = stroke)
+        drawPath(tick, kelp, style = stroke)
+        drawPath(severed, kelp, style = stroke)
     }
 }
 

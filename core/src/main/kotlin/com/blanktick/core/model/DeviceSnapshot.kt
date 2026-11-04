@@ -102,6 +102,12 @@ data class DeviceSnapshot(
 )
 
 /** State of the currently joined Wi-Fi network. */
+/** One active line of the hosts file: [name] resolves to [ip] on this machine only. */
+data class HostsEntry(val ip: String, val name: String)
+
+/** A Wi-Fi network in range. [ssid] null = hidden network. */
+data class NearbyWifi(val ssid: String?, val security: WifiSecurity)
+
 data class WifiSnapshot(
     val ssid: String?,
     val security: WifiSecurity,
@@ -214,6 +220,36 @@ data class DesktopFacts(
     val os: DesktopOs,
     /** e.g. `Windows 11 Pro 24H2`, `macOS 15.2`, `Ubuntu 24.04`. Display only. */
     val osBuild: String? = null,
+    /**
+     * `false` = verified NOT on Wi-Fi (no Wi-Fi adapter, or none connected), so
+     * NET-WIFI-001 does not apply. `null` = not read. `true` = on Wi-Fi.
+     */
+    val onWifi: Boolean? = null,
+    /**
+     * Files queued for the antivirus second opinion that its time budget did not
+     * reach. `0` = every startup program and running process was scanned; above
+     * zero is shown, never hidden. `null` = no scanner to ask.
+     */
+    val antivirusUnscanned: Int? = null,
+
+    // ---- Network anomalies (all read locally, no connection) ----------------
+    /** `false` = verified no default route (not connected to any network). */
+    val networkConnected: Boolean? = null,
+    /**
+     * Other addresses on the local network that claim the ROUTER's hardware
+     * (MAC) address — the signature of ARP spoofing. Empty = none. `null` = the
+     * neighbour table could not be read.
+     */
+    val routerMacSharedWith: List<String>? = null,
+    /** `true` when this is the first scan to see this network, so there is no earlier router to compare. */
+    val gatewayFirstSeen: Boolean? = null,
+    /** Every active line of the hosts file. Empty = no entries. `null` = not read. */
+    val hostsEntries: List<HostsEntry>? = null,
+    /** Wi-Fi networks in range, as reported by the adapter. `null` = not read. */
+    val nearbyWifi: List<NearbyWifi>? = null,
+    /** Proxy auto-config (PAC) script URL, if one is set. Meaningful only when [proxySettingsRead]. */
+    val autoProxyConfigUrl: String? = null,
+    val proxySettingsRead: Boolean? = null,
 
     // ---- Perimeter --------------------------------------------------------
     /** Host firewall on for the profile currently in use. */
@@ -903,6 +939,12 @@ data class AutoRunEntry(
      * be hashed — unreadable, missing, or above the size cap.
      */
     val sha256: String? = null,
+    /**
+     * `false` when the entry's command names no program file at all (e.g. an
+     * Active Setup stub of just `/UserInstall`): there is nothing to hash, which
+     * is different from a file that could not be hashed. `null` = not reported.
+     */
+    val hasProgramFile: Boolean? = null,
     /**
      * Whether that hash is in the bundled known-malware table.
      *

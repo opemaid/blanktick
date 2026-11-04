@@ -30,7 +30,10 @@ object DataExposureRules {
         override fun check(s: DeviceSnapshot): RuleOutcome {
             val scanned = s.photosScanned ?: return RuleOutcome.NotApplicable
             val tagged = s.photosWithPreciseLocation ?: return RuleOutcome.NotApplicable
-            if (scanned == 0) return RuleOutcome.NotApplicable
+            // The library WAS read and holds no photos: verified, nothing to judge.
+            if (scanned == 0) return RuleOutcome.DoesNotApply(
+                "No photos were found in the folders that were checked, so none can leak a location."
+            )
             if (tagged == 0) return RuleOutcome.Pass
 
             val share = tagged.toDouble() / scanned
@@ -95,6 +98,18 @@ object DataExposureRules {
  */
 object AccountSecurityRules {
 
+    /**
+     * On a desktop, passwords are only ever checked when the person types them into
+     * the Passwords tool: Blanktick deliberately never reads saved credentials. So an
+     * automatic scan with no audit has not *failed* to observe anything — the check
+     * simply belongs to that tool. Mobile keeps the old "not observed" meaning.
+     */
+    private fun passwordsNotTypedIn(s: DeviceSnapshot): RuleOutcome? =
+        if (s.platform == Platform.DESKTOP && s.passwordAudit == null) RuleOutcome.DoesNotApply(
+            "Passwords are checked only in the Passwords tool, for the ones you type in. Blanktick " +
+                "never reads your saved passwords, so the automatic scan does not include this check."
+        ) else null
+
     val ScreenLockStrength = object : BaseRule(
         id = "ACC-LOCK-001",
         category = Category.ACCOUNT_SECURITY,
@@ -155,7 +170,12 @@ object AccountSecurityRules {
                 )
 
                 ScreenLock.PIN_LONG, ScreenLock.PASSWORD -> RuleOutcome.Pass
-                ScreenLock.UNKNOWN -> RuleOutcome.NotApplicable
+                // Desktop: the question this rule asks there is "does signing in need a
+                // credential at all" (see the desktop finding text). UNKNOWN on a desktop
+                // means a credential IS required but Windows will not say whether it is a
+                // PIN or a password, so the desktop question is answered: pass. On a phone
+                // UNKNOWN still means the lock type was not read.
+                ScreenLock.UNKNOWN -> if (desktop) RuleOutcome.Pass else RuleOutcome.NotApplicable
             }
         }
     }
@@ -209,7 +229,7 @@ object AccountSecurityRules {
         description = "Saved passwords do not appear in known breaches",
         platforms = Platforms.EVERYWHERE
     ) {
-        override fun check(s: DeviceSnapshot) = requireObserved(s.passwordAudit) { audit ->
+        override fun check(s: DeviceSnapshot) = passwordsNotTypedIn(s) ?: requireObserved(s.passwordAudit) { audit ->
             if (audit.credentialsChecked == 0) return@requireObserved RuleOutcome.NotApplicable
             if (audit.breachedCount == 0) return@requireObserved RuleOutcome.Pass
 
@@ -239,7 +259,7 @@ object AccountSecurityRules {
         description = "Saved passwords are not reused across sites",
         platforms = Platforms.EVERYWHERE
     ) {
-        override fun check(s: DeviceSnapshot) = requireObserved(s.passwordAudit) { audit ->
+        override fun check(s: DeviceSnapshot) = passwordsNotTypedIn(s) ?: requireObserved(s.passwordAudit) { audit ->
             if (audit.credentialsChecked == 0) return@requireObserved RuleOutcome.NotApplicable
             if (audit.reusedCount == 0) return@requireObserved RuleOutcome.Pass
 
@@ -269,8 +289,28 @@ object AccountSecurityRules {
     ) {
         private val MAX_ACCEPTABLE_SECONDS = 300
 
+        /** A collector reports "never locks" as Int.MAX_VALUE; anything a day or longer reads as never. */
+        private val NEVER = 24 * 3600
+
         override fun check(s: DeviceSnapshot) = requireObserved(s.screenLockTimeoutSeconds) { secs ->
-            if (secs <= MAX_ACCEPTABLE_SECONDS) RuleOutcome.Pass else RuleOutcome.Fail(
+            if (secs <= MAX_ACCEPTABLE_SECONDS) RuleOutcome.Pass
+            else if (secs >= NEVER) RuleOutcome.Fail(
+                Finding(
+                    ruleId = id,
+                    category = category,
+                    severity = Severity.MEDIUM,
+                    title = "This device never locks itself when left alone",
+                    detail = "Nothing on this device locks it after you walk away: no secure screen " +
+                        "saver, no inactivity lock, and it either never sleeps or wakes without " +
+                        "asking for a password. On a laptop this is usually while it is plugged in " +
+                        "— exactly when it is sitting on a desk.",
+                    remediation = "Turn on \"require sign-in when the PC wakes\" and set the device to " +
+                        "sleep (or the screen to lock) after a few minutes, both plugged in and on " +
+                        "battery. Windows+L locks it immediately.",
+                    evidence = mapOf("timeoutSeconds" to "never")
+                )
+            )
+            else RuleOutcome.Fail(
                 Finding(
                     ruleId = id,
                     category = category,

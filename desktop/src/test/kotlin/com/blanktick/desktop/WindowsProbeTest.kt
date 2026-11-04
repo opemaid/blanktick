@@ -106,6 +106,39 @@ class WindowsProbeTest {
     }
 
     /**
+     * `[Type]::new()` creates an object exactly like `New-Object`, but carries no
+     * `New-` token, so the fences above cannot see it. Pinned to an explicit list
+     * so that syntax can never become a quiet way around them.
+     *
+     * The one sanctioned use (2026-10-30): a `ProcessStartInfo` for the parallel
+     * Defender pass. It launches only the same read-only
+     * `MpCmdRun -Scan … -DisableRemediation` the probe already ran with `&`, but
+     * several at once, windowless, with output captured — so every startup
+     * program and running process gets an antivirus answer instead of the first
+     * twenty.
+     */
+    @Test
+    fun `every constructor call in the probe is sanctioned`() {
+        val constructed = statements.filter { it.contains("::new(") }
+        val sanctioned = listOf("[System.Diagnostics.ProcessStartInfo]::new()")
+        val unexpected = constructed.filterNot { line -> sanctioned.any { line.contains(it) } }
+        assertTrue(unexpected.isEmpty(), "unsanctioned ::new(): $unexpected")
+        assertEquals(1, constructed.size, "expected exactly one sanctioned ::new(), got: $constructed")
+
+        // And the process it configures may only ever run Defender's scanner.
+        val launches = statements.filter { it.contains("Diagnostics.Process]::Start(") }
+        assertEquals(1, launches.size, "expected exactly one process launch, got: $launches")
+        assertTrue(
+            statements.any { it.contains("\$psi.FileName = \$script:mpCmdRun") },
+            "the only launched program must be MpCmdRun"
+        )
+        assertTrue(
+            statements.any { it.contains("-DisableRemediation") && it.contains("\$psi.Arguments") },
+            "the launched scan must be read-only (-DisableRemediation)"
+        )
+    }
+
+    /**
      * The update agent must be asked offline.
      *
      * Enumerating pending updates normally means contacting Microsoft, which is
@@ -204,6 +237,17 @@ class WindowsProbeTest {
                 "browser.ext", "browser.ext.read", "browser.ext.unread",
                 "cert", "cert.storeRead",
                 "dns", "dns.enumerated",
+                // 2026-10-30: Wi-Fi security via netsh, Windows 11 power-plan lock
+                // settings, SmartScreen key-readability, antivirus coverage.
+                "wifi.adapters", "wifi.adaptersUp", "wifi.state", "wifi.ssid", "wifi.auth", "wifi.cipher",
+                "lock.inactivityPolicy", "power.hasBattery",
+                "smartscreen.keyRead", "smartscreen.policyKeyRead",
+                "avscan.unscanned",
+                // Network anomalies: router/ARP table, hosts file, PAC, nearby Wi-Fi.
+                "net.noGateway", "net.gateway", "net.neighbor", "net.neighborsRead",
+                "hosts.entry", "hosts.read",
+                "proxy.settingsRead", "proxy.pac", "proxy.pacMachine",
+                "wifi.nearby", "wifi.nearbyRead",
                 "drive", "drive.enumerated",
                 "fw.enumerated", "hash.selfTest",
                 "reachable", "reachable.enumerated", "reachable.unattributed",

@@ -34,7 +34,12 @@ A non-trivial number of non-technical users — the people this product is writt
 for — will stop at "Windows protected your PC". That is a known, accepted cost of
 the current approach and should be revisited before any real launch.
 
-## 3. No installer, only a portable build
+## 3. Installer (MSI) and portable build — RESOLVED 2026-10-23
+
+WiX is now available and `gradlew :desktop:packageMsi` produces a per-user MSI
+(no admin rights, Start-menu entry, Blanktick icon from `desktop/packaging/blanktick.ico`).
+The site leads with the MSI; the ZIP below remains as the portable option.
+Historical note follows.
 
 `packageMsi` requires the WiX Toolset, which is not installed. The shipping
 artefact is a ZIP of `createDistributable` output: a folder containing

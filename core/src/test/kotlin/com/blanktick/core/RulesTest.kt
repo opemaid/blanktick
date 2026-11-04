@@ -24,6 +24,7 @@ import com.blanktick.core.model.RemovableDrive
 import com.blanktick.core.model.ScreenLock
 import com.blanktick.core.model.Severity
 import com.blanktick.core.model.WifiSecurity
+import com.blanktick.core.model.NearbyWifi
 import com.blanktick.core.model.WifiSnapshot
 import com.blanktick.core.rules.AppHygieneRules
 import com.blanktick.core.rules.DeviceIntegrityRules
@@ -133,7 +134,7 @@ object Snapshots {
         screenLock = ScreenLock.PASSWORD,
         diskEncrypted = true,
         screenLockTimeoutSeconds = 300,
-        wifi = WifiSnapshot(ssid = "Home", security = WifiSecurity.WPA3),
+        wifi = WifiSnapshot(ssid = "Home", security = WifiSecurity.WPA3, gatewayMacChanged = false),
         userInstalledCaCerts = emptyList(),
         proxy = null,
         dnsServers = listOf("192.168.1.1"),
@@ -143,6 +144,14 @@ object Snapshots {
         desktop = DesktopFacts(
             os = os,
             osBuild = "Windows 11 Pro 24H2",
+            // Healthy network, all read locally (2026-10-30 network-anomaly rules).
+            onWifi = true,
+            networkConnected = true,
+            routerMacSharedWith = emptyList(),
+            gatewayFirstSeen = false,
+            hostsEntries = emptyList(),
+            nearbyWifi = listOf(NearbyWifi("Home", WifiSecurity.WPA3)),
+            proxySettingsRead = true,
             firewallEnabled = true,
             firewallProfilesOff = emptyList(),
             antivirusProduct = "Microsoft Defender",
@@ -927,7 +936,9 @@ class IsoDateTest {
         val fail = r.evaluate(Snapshots.healthyDesktop().copy(passwordAudit = PasswordAudit(20, 0, 3, 0)))
         assertEquals(Severity.MEDIUM, (fail as RuleOutcome.Fail).findings.first().severity)
         assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(passwordAudit = PasswordAudit(20, 0, 0, 0))) is RuleOutcome.Pass)
-        assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(passwordAudit = null)) is RuleOutcome.NotApplicable)
+        // Desktop: no audit means the Passwords tool was not used — the automatic scan
+        // never reads saved passwords, so this is a verified does-not-apply, never a pass.
+        assertTrue(r.evaluate(Snapshots.healthyDesktop().copy(passwordAudit = null)) is RuleOutcome.DoesNotApply)
     }
 
     @Test

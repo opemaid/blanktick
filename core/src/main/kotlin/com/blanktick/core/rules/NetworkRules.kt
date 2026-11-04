@@ -111,6 +111,13 @@ object NetworkRules {
         }
     }
 
+    /** Verified not on Wi-Fi (desktop with no adapter, or none connected): nothing to judge. */
+    private fun notOnWifi(s: DeviceSnapshot): RuleOutcome? =
+        if (s.wifi == null && s.desktop?.onWifi == false) RuleOutcome.DoesNotApply(
+            "This computer is not connected to Wi-Fi (wired, or no Wi-Fi adapter), so there is no " +
+                "Wi-Fi network to check."
+        ) else null
+
     /** Open Wi-Fi: everything not already encrypted is readable by everyone nearby. */
     val OpenWifi = object : BaseRule(
         id = "NET-WIFI-001",
@@ -118,7 +125,7 @@ object NetworkRules {
         description = "Wi-Fi network is encrypted",
         platforms = Platforms.EVERYWHERE
     ) {
-        override fun check(s: DeviceSnapshot) = requireObserved(s.wifi) { wifi ->
+        override fun check(s: DeviceSnapshot) = notOnWifi(s) ?: requireObserved(s.wifi) { wifi ->
             val name = wifi.ssid?.let { "\"$it\"" } ?: "This network"
             when (wifi.security) {
                 WifiSecurity.OPEN -> RuleOutcome.Fail(
@@ -176,10 +183,18 @@ object NetworkRules {
     val EvilTwin = object : BaseRule(
         id = "NET-WIFI-002",
         category = Category.NETWORK,
-        description = "Wi-Fi gateway matches the one seen previously"
+        description = "Wi-Fi gateway matches the one seen previously",
+        // Desktop enrolled 2026-10-30: the desktop collector now remembers each
+        // network's router (a small baseline file) and compares it on the next scan.
+        platforms = setOf(Platform.ANDROID, Platform.IOS, Platform.DESKTOP)
     ) {
         override fun check(s: DeviceSnapshot): RuleOutcome {
+            notOnWifi(s)?.let { return it }
             val wifi = s.wifi ?: return RuleOutcome.NotApplicable
+            if (wifi.gatewayMacChanged == null && s.desktop?.gatewayFirstSeen == true) return RuleOutcome.DoesNotApply(
+                "This is the first scan to see \"${wifi.ssid ?: "this network"}\". Its router has been " +
+                    "remembered and will be compared on every scan from now on."
+            )
             val changed = wifi.gatewayMacChanged ?: return RuleOutcome.NotApplicable
             if (!changed) return RuleOutcome.Pass
             return RuleOutcome.Fail(
