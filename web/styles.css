@@ -575,6 +575,8 @@ pre {
 .foot-note p { font-size: 15px; color: var(--on-kelp-2); }
 .foot-bar { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 32px; padding-top: 20px; border-top: 1px solid rgba(251, 250, 246, .35); color: var(--on-kelp-2); }
 .foot-bar p { margin: 0; max-width: none; }
+/* NVIDIA's required legal line wherever their logo appears (the Inception badge). */
+.foot-legal { margin: 14px 0 0; max-width: none; font-size: 12px; line-height: 1.5; color: var(--on-kelp-2); }
 
 /* ---------------------------------------------------------------- legal docs */
 .doc { padding: clamp(48px, 7vw, 104px) 0 clamp(72px, 8vw, 120px); }
