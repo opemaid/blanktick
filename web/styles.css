@@ -563,6 +563,10 @@ pre {
 .site-foot .brand .mark { width: 40px; height: 29px; }
 .foot-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; }
 .foot-brand p { margin-top: 16px; max-width: 30ch; color: var(--on-kelp-2); }
+/* NVIDIA Inception member badge. NVIDIA's rules: never recolour or reshape it,
+   and never show it larger than the Blanktick logo (the logo above is ~185px wide). */
+.foot-badge { display: inline-block; margin-top: 18px; line-height: 0; }
+.foot-badge img { display: block; width: 116px; height: 50px; margin-left: -6px; }
 .foot-col h2 { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--paper); font-weight: 600; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid rgba(251, 250, 246, .35); }
 .foot-col ul { list-style: none; margin: 0; padding: 0; }
 .foot-col li { padding: 5px 0; }
