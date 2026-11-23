@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.opemaid/blanktick",
   "title": "Blanktick",
-  "description": "Read-only security posture of a Windows PC, incl. AI-agent risks (exposed model servers, MCP tools, plaintext AI keys).",
+  "description": "Read-only security posture of a Windows PC, including AI-agent risks. Offline, no fix tools.",
   "repository": { "url": "https://github.com/opemaid/blanktick", "source": "github" },
   "websiteUrl": "https://blanktick.org",
   "version": "0.1.3",
