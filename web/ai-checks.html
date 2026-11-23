@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Six things to check on a Windows PC that runs AI tools — Blanktick</title>
+<meta name="description" content="Model servers open to the network, assistants that can run commands, API keys in plain text, and three more. Each with a PowerShell command you can run yourself.">
+<link rel="preload" href="fonts/hanken-grotesk-var-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#FBFAF6">
+</head>
+
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="tick" viewBox="20 50 228 166">
+      <path d="M44 136 L104 192 L150 148" fill="none" stroke="currentColor" stroke-width="34" stroke-linecap="butt" stroke-linejoin="miter"/>
+      <path d="M172 126 L224 74" fill="none" stroke="currentColor" stroke-width="34" stroke-linecap="butt"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="site">
+  <div class="wrap nav">
+    <a class="brand" href="index.html" aria-label="Blanktick, home">
+      <svg class="mark" viewBox="20 50 228 166" aria-hidden="true" focusable="false"><use href="#tick"/></svg>
+      <span class="word">blanktick</span>
+    </a>
+    <nav class="nav-wide" aria-label="Primary">
+      <ul>
+        <li><a href="index.html#looks"><span class="n" aria-hidden="true">04</span>What it checks</a></li>
+        <li><a href="index.html#about"><span class="n" aria-hidden="true">07</span>About</a></li>
+        <li><a href="team.html">Team</a></li>
+        <li><a class="nav-cta" href="index.html#download">Download</a></li>
+      </ul>
+    </nav>
+    <details class="nav-narrow">
+      <summary>Contents</summary>
+      <nav aria-label="Primary">
+        <ol>
+          <li><a href="index.html#looks"><span class="n" aria-hidden="true">04</span>What it checks</a></li>
+          <li><a href="index.html#about"><span class="n" aria-hidden="true">07</span>About</a></li>
+          <li><a href="team.html">Team</a></li>
+          <li><a href="index.html#download"><span class="n" aria-hidden="true">08</span>Download</a></li>
+        </ol>
+      </nav>
+    </details>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+<article class="doc">
+  <div class="wrap doc-grid">
+    <header class="doc-head">
+      <p class="micro"><span class="dot" aria-hidden="true"></span>Field notes</p>
+      <h1>Six things to check on a Windows PC that runs AI tools</h1>
+      <p class="doc-meta"><span><b>Published</b> 23 November 2026</span><span><b>Every command</b> only reads</span></p>
+    </header>
+    <div class="doc-body">
+<p>Antivirus looks for bad files. Most of the risk that AI tools add to a PC is not a file.
+It is a setting: a model server that answers anyone on the Wi-Fi, a JSON file that lets
+an assistant run commands, an API key pasted into a config two months ago. None of
+those trips a virus scanner, and none of them shows up in the places Windows lists
+things that start on their own.</p>
+<p>Here are the six we check for, why each matters, and how to look by hand. Nothing
+below changes anything on your machine. Every command only reads.</p>
+<p>The four config files most assistants use on Windows:</p>
+<table>
+<thead>
+<tr>
+<th>Assistant</th>
+<th>File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Claude Desktop</td>
+<td><code>%APPDATA%\Claude\claude_desktop_config.json</code></td>
+</tr>
+<tr>
+<td>Claude Code</td>
+<td><code>%USERPROFILE%\.claude.json</code></td>
+</tr>
+<tr>
+<td>Cursor</td>
+<td><code>%USERPROFILE%\.cursor\mcp.json</code></td>
+</tr>
+<tr>
+<td>Windsurf</td>
+<td><code>%USERPROFILE%\.codeium\windsurf\mcp_config.json</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>A local model server listening on every network</h2>
+<p>Ollama, LM Studio, llama.cpp's server and similar tools expose an HTTP API with no
+login, because they are meant to answer only this computer. Ollama, for example,
+listens on <code>127.0.0.1</code> unless you set <code>OLLAMA_HOST</code>. Set it to <code>0.0.0.0</code>, often done to
+reach the model from a phone or another PC, and on a café, hotel or office
+network, anyone scanning the subnet gets free use of your GPU, your models, and
+whatever is in the conversation.</p>
+<pre class="term"><code>Get-NetTCPConnection -State Listen |
+  Where-Object { $_.LocalAddress -in '0.0.0.0', '::' } |
+  Select-Object LocalPort, @{ n = 'Program'; e = { (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).ProcessName } } |
+  Sort-Object LocalPort -Unique | Format-Table -AutoSize
+</code></pre>
+<p>If <code>ollama</code>, <code>LM Studio</code>, <code>llama-server</code>, <code>koboldcpp</code>, <code>open-webui</code>, <code>comfyui</code> or
+similar appears in that list, it is reachable from the network. <strong>Fix:</strong> for Ollama,
+unset <code>OLLAMA_HOST</code> or set it to <code>127.0.0.1</code>. Other servers have an equivalent
+"listen address" or "serve on local network" setting.</p>
+<p><em>(Blanktick rule <code>DSK-AI-001</code>. It matches by program name, not port, because people
+move ports.)</em></p>
+<h2>An assistant that can run any command</h2>
+<p>An MCP server entry is a line in a JSON file that tells an assistant "you may start
+this program." If that program is <code>cmd</code>, <code>powershell</code> or <code>bash</code>, the assistant can
+run anything you can. That is often deliberate. But the file grants it without
+showing up in any Run key, scheduled task or service list, which is where every
+startup checker looks.</p>
+<pre class="term"><code>$configs = @(
+  &quot;$env:APPDATA\Claude\claude_desktop_config.json&quot;,
+  &quot;$env:USERPROFILE\.claude.json&quot;,
+  &quot;$env:USERPROFILE\.cursor\mcp.json&quot;,
+  &quot;$env:USERPROFILE\.codeium\windsurf\mcp_config.json&quot;
+) | Where-Object { Test-Path $_ }
+
+&amp; { foreach ($f in $configs) {
+  $j = Get-Content $f -Raw | ConvertFrom-Json
+  $servers = @($j.mcpServers) + @($j.projects.PSObject.Properties.Value.mcpServers) | Where-Object { $_ }
+  foreach ($s in $servers) {
+    foreach ($p in $s.PSObject.Properties) {
+      [pscustomobject]@{ Tool = $p.Name; Starts = $p.Value.command; File = Split-Path $f -Leaf }
+    }
+  }
+} } | Format-Table -AutoSize
+</code></pre>
+<p>Any tool whose <code>Starts</code> column is a shell can run commands as you. <strong>Fix:</strong> nothing,
+if you recognise it. If you don't, delete the entry from the file shown.</p>
+<p><em>(Blanktick rule <code>DSK-AI-002</code>.)</em></p>
+<h2>API keys in plain text in those files</h2>
+<p>Many setup guides tell you to paste an API key into the MCP config. Any program
+running as you can then read it. These keys are usually billable and rarely expire.</p>
+<pre class="term"><code>$pattern = 'sk-[A-Za-z0-9_\-]{20,}|AIza[0-9A-Za-z_\-]{30,}|ghp_[A-Za-z0-9]{30,}'
+foreach ($f in $configs) {
+  $n = (Select-String -Path $f -Pattern $pattern -AllMatches).Matches.Count
+  if ($n) { &quot;{0}: {1} key-shaped value(s)&quot; -f $f, $n }
+}
+</code></pre>
+<p>This prints file names and counts, never the keys themselves. A checker that copies
+your secret into its own output has made the problem worse. <strong>Fix:</strong> move keys
+into environment variables or a credential store, and <strong>rotate</strong> any key that sat in
+a file. Assume it has been copied.</p>
+<p><em>(Blanktick rule <code>DSK-AI-003</code>.)</em></p>
+<h2>AI tools that download their code every time they start</h2>
+<p>Look at the <code>Starts</code> column from check 2 again. <code>npx</code>, <code>uvx</code>, <code>bunx</code> and <code>pipx</code> don't
+name a program on your disk. They fetch a package from a public registry and run
+it as you, usually the latest version, every time the assistant starts. If that
+package is a look-alike, or is compromised after you added it, the new code runs
+with your full access, and nothing on the machine changed for you to notice.</p>
+<p><strong>Fix:</strong> pin a version (<code>npx some-server@1.4.2</code>), or install the tool once to a fixed
+path and point the config at that.</p>
+<p><em>(Blanktick rule <code>DSK-AI-005</code>.)</em></p>
+<h2>One assistant that can both read the web and act on your PC</h2>
+<p>This is the prompt-injection condition. A tool that pulls in outside text (a browser,
+fetch, email, Slack, search) is fine alone. A tool that writes files or runs commands
+is fine alone. <strong>Together</strong>, a web page or email the assistant reads can carry hidden
+instructions, and the assistant has the means to carry them out as you.</p>
+<p>It is common. On the first developer PC we checked while writing this, one assistant
+had a browser-automation tool started through <code>npx</code> next to two tools started through
+<code>cmd</code>. That is checks 2, 4 and 5 in one config file.</p>
+<p>Using the table from check 2: if the same file has a tool named like <code>fetch</code>, <code>web</code>,
+<code>browser</code>, <code>playwright</code>, <code>puppeteer</code>, <code>search</code>, <code>gmail</code>, <code>slack</code> <strong>and</strong> a shell or a
+tool named like <code>filesystem</code>, <code>shell</code>, <code>exec</code>, <code>git</code>, <code>docker</code> or <code>database</code>, you have
+the pairing. <strong>Fix:</strong> keep content-reading tools and acting tools in separate assistant
+profiles, or treat everything the assistant reads as untrusted input.</p>
+<p><em>(Blanktick rule <code>DSK-AI-006</code>. It is a name-based heuristic, and it says so.)</em></p>
+<h2>Windows Recall keeping a searchable record of your screen</h2>
+<p>On Copilot+ PCs, Recall periodically snapshots the screen and extracts the text so you
+can search it later. That is useful. It is also a searchable history of everything
+that was on screen, including things other apps were careful not to store.</p>
+<pre class="term"><code>'Recall off by policy (machine): ' + (Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI' -ErrorAction SilentlyContinue).DisableAIDataAnalysis
+'Recall off by policy (user):    ' + (Get-ItemProperty 'HKCU:\Software\Policies\Microsoft\Windows\WindowsAI' -ErrorAction SilentlyContinue).DisableAIDataAnalysis
+'Recall snapshot store present:  ' + (Test-Path &quot;$env:LOCALAPPDATA\CoreAIPlatform.00\UKP&quot;)
+</code></pre>
+<p><code>1</code> means switched off by policy. An empty value means no policy is set. <strong>Fix:</strong> if you
+don't use it, <em>Settings → Privacy &amp; security → Recall &amp; snapshots</em>.</p>
+<p><em>(Blanktick rule <code>DSK-AI-004</code>. It reports "not applicable" on hardware without Recall.)</em></p>
+<hr />
+<h2>Or let your AI agent do it</h2>
+<p><a href="https://blanktick.org">Blanktick</a> runs these six checks plus about 75 Windows
+security settings, offline. It is free and open source (AGPL-3.0), and its build fails
+if networking code is ever added. It also tells you which checks it <strong>could not</strong> run,
+instead of counting them as passes.</p>
+<p>It ships a read-only MCP server, so you can ask your own assistant:</p>
+<pre class="term"><code>/plugin marketplace add opemaid/blanktick
+/plugin install blanktick@blanktick
+</code></pre>
+<blockquote>
+<p>How secure is this PC? Use Blanktick, then give me the three things to fix first and anything you couldn't check.</p>
+</blockquote>
+<p>The tools only read. None of them fixes, deletes or blocks anything: the agent
+explains, and you decide.</p>
+<p><strong>Download:</strong> <a href="https://blanktick.org">blanktick.org</a> · <a href="https://github.com/opemaid/blanktick">GitHub</a> · <code>winget install 9MW3G5H3RF3M -s msstore</code></p>
+    </div>
+  </div>
+</article>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="brand" href="index.html" aria-label="Blanktick, home">
+          <svg class="mark" viewBox="20 50 228 166" aria-hidden="true" focusable="false"><use href="#tick"/></svg>
+          <span class="word">blanktick</span>
+        </a>
+        <p>A free, offline security scanner that tells you what it could not check.</p>
+      </div>
+      <nav class="foot-col" aria-labelledby="f-product">
+        <h2 id="f-product">Product</h2>
+        <ul>
+          <li><a href="index.html#coverage">Coverage</a></li>
+          <li><a href="index.html#looks">What it checks</a></li>
+          <li><a href="index.html#offline">Offline design</a></li>
+          <li><a href="index.html#download">Download</a></li>
+        </ul>
+      </nav>
+      <nav class="foot-col" aria-labelledby="f-project">
+        <h2 id="f-project">Project</h2>
+        <ul>
+          <li><a href="index.html#about">About &amp; mission</a></li>
+          <li><a href="team.html">Team &amp; founder</a></li>
+          <li><a href="mailto:hello@blanktick.org">Contact</a></li>
+          <li><a href="mailto:hello@blanktick.org?subject=Security%20report">Report a vulnerability</a></li>
+        </ul>
+      </nav>
+      <nav class="foot-col" aria-labelledby="f-legal">
+        <h2 id="f-legal">Legal</h2>
+        <ul>
+          <li><a href="privacy.html" aria-current="page">Privacy policy</a></li>
+          <li><a href="terms.html">Terms &amp; licence</a></li>
+          <li><a href="privacy.html#cookies">Cookies: none</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="foot-bar">
+      <p>&copy; 2026 Blanktick. Founded by Simphiwe Damoyi, South Africa.</p>
+      <p>No cookies &middot; No analytics &middot; No third-party requests</p>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
