@@ -47,7 +47,7 @@ release, not construction.
 
 ## Release engineering
 
-- [x] `release.yml` drafted — builds the MSI (`:desktop:packageMsi`) on a `v*` tag, publishes a GitHub Release + SHA-256. **(draft — review before use.)**
+- [x] `release.yml` drafted — builds the MSI (`:desktop:packageMsi`) on a `v*` tag, keeps it + SHA-256 as a private workflow artifact; does NOT publish (synthetic corpus). Public releases are uploaded by hand.
 - [x] `docs/release.md` runbook drafted.
 - [ ] Bump `packageVersion` 0.1.0 → the intended release version. **[HUMAN decision.]**
 - [ ] A production release must build the MSI from the **real** LOLDrivers corpus (`tools/fetch_loldrivers.py`), not the CI test seed.

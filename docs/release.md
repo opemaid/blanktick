@@ -44,9 +44,15 @@ known, accepted state for now, not an oversight.
    (`v0.2.0`) and the in-MSI `packageVersion` (`0.2.0`) are maintained
    separately — keep them in step by hand.
 
-5. **Watch the workflow**, then check the drafted/published Release has the
-   `.msi` and `.msi.sha256` attached and the MSI installs on a clean Windows
-   VM.
+5. **Watch the workflow.** It only proves the tag builds; it does **not**
+   publish. Its MSI carries the synthetic test corpus and is kept as a private
+   workflow artifact for 14 days. Download it from the run page if you want to
+   smoke-test the installer on a clean Windows VM.
+
+6. **Publish by hand.** Build the release locally with the real corpus, then
+   create the GitHub Release yourself and upload the MSI, zip, `.mcpb` and
+   their SHA-256 checksums with the release notes (as done for v0.1.3), e.g.
+   `gh release create v0.2.0 <files> --notes-file notes.md`.
 
 ## What the release workflow does
 
@@ -68,8 +74,10 @@ known, accepted state for now, not an oversight.
    `windows-latest` image.
 5. **Locates the MSI** under `desktop/build/compose/binaries/main/msi/` and
    writes a `.sha256` next to it.
-6. **Creates the GitHub Release** for the tag (via
-   `softprops/action-gh-release`) and uploads the `.msi` and `.msi.sha256`.
+6. **Keeps the MSI and `.sha256` as a private workflow artifact** (14 days).
+   It does **not** create or edit a GitHub Release: the workflow runs with
+   `contents: read`. Until 2026-11-23 it did, which attached the synthetic MSI
+   to the public v0.1.3 release and overwrote its notes.
 
 ## The signing gap
 

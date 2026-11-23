@@ -1,7 +1,17 @@
-# Release
+# Release build check
 #
-# Builds the Windows MSI installer for a tagged version and publishes it as a
-# GitHub Release. Triggered by pushing a tag that matches `v*` (e.g. v0.1.0).
+# Builds the Windows MSI installer for a tagged version to prove the tag builds
+# and passes the offline-bytecode gate. Triggered by pushing a tag that matches
+# `v*` (e.g. v0.1.0), or by hand from the Actions tab.
+#
+# IT DOES NOT PUBLISH ANYTHING. The MSI built here bundles the SYNTHETIC test
+# intel corpus (see "NOTE ON INTEL DATA" below), so it must never reach users.
+# It is kept only as a private workflow artifact (expires after 14 days).
+# Public releases are built locally with the real corpus and uploaded by hand
+# (MSI, zip, .mcpb, checksums and release notes), as was done for v0.1.3.
+# Until 2026-11-23 this workflow attached its synthetic MSI to the public
+# release and overwrote the release notes; the permissions below now make
+# that impossible (contents: read).
 #
 # ---------------------------------------------------------------------------
 # THE MSI THIS WORKFLOW PRODUCES IS UNSIGNED.
@@ -58,10 +68,12 @@
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
-# Needed so softprops/action-gh-release can create the release and upload assets.
+# Read-only on purpose: this workflow must not be able to create or edit a
+# GitHub Release.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   release:
@@ -134,19 +146,14 @@ jobs:
           sha256sum "$msi" > "$msi.sha256"
           echo "msi=$msi" >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub Release and upload the MSI
-        uses: softprops/action-gh-release@v2
+      - name: Keep the test MSI as a private workflow artifact
+        # NOT a release asset. Downloadable from the workflow run page by repo
+        # collaborators only, for smoke-testing the installer.
+        uses: actions/upload-artifact@v4
         with:
-          # The release is created for the pushed tag (github.ref_name).
-          files: |
+          name: blanktick-${{ github.ref_name }}-SYNTHETIC-test-msi
+          path: |
             desktop/build/compose/binaries/main/msi/*.msi
             desktop/build/compose/binaries/main/msi/*.msi.sha256
-          body: |
-            Blanktick ${{ github.ref_name }} — offline Windows security-posture check.
-
-            **This MSI is UNSIGNED.** On first run Windows SmartScreen will show
-            "Windows protected your PC" / "Unknown publisher". Click **More info**
-            then **Run anyway**. Verify your download with the published
-            `.sha256` checksum before installing.
-
-            Per-user install (no administrator rights required).
+          retention-days: 14
+          if-no-files-found: error
