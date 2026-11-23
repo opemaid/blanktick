@@ -14,6 +14,21 @@ It finds where bad AI can get into your PC, and lets your own AI agent help you 
 <a href="https://dl.blanktick.org/Blanktick-0.1.3-win-x64.zip">portable .zip</a> ·
 or <code>winget install 9MW3G5H3RF3M -s msstore</code></p>
 
+<p align="center"><img src="design/readme/claude-checks-a-pc.gif" alt="A real Claude Code session: Claude runs a Blanktick scan over MCP, reports the score alongside what could not be checked, and lists the 13 checks Windows would not answer." width="820"><br>
+<sub>A real session, sped up 2×. One question, one scan, nothing changed on the machine.</sub></p>
+
+### Try it with your AI agent in a minute
+
+Install Blanktick (above), then in Claude Code:
+
+```
+/plugin marketplace add opemaid/blanktick
+/plugin install blanktick@blanktick
+```
+
+Ask: *"How secure is this PC? Use Blanktick, then give me the three things to fix first and anything you couldn't check."*
+Any other MCP client: run `Blanktick.exe --mcp` over stdio ([docs/mcp.md](docs/mcp.md)).
+
 <p align="center"><a href="https://www.nvidia.com/en-us/startups/"><img src="design/badges/nvidia-inception-badge.svg" alt="Blanktick is a member of the NVIDIA Inception program" width="150"></a><br>
 <sub>&copy; 2026 NVIDIA, the NVIDIA logo, and NVIDIA Inception are trademarks and/or registered trademarks of NVIDIA Corporation in the U.S. and other countries.</sub></p>
 
@@ -665,7 +680,8 @@ Claude Desktop users can install the one-click extension (`tools/build-mcpb.sh`
 builds `Blanktick-0.1.3.mcpb`). In Claude Code:
 
 ```
-/plugin install blanktick --marketplace opemaid/blanktick
+/plugin marketplace add opemaid/blanktick
+/plugin install blanktick@blanktick
 ```
 
 Stdio, not HTTP: your client launches Blanktick and talks to it over standard input
