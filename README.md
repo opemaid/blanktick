@@ -29,6 +29,8 @@ Install Blanktick (above), then in Claude Code:
 Ask: *"How secure is this PC? Use Blanktick, then give me the three things to fix first and anything you couldn't check."*
 Any other MCP client: run `Blanktick.exe --mcp` over stdio ([docs/mcp.md](docs/mcp.md)).
 
+<p align="center"><a href="https://glama.ai/mcp/servers/opemaid/blanktick"><img src="https://glama.ai/mcp/servers/opemaid/blanktick/badges/score.svg" alt="Blanktick MCP server on Glama"></a></p>
+
 <p align="center"><a href="https://www.nvidia.com/en-us/startups/"><img src="design/badges/nvidia-inception-badge.svg" alt="Blanktick is a member of the NVIDIA Inception program" width="150"></a><br>
 <sub>&copy; 2026 NVIDIA, the NVIDIA logo, and NVIDIA Inception are trademarks and/or registered trademarks of NVIDIA Corporation in the U.S. and other countries.</sub></p>
 
